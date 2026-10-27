@@ -2,6 +2,8 @@
 
 **Revisión adicional del 27/10/2026:** ver [validación de negocio y cuestionario pendiente](#validación-de-negocio-y-cuestionario-pendiente). Contrasta los archivos locales del prototipo con el SQL y distingue reglas documentadas de comportamientos posteriores del código. Las preguntas no constituyen decisiones aprobadas.
 
+**Respuestas posteriores del usuario:** ver [respuestas y alcance limitado al prototipo](#respuestas-y-alcance-limitado-al-prototipo). Esta sección actualiza la prioridad y el estado del cuestionario anterior; no se exige responder las 30 preguntas para continuar.
+
 Este documento incorpora la [auditoría](auditoria-bd-actual-vs-planificada.md) y prepara el modelo para tu revisión manual contra las vistas. **No se cambiaron entidades TypeORM, migraciones ni una base desplegada.** El [SQL de revisión](03_schema_total.sql) crea una instalación nueva separada en `agro`; no es una actualización sobre tu base existente.
 
 **Base revisada al 27/10/2026:** se incluyen 19 de las 20 tablas actuales; `archivo` queda fuera del esquema por decisión de negocio. Se conservan **173 columnas actuales**: se excluyen las diez de archivo y se retira `campania_x_proveedores.finca_id`, su FK y sus tres índices asociados. El SQL propone unicidad por campaña/proveedor; las validaciones de entrevista se adaptan para comprobar la propiedad de la finca sin exigirla en la participación. El backend real sigue sin cambios.
@@ -5379,7 +5381,7 @@ Se respetan los acuerdos ya registrados: conservar `campania_x_proveedores`, ide
 
 ### Preguntas para cerrar el modelo
 
-Responder primero **P01–P15**, porque cambian la estructura y los cálculos principales. Las recomendaciones son propuestas para discutir; no sustituyen tus respuestas ni cambian las decisiones D01–D15.
+Cuestionario original de la revisión. Su estado vigente se encuentra en [respuestas y alcance limitado al prototipo](#respuestas-y-alcance-limitado-al-prototipo). Las recomendaciones originales no sustituyen las respuestas del usuario ni autorizan funciones adicionales.
 
 | ID | Pregunta | Qué permite definir |
 |---|---|---|
@@ -5422,3 +5424,60 @@ La gestión de archivos sigue diferida por el acuerdo D13. Al retomar esa etapa 
 ### Siguiente paso tras las respuestas
 
 Actualizar las decisiones existentes, retirar duplicidades aprobadas, completar los detalles de cosecha/recepción/documentos económicos y revisar las restricciones de extremo a extremo. Después preparar migraciones TypeORM con conservación de históricos y pruebas transaccionales de kilos, pagos y cierres. No aplicar `03_schema_total.sql` sobre la base existente.
+
+## Respuestas y alcance limitado al prototipo
+
+**27/10/2026 — actualización tras las respuestas del usuario.** El objetivo es trasladar los flujos del prototipo a `epe-web`, respetando el trabajo existente. Se entiende como referencia funcional para implementar la web, no como una orden de mover físicamente la carpeta ni reemplazar ahora el frontend. Esta revisión solo actualiza el reporte: no modifica prototipo, web, backend o SQL.
+
+**Regla de alcance:** conservar lo que cubre el prototipo; las posibilidades de negocio adicionales se documentan y se excluyen del diseño operativo por ahora. Las respuestas explícitas se registran, y cuando contradicen el prototipo se señala la diferencia para consultarla antes de implementarla. No se interpreta la mera existencia de datos demo como una regla aprobada.
+
+Se interpretan los números según las **15 preguntas del último mensaje al usuario**, cuya redacción difiere parcialmente de P01–P15 del cuestionario completo. En particular, «3: sí, no» significa una sola agroexportadora y no varias campañas activas para una misma fruta; «4: sí» significa varios requerimientos independientes del mismo cliente/campaña; «14: sí, sí» significa varias facturas por carga y ajustes/correcciones. La respuesta 9 se aplica a compra y transporte, sin extenderla automáticamente a ventas.
+
+### Respuestas contrastadas
+
+| Punto | Respuesta o comportamiento encontrado | Estado y efecto para el schema |
+|---|---|---|
+| 1 | El prototipo es la referencia que debe trasladarse a la web. | Confirmado como dirección funcional. Las contradicciones internas se reportan, no se resuelven escogiendo silenciosamente una versión. |
+| 2 | El usuario pide explicar la duplicidad. Ejemplo: proveedor Juan en campaña Mango se registra una vez en `campania_x_proveedores` y otra en `participacion_proveedor_campana`, ambas con kilos/estado. Una podría decir 1.000 kg y la otra 800 kg. | Es una duplicidad técnica de la propuesta, no dos pantallas o negocios exigidos por el prototipo. Recomiendo conservar y ampliar la tabla existente, con una sola fuente editable. No se ha aprobado aún eliminar la otra ni se modifica el SQL en esta revisión. |
+| 3 | Una agroexportadora; no varias campañas activas de la misma fruta. `CampaignModal` y `masterIssue('campaigns')` no comprueban esa exclusividad. El demo contiene Mango planificado y Mango en proceso; esto contradice la definición de activa como toda campaña sin terminar usada por el SQL. | Respuesta registrada. Falta alinear la definición de activa: el SQL incluye planificación y proceso. Se reporta que el prototipo no impone el límite; no se añade multempresa. |
+| 4 | Se desean varios requerimientos independientes del mismo cliente/campaña. Sin embargo, el editor `modules.tsx:1345–1372` busca una participación previa y bloquea crear otra; permite varios contratos dentro de la existente. | **Contradicción funcional.** Mantener pendiente la elección entre varios contratos en una participación o varios requerimientos reales. No retirar la unicidad cliente/campaña automáticamente. |
+| 5 | Una entrega corresponde a un viaje. `quality-load-utils.ts:deliveryHasLoad` reserva la entrega y evita otra carga; `FLUJO-EXPORTACION.md` declara una carga por entrega. | Coincide con el flujo previsto. Los duplicados históricos del demo no justifican viajes parciales; ese negocio queda fuera del alcance. |
+| 6 | La coordinación es la fuente del viaje y un chofer puede hacer varios viajes el mismo día. El prototipo asigna chofer/camión por entrega/servicio y no se encontró un bloqueo global por día en los validadores revisados. | Compatible con la respuesta. La exclusión SQL antigua por días completos sí debe revisarse técnicamente para no impedir viajes sucesivos. El prototipo no define un motor adicional de reservas/optimización. |
+| 7 | Se puede vincular transportista sin acuerdo completo. `store.tsx:linkCampaignTransporter` crea el vínculo con cotización y servicios; `paymentAgreement` se guarda después. | Coincide. `acuerdo_transporte` completo no debe ser el único modo de representar ese vínculo inicial. D06 queda confirmado en su comportamiento, sin crear ahora una tabla. |
+| 8 | Pagar por kilos reconocidos en planta; nadie asume la diferencia. `provider-receipt.tsx` captura esos kilos, pero `provider-settlement-payment.ts` y `finance-flow.ts:validateLiquidation` liquidan kilos cargados. | **Contradicción dentro del prototipo y con la respuesta.** Registrar como regla solicitada kilos reconocidos. No crear un cargo, deuda, reparto de pérdidas o descuento adicional por la diferencia. No interpretar que los kilos físicos de origen y destino deban igualarse. |
+| 9 | Compra y transporte en PEN. Compra ya fija PEN en `CampaignProviderModal` y en la liquidación. El acuerdo de transporte todavía ofrece USD/PEN/EUR, aunque liquidaciones y adelantos nuevos de transporte operan en PEN. | Respuesta registrada; existe una inconsistencia del selector de transporte que se debe reportar/alinear. No ampliar el negocio a compra/transporte multimoneda. Ventas conserva su moneda de contrato. |
+| 10 | `CampaignProviderModal` registra un precio y moneda por participación del proveedor; `purchaseSources` recupera ese precio. Si encuentra varios registros aplicables a las fincas, exige que tengan el mismo precio/moneda; en caso contrario bloquea por ambigüedad. | El prototipo no implementa una lista de precios por calidad, un historial de vigencias ni varias líneas de precio para el mismo proveedor/carga. No exigir ese negocio ni un editor nuevo de acuerdos. Conservar el precio aplicado al documento sigue siendo necesario para su historia. |
+| 11 | `ProviderReceiptBreakdown` registra manualmente kilos reconocidos **por proveedor**, no por finca. Deben ser positivos, no superar los cargados del proveedor y sumar el peso de planta, con tolerancia de 0,01 kg. | Sí está cubierto. No prorratea automáticamente ni define una persona aprobadora separada. Si solo hay peso global, no inventar el desglose. Para un proveedor, `purchaseSources` usa el peso de planta como recibido. El uso de estos kilos para pagar sigue en conflicto con el punto 8. |
+| 12 | El acuerdo guarda un monto total de campaña/transportista. Cada carga tiene su flete; los gastos van aparte. `transport-freight.ts` compara el flete liquidado acumulado con el acuerdo y permite exceso con observación; el editor bloquea cambiar el flete de una carga ya liquidada. | Es una referencia total de campaña con asignación por carga y excepción documentada, no una tarifa automática por kilos ni un tope absolutamente infranqueable. No añadir aprobaciones jerárquicas que el prototipo no tiene. |
+| 13 | `transport-advances.ts` distingue adelanto acordado, desembolso real, aplicación a liquidaciones por carga y disponible. Cada aplicación referencia el desembolso y no es un nuevo pago. | Sí cubre adelantos a transportistas y su distribución entre cargas de la misma empresa/campaña. No se identificó un flujo específico de adelantos de compra a proveedores ni devolución/reembolso de sobrantes: se reportan y quedan fuera. Una condición de adelanto escrita en un contrato no acredita un desembolso. |
+| 14 | Se desean varias facturas por carga y ajustes/correcciones. `finance-model.ts` sí guarda descuento y cargos, pero `validateLiquidation` bloquea otra liquidación de venta por viaje y exige todo el peso recibido en un solo documento. Los vínculos financieros se protegen contra borrado/cambio de origen. | **Contradicción sobre varias facturas.** Los ajustes están cubiertos; la facturación parcial/agrupada y un flujo completo de anulación/rectificación no se acreditan con esos campos. Se reportan; no se amplían automáticamente cardinalidades ni procesos. |
+| 15 | `SettlementPersonPicker` permite proveedor principal o persona vinculada, con nombres, documento y vínculo. El texto exige que corresponda a quien realiza la venta; `purchase-uit.ts` acumula por identidad/año y conserva la identidad histórica. | Sí está cubierto y debe mantenerse. No se añade un módulo de poderes o autorizaciones documentales que no se encontró en ese flujo. No se presenta el selector como facultad para transferir ventas anteriores ni como validación legal. |
+
+### Qué no se incorporará por no estar definido en el prototipo
+
+Esta lista cierra la ampliación de alcance planteada como posibilidad en el cuestionario anterior. «No definido» significa que no se encontró un flujo implementado en las fuentes revisadas, no una afirmación de imposibilidad futura.
+
+| Posibilidad adicional | Tratamiento actual |
+|---|---|
+| Varias agroexportadoras y aislamiento entre empresas | Fuera del alcance; el usuario confirma una empresa. |
+| Dividir una entrega entre varios viajes/camiones | Fuera del alcance; el usuario confirma un viaje por entrega y el flujo lo respalda. |
+| Tarifarios de compra por calidad, varias vigencias y varios precios en una liquidación del mismo proveedor | Solo reportar; usar el precio de participación que el prototipo contempla. |
+| Prorrateo automático de mermas/gastos, responsables económicos de diferencias y recepción reconocida por finca | Solo reportar; hay captura manual por proveedor y el usuario no solicita imputar pérdidas. |
+| Adelantos de compra a proveedores y reembolso automático de adelantos sobrantes | Solo reportar; no extender los adelantos de transporte a otro negocio. |
+| Facturación parcial/agrupada, anulación/rectificación completa y nuevos cálculos tributarios | Reportar la diferencia con el punto 14; no diseñarlos a partir de un «sí» sin resolver el conflicto con el prototipo. Descuentos/cargos existentes sí permanecen en alcance. |
+| Nuevos perfiles Calidad, Logística, Tesorería y Contabilidad con aprobaciones separadas | Solo reportar; los perfiles observados son Administrador y Chofer. |
+| Poderes/autorizaciones documentales de personas vinculadas | Solo reportar; conservar selector, datos del vínculo e identidad del documento. |
+| Excepciones autorizadas de MTD, reapertura formal de campañas y motor de reservas de choferes | Solo reportar; no convertir las posibilidades del cuestionario en funcionalidades. |
+| Un modo completo de operación sin internet y resolución manual de conflictos de negocio | No se exige como negocio nuevo. Se conserva la sincronización/versionado del prototipo sin afirmar que cubra trabajo autónomo completo sin conexión. |
+
+Los avances por finca, confirmaciones de cosecha, análisis/MTD, exámenes pendientes, evidencia documental, guías, cierres de recepción/campaña y protección del historial **sí aparecen** en el prototipo. No se descartan junto con las posibilidades anteriores. La validación técnica de consistencia, concurrencia, permisos del chofer y migraciones también sigue siendo necesaria para implementar lo existente; no requiere inventar pantallas o negocios adicionales.
+
+### Diferencias que deben consultarse antes de implementar
+
+1. **Cliente/campaña:** el usuario pide varios requerimientos independientes; el editor solo permite una participación y varios contratos. Distinguir si «varios requerimientos» se refiere a esos contratos o realmente a varias participaciones.
+2. **Compra:** el usuario pide kilos reconocidos; el pago del prototipo usa kilos cargados. Ejemplo: 1.000 kg cargados y 960 kg reconocidos → la respuesta solicita pagar 960 × precio; el código actual paga 1.000 × precio. No añadir una compensación por los otros 40 kg.
+3. **Venta:** el usuario admite varias facturas por carga; el prototipo bloquea un segundo documento por viaje. Descuentos/cargos sí existen. No confundir varios cobros de una factura con varias facturas.
+4. **Campañas activas:** se pide una por fruta, pero el prototipo no lo valida. El SQL cuenta también las planificadas como activas; señalar esta precisión antes de equiparar «activa» con solo «En Proceso».
+5. **Transporte en soles:** el usuario lo confirma y el flujo nuevo de liquidación lo exige; el selector del acuerdo aún ofrece otras monedas. Mantener la decisión PEN y registrar la discrepancia visual.
+
+La consolidación de las dos tablas de participación sigue siendo una recomendación técnica explicada en el punto 2, pendiente de aprobación; no representa un proceso de negocio ausente que deba inventarse. El SQL actual permanece como propuesta anterior y aún no incorpora las respuestas de esta sección.
