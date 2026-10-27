@@ -1,5 +1,7 @@
 # Base de datos por vista — modelo revisado sobre el backend actual
 
+**Auditoría vigente por cumplimiento de la aplicación:** ver [resultado y cambios mínimos necesarios](#auditoría-de-cumplimiento-de-la-aplicación). Por instrucción posterior del usuario se prioriza ejecutar los flujos del prototipo sobre normalización, elegancia o refactorizaciones. Las auditorías y preguntas anteriores se conservan como antecedente, no como requisitos adicionales.
+
 **Revisión adicional del 27/10/2026:** ver [validación de negocio y cuestionario pendiente](#validación-de-negocio-y-cuestionario-pendiente). Contrasta los archivos locales del prototipo con el SQL y distingue reglas documentadas de comportamientos posteriores del código. Las preguntas no constituyen decisiones aprobadas.
 
 **Respuestas posteriores del usuario:** ver [respuestas y alcance limitado al prototipo](#respuestas-y-alcance-limitado-al-prototipo). Esta sección actualiza la prioridad y el estado del cuestionario anterior; no se exige responder las 30 preguntas para continuar.
@@ -5481,3 +5483,103 @@ Los avances por finca, confirmaciones de cosecha, análisis/MTD, exámenes pendi
 5. **Transporte en soles:** el usuario lo confirma y el flujo nuevo de liquidación lo exige; el selector del acuerdo aún ofrece otras monedas. Mantener la decisión PEN y registrar la discrepancia visual.
 
 La consolidación de las dos tablas de participación sigue siendo una recomendación técnica explicada en el punto 2, pendiente de aprobación; no representa un proceso de negocio ausente que deba inventarse. El SQL actual permanece como propuesta anterior y aún no incorpora las respuestas de esta sección.
+
+## Auditoría de cumplimiento de la aplicación
+
+**27/10/2026 — criterio actualizado por el usuario.** Objetivo: que la base permita guardar, recuperar y continuar los flujos reales del prototipo al llevarlos a `epe-web`. No se evalúa si el diseño es el más normalizado ni se exige rehacer lo existente por calidad. Se conservan las respuestas anteriores y se reportan sus contradicciones sin inventar nuevos negocios.
+
+**Dictamen: cumplimiento funcional parcial.** El SQL contiene la estructura principal y sirve como punto de partida. Sin embargo, todavía impide algunas altas y borradores válidos de la aplicación y no conserva todo el detalle de cosecha, recepción, guías y documentos económicos. No basta con que existan 66 tablas para considerar completa la persistencia de las pantallas.
+
+**Alcance verificado:** lectura del SQL `03_schema_total.sql`, tipos y formularios locales del prototipo, validadores de negocio y DTO/entidades relevantes del backend. Referencias: backend `e03a2a0`, web `b76f8e3`, documentación previa `36c93a3`. No se realizó una nueva prueba de navegador, una auditoría completa de endpoints ni una conexión a base desplegada. El backend actual y la propuesta SQL son cosas distintas: las tablas propuestas no están implementadas por el hecho de figurar en este archivo.
+
+### Matriz funcional del schema propuesto
+
+**Base cubierta** indica que hay tablas/campos para el núcleo del registro, no que exista ya una API o una prueba completa. **Parcial** indica que se pueden guardar algunos datos pero falta detalle o una etapa. **Bloqueo** identifica un dato o acción del prototipo que la propuesta impide guardar como está.
+
+| Flujo del prototipo | Soporte aprovechable en el SQL | Resultado funcional |
+|---|---|---|
+| Acceso Administrador/Chofer | `persona`, `usuario`, `rol`, `sesion_usuario`, usuario asociado al chofer | Base cubierta para estos perfiles. La autenticación operativa no se acredita con esta auditoría del schema. No añadir perfiles nuevos. |
+| Listado/detalle de campañas y catálogos | `campana`, `fruta`, `fruta_derivada`, variedades de campaña | Base cubierta para el núcleo y consultas. La exclusividad de campaña activa se trata como diferencia de regla, no como rediseño. |
+| Alta de proveedor, finca y transportista privado | Tablas maestras actuales ampliadas | **Bloqueo** para documentos/teléfonos/códigos no enteros, hectáreas decimales o transportista sin RUC; ver FC01. |
+| Vincular proveedor y registrar entrevista | Participación, entrevistas, variedades; precio en `acuerdo_compra` | **Parcial/bloqueo** por MTD obligatorio ajeno al alta y correspondencia pendiente del precio/datos de entrevista; FC02. La duplicidad de tablas no exige por sí sola una refactorización. |
+| Registrar examen pendiente/enviado y completar resultado | `examen_proveedor` tiene campos de etapa nuevos | **Bloqueo:** resultado/documento siguen obligatorios desde el alta; FC03. |
+| Certificados del proveedor | `certificado_proveedor` conserva nombre, fecha SENASA y vínculo documental | Base cubierta para los datos de la ficha; binarios/evidencia siguen pendientes por el acuerdo documental. |
+| Certificación de campaña, cobertura, ampliación y pagos | Certificado, cobertura por proveedor, ampliaciones y pagos | **Parcial:** reutilizar las tablas; preservar también inicio de vigencia, observaciones y cambios de cobertura que la pantalla vuelve a mostrar; FC04. No es necesario otro subsistema de certificación. |
+| Cliente, participación comercial y varios contratos | Cliente/campaña, variedades, contratos | **Parcial:** guardar contrato sin precio definitivo y condiciones de entrega/observaciones; FC05. Varios requerimientos independientes siguen en contradicción con el editor. |
+| Entrega y programa semanal | `entrega_programada`, distribución por variedad, `v_programa_semanal` | Base cubierta para un viaje por entrega y su resumen semanal. No hace falta una tabla de totales por semana. |
+| Cotizaciones y vínculo inicial del transportista | Solicitud, invitación, cotización, acuerdo | **Parcial/bloqueo:** existe la cotización, pero falta representar el vínculo de campaña antes de completar el acuerdo; FC06. |
+| Coordinar viaje con varios proveedores/fincas | Coordinación y orígenes | Base cubierta para el viaje. **Parcial** para flete antes de liquidar y observación por exceso; FC07. Revisar el bloqueo por días del modelo antiguo si se sigue escribiendo allí. |
+| Incorporar campaña a Calidad y analizar antes de cargar | Análisis y MTD por participación/finca | Análisis previos cubiertos. **Parcial:** conservar la incorporación manual por canal y su estado sin inventar una entrega; FC08. |
+| Exportación: preparar, registrar avances y cerrar cosecha | Cabecera `cosecha`, carga, gastos y análisis | **Parcial:** faltan organización, confirmaciones y filas de avances por proveedor/finca; FC08. |
+| Industria: inspección, rechazo, corrección y carga | Carga, cosecha/operación y análisis | **Parcial:** no se conserva el detalle de inspección y correcciones del formulario; FC08. |
+| Registrar carga con kilos y bultos por proveedor | `carga`, `proveedor_carga`, `origen_carga`, `gasto_carga` | Base cubierta para kilos, variedad, bultos y gastos. Totales del camión pueden calcularse desde el detalle. |
+| Preparar y volver a consultar guías de la carga | Guía, proveedores de guía y normas | **Parcial:** falta conservar todo el contenido editable/emitido y la selección de fincas por guía; FC09. Varias guías por carga ya están representadas. |
+| Viaje y checklist del chofer | `historial_chofer`, recepción y guía de salida | Base cubierta para etapas y fechas principales. **Parcial** para los detalles del checklist de jabas/no aplica; FC10. |
+| Logística: espera, descarga, compra/recepción y cierre | `recepcion_planta`, carga y cierres | **Parcial:** no conserva ventana/espera/reprogramación, inicio-fin de descarga, compra revisada y recepción por proveedor; FC10. |
+| Liquidar proveedor y volver a consultar su documento | `liquidacion_proveedor`, personas, pagos y saldo | **Parcial:** faltan kilos base, precio aplicado, vencimiento y datos de identidad histórica; FC11. La base reconocida solicitada contradice el pago actual del prototipo. |
+| Liquidar transporte y aplicar adelanto a cargas | Liquidación, gastos, adelantos, aplicaciones, pagos y vista de saldo | Base cubierta para registrar los movimientos principales. **Parcial** para vencimiento/documento y aplicación transaccional de límites; FC07/FC13. |
+| Preparar factura, emitir y cobrar | Factura, cobros y saldo | **Bloqueo** si hay descuentos/cargos: el CHECK exige el importe sin ajustes. Falta conservar verificación y notas; FC12. Varias facturas por carga siguen en contradicción con el prototipo. |
+| Control anual por persona y cierre de campaña | Persona/documento, parámetro UIT, vista anual y metadatos de cierre | Base cubierta para consulta/cierre principal. **Parcial:** conservar acuse del aviso y usar base histórica definida; FC11. Bloqueos de cierre y cambios posteriores necesitan servicio, no otra tabla de checklist; FC13. |
+| Adjuntos usados a lo largo del flujo | URLs actuales y referencias documentales reservadas | **Diferido:** la decisión de excluir `archivo` continúa vigente. No se acredita el flujo completo de adjuntar/descargar; FC14. |
+
+### Faltantes que sí afectan el funcionamiento
+
+Las soluciones siguientes son el **mínimo funcional propuesto**, no cambios ejecutados ni requisitos para crear una tabla por pantalla. Puede usarse JSONB para objetos de formularios y listas pequeñas si con ello se guarda y recupera fielmente la información. Reutilizar campos equivalentes, generar códigos internos y derivar totales son opciones válidas.
+
+| ID | Acción y dato que usa la aplicación | Qué ocurre con la propuesta actual | Cambio mínimo para permitir el flujo |
+|---|---|---|---|
+| FC01 | Guardar proveedor con documento/teléfono como texto, finca de 3,5 ha, código SENASA alfanumérico o transportista privado sin RUC | `proveedor` conserva documento, teléfono y código como enteros; `finca` conserva hectáreas enteras; transportista exige RUC. El prototipo admite esos casos. | Ajustar los tipos concretos y obligatoriedad según el tipo de transportista. No es cosmético: evita perder ceros/letras o rechazar valores del formulario. Revisar también dimensiones del vehículo: el validador del prototipo acepta omisiones, el SQL exige todas. |
+| FC02 | Vincular proveedor, guardar su precio y registrar datos agronómicos de entrevista | `mtd_ceratitis` sigue obligatorio en participación aunque se captura en Análisis; precio vive solo en un acuerdo con variedad/fechas obligatorias. Entrevista agrega descripciones pero mantiene distanciamiento/frecuencia numéricos obligatorios. | Persistir el precio de participación mediante campos o mapeo explícito al acuerdo sin exigir negocios adicionales. Dejar opcionales los datos legacy que ya no pide esa etapa; guardar «5 × 5»/«cada 7 días» sin inventar números para satisfacer el SQL. Si se mantienen dos participaciones, el servicio debe guardar/leer la misma participación lógica. |
+| FC03 | Crear examen Pendiente o Enviado sin resultado todavía | Resultado y URL son NOT NULL; agregar `estado_examen` no elimina ese bloqueo. | Permitir resultado/documento ausentes hasta la etapa que los requiere. No guardar «Negativo» o una URL ficticia para poder avanzar. |
+| FC04 | Guardar vigencia de certificado y consultar datos de cobertura | Existen cobertura, ampliaciones y pagos, pero la ficha guarda `vigenciaInicio`, observaciones y `kilosHistory` con productores de cada cambio. No todos tienen representación histórica equivalente. | Añadir inicio/observaciones y, si no puede reconstruirse desde las filas actuales, un detalle/JSON de los cambios de cobertura. Kilos totales y estado de pago se calculan; no requieren tablas nuevas. |
+| FC05 | Guardar contrato antes de fijar precio, condiciones de entrega y observaciones | `CommercialContract.precio` es opcional y el editor admite vacío; SQL exige precio positivo. Faltan condiciones de entrega y observaciones propias del contrato. | Precio opcional hasta facturar; guardar condiciones/observaciones. El número interno obligatorio puede generarse: no exigir al usuario un nuevo formulario solo por una columna del schema. |
+| FC06 | Vincular transportista y completar acuerdo después | El prototipo crea `CampaignTransporter` sin `paymentAgreement`; `acuerdo_transporte` exige monto y tipo de pago desde el principio. No hay otro vínculo campaña/empresa que cubra por sí solo ese registro. | Permitir un acuerdo/vínculo en borrador con condiciones opcionales y validarlas al completar. Es suficiente ampliar lo existente; no se exige normalizarlo en nuevas tablas. |
+| FC07 | Guardar flete de entrega/carga, su justificación y vencimiento de la liquidación | La aplicación asigna flete antes de liquidar. El SQL tiene el importe en liquidación y un total de acuerdo, pero no un importe reservado por entrega/carga; tampoco conserva todos los datos del documento de transporte. | Campo de flete en la entrega coordinada o carga, observación reutilizable y vencimiento del documento. Acuerdo/cargas en PEN según respuesta; no desarrollar multimoneda adicional. La observación por exceso ya existe en el prototipo. |
+| FC08 | Agregar campaña a Calidad sin carga, organizar cosecha, agregar varios avances y guardar inspección de Industria | El prototipo tiene estado por campaña/canal antes de seleccionar entrega, objeto `organization`, lista `advances`, `closure` e `industry`. La cabecera `cosecha` exige entrega y conserva casi solo totales. | Conservar habilitación por canal y los objetos/listas, por campos/JSONB o detalle sencillo, con referencia al origen de cada avance. Una suma de kilos no permite reconstruir fecha, finca, jabas, responsable ni confirmaciones. No crear operaciones/entregas ficticias para llenar FK. |
+| FC09 | Guardar borrador/guía emitida con proveedores, fincas y campos del documento | `RemissionGuideDetails` incluye fecha de emisión, motivo, descripción/código de producto, frases y tipos documentales. SQL conserva solo parte. `proveedor_guia` no identifica el subconjunto de fincas elegido para esa guía. | Añadir un JSON/snapshot completo del contenido y selección de fincas por proveedor de guía. Reutilizar la relación guía/carga y sus normas. No regenerar una guía histórica usando datos maestros que pudieron cambiar. |
+| FC10 | Registrar recepción reconocida por proveedor, espera/reprogramación, descarga y devolución de jabas | Solo hay peso global y una `descarga_at`. Faltan filas `purchases` con revisión/soporte, `recognizedQuantity`, inicio-fin, motivos de espera y detalles «no aplica»/pendientes del checklist. | Guardar desglose reconocido por proveedor y datos de logística/checklist mediante detalle/JSONB o columnas. Conservar separados kilos cargados y recibidos. No añadir reparto automático de diferencias. |
+| FC11 | Liquidar compra sobre kilos reconocidos, consultar vencimiento y controlar acumulado de la persona | `liquidacion_proveedor` solo conserva importe y valor UIT, no kilos/precio aplicados ni vencimiento. La identidad depende de maestros mutables y no guarda el acuse del aviso del prototipo. | Guardar base de kilos, precio, vencimiento, identidad del documento y acuse. PEN puede ser una regla fija explícita. Proveedor principal debe poder seleccionarse; no obligar a crear una persona vinculada ficticia porque la FK actual de liquidación apunta a esa relación. Usar los kilos reconocidos según respuesta del usuario una vez alineado el flujo. |
+| FC12 | Preparar factura con descuento/cargos y registrar emisión electrónica | `importe_venta = round(kilos × precio, 2)` rechaza cualquier total ajustado. No se conservan descuento/cargos/notas ni la fecha de verificación del objeto `electronicInvoice`. | Añadir ajustes y notas, adaptar el cálculo del total y guardar verificación de emisión. Mantener una factura por viaje como regla del prototipo hasta resolver la discrepancia con la respuesta sobre múltiples facturas. |
+| FC13 | Guardar pagos/cobros, aplicar adelanto, finalizar campaña | Tablas/vistas permiten movimientos y saldos, pero no implementan las reglas de suma, sobrepago, aplicación única o cierre del prototipo. El SQL ya advierte que esas reglas están pendientes de servicio. | Implementar los guardados de negocio y sus comprobaciones en una transacción. Solo es requisito funcional para impedir pagar/aplicar dos veces o cerrar con pendientes. No se exige arquitectura nueva, libro contable ni framework adicional. |
+| FC14 | Adjuntar y volver a abrir evidencias/documentos | Campos `*_archivo_id` quedan sin relación y no representan por sí solos un archivo subido. Parte del prototipo guarda nombres, otra dispone de almacenamiento de documentos. | Mantener la integración documental como etapa diferida acordada y hacer visible la limitación. No dar por completo el flujo de documentos ni introducir identificadores inventados. La auditoría no revoca la exclusión actual de `archivo`. |
+
+### Ejemplos de aceptación que hoy requieren ajustes
+
+Estos son escenarios derivados de formularios/código, no pruebas ejecutadas contra la base:
+
+1. Registrar finca de **3,5 ha** y recuperarla con ese mismo valor: hoy `ha_cultivo integer` no representa el dato.
+2. Registrar examen **Pendiente**, enviarlo y agregar resultado después: hoy el primer paso exige un resultado todavía inexistente.
+3. Vincular transportista hoy y completar monto/acuerdo mañana: hoy la única cabecera propuesta exige el acuerdo completo.
+4. Guardar dos avances de cosecha del mismo proveedor en fincas distintas y consultar ambos: hoy solo queda una cabecera con totales.
+5. Recibir una carga de dos proveedores y guardar **600 + 360 = 960 kg reconocidos**, sin sobrescribir los kilos cargados: falta el detalle reconocido por proveedor.
+6. Preparar venta de **100 kg × S/2 − S/10 = S/190**: el CHECK actual exige S/200.
+7. Liquidar al proveedor principal y volver a ver kilos, precio, vencimiento e identidad originales: faltan datos del documento y un mapeo explícito para la persona principal.
+8. Guardar una guía, cambiar después datos del maestro y volver a ver la guía emitida con su contenido original: requiere conservar todo su contenido, no solo una parte de los campos.
+
+### Aspectos que dejan de bloquear por calidad de diseño
+
+- **Dos tablas de participación o transporte:** no se exige consolidarlas para aprobar el esquema. Pueden conservarse si el guardado mantiene correspondencia y la aplicación recupera los mismos datos; solo se señala el conflicto si aparece en el uso.
+- **Nueva normalización de datos:** no se exige separar cada objeto del prototipo en tablas. JSONB y campos existentes son aceptables cuando cubran escritura, consulta y continuidad del flujo.
+- **KPIs, saldos, estados de pago, totales semanales y de camión:** derivarlos con consultas es suficiente. No crear tablas por tarjeta, pestaña o resumen.
+- **Catálogo nuevo de destinos, editor de acuerdos de compra y mejoras de nomenclatura:** no son condiciones para continuar si se guardan los destinos/precios que los formularios ya usan.
+- **Multempresa, roles adicionales, tarifarios por calidad, adelantos a proveedores, reparto de pérdidas y funcionalidades contables extra:** fuera del alcance según instrucción del usuario. No se reabren como cuestionario obligatorio.
+
+### Diferencias de negocio conservadas aparte
+
+Las respuestas del usuario no se ignoran, pero tampoco se convierte una contradicción en una función inventada. Permanecen reportadas: varios requerimientos cliente/campaña frente al editor único, compra sobre reconocidos frente a pago sobre cargados, y varias facturas por carga frente a documento único del prototipo. No bloquean completar la auditoría ni corregir los demás faltantes. También siguen señaladas la definición de campaña activa y el selector de monedas de transporte.
+
+### Orden mínimo de trabajo posterior
+
+1. **Permitir registrar lo que ya piden las pantallas:** tipos de maestros, campos opcionales por etapa, precio de participación/contrato y vínculo inicial del transportista — FC01–FC06.
+2. **Permitir completar el recorrido físico:** Calidad/cosecha/Industria, carga, guía y recepción por proveedor — FC07–FC10.
+3. **Permitir cerrar el recorrido económico:** documento de compra, factura con ajustes, movimientos y cierre — FC11–FC13.
+4. **Retomar documentos cuando corresponda:** FC14 sigue diferido por acuerdo previo. No presentarlo como terminado al cerrar las etapas anteriores.
+
+Antes de implementar, llevar únicamente los cambios mínimos necesarios al SQL de revisión y después a migraciones TypeORM. Esta auditoría **no modifica** tablas, SQL, frontend o backend ni aprueba cambios de negocio pendientes.
+
+### Verificación realizada en esta pasada
+
+- Se ejecutó nuevamente `.validation/validar_inventario_negocio.mjs`: **66 tablas, 137 FK y 6 vistas**, sin columnas inexistentes en las referencias declaradas.
+- Se ejecutó `.validation/auditar_cumplimiento_app.mjs`: **10 contrastes de fuente/SQL y 3 comprobaciones auxiliares de ausencias**, con hashes de las fuentes en `resultado_cumplimiento_app.json`. Corroboran incompatibilidades puntuales; no constituyen un porcentaje de cobertura ni 10 flujos probados.
+- Se revisaron manualmente los tipos y guardados de `store.tsx`, los formularios relevantes de `modules.tsx`, y las reglas de `finance-flow.ts`, `finance-model.ts`, `provider-receipt.tsx`, `driver-receipt-model.ts`, `quality-campaign.tsx`, `remission-model.ts` y transporte.
+- No se ejecutó PostgreSQL/PGlite, no se repitieron sus pruebas históricas, no se probó la UI de extremo a extremo ni se verificó una base desplegada. No se realizaron cambios funcionales que requieran pruebas de regresión de la aplicación.

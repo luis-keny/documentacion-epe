@@ -4,8 +4,9 @@ Este repositorio contiene la documentación discutida y el SQL de revisión. El 
 
 ## Documentos vigentes
 
+- **[Auditoría vigente: cumplimiento de la aplicación](agro-schema/01_reporte_especifico.md#auditoría-de-cumplimiento-de-la-aplicación):** matriz funcional, faltantes FC01–FC14 y orden mínimo para cubrir el prototipo. Se prioriza funcionamiento sobre calidad del diseño; el SQL no se modificó en esta pasada.
 - [Reporte por vista](agro-schema/01_reporte_especifico.md): 62 fichas con navegación, función de cada tabla, atributos, relaciones y decisiones D01–D15.
-- [Validación de negocio y 30 preguntas pendientes](agro-schema/01_reporte_especifico.md#validación-de-negocio-y-cuestionario-pendiente): revisión adicional del 27/10/2026; incluye contradicciones entre documentos y código del prototipo y prioridades antes de implementar.
+- [Antecedente: validación de negocio y cuestionario original](agro-schema/01_reporte_especifico.md#validación-de-negocio-y-cuestionario-pendiente): sus 30 preguntas no son requisitos adicionales; las respuestas y el criterio de cumplimiento posteriores determinan el alcance vigente.
 - [Respuestas del usuario y alcance limitado al prototipo](agro-schema/01_reporte_especifico.md#respuestas-y-alcance-limitado-al-prototipo): estado vigente del cuestionario, explicación de la duplicidad, reglas encontradas y diferencias por consultar. Los negocios adicionales solo se reportan y quedan fuera del alcance.
 - [Esquema general y relaciones Mermaid por vista](agro-schema/02_tablas_y_relaciones.md): mapa de las 66 tablas, flujo funcional y recortes por vista.
 - [SQL total de revisión](agro-schema/03_schema_total.sql): instalación nueva en el esquema PostgreSQL `agro`; no es una migración sobre la base existente.
@@ -14,6 +15,7 @@ Este repositorio contiene la documentación discutida y el SQL de revisión. El 
 
 ## Acuerdos confirmados al 27/10/2026
 
+- La prioridad es cubrir los flujos de la aplicación usando el prototipo como referencia. No se exige normalizar, refactorizar o mejorar arquitectura para avanzar. Los negocios ausentes del prototipo se reportan y quedan fuera del alcance; las contradicciones con respuestas explícitas se mantienen identificadas.
 - Esta etapa comprende documentación y SQL para revisión manual; no se modifican entidades TypeORM, migraciones ni bases desplegadas.
 - Se conservan los nombres físicos actuales. El modelo revisado incluye 66 tablas: 19 actuales y 47 propuestas. Una propuesta documentada no equivale a aprobación definitiva de implementación.
 - `campania_x_proveedores` se mantiene y agrupa al proveedor y sus entrevistas dentro de una campaña. Se retira su vínculo directo a finca en el modelo objetivo.
@@ -35,6 +37,8 @@ No se ha aprobado eliminar `campania_x_proveedores`. Tampoco se ha aprobado reti
 La carpeta `agro-schema/.validation` conserva modelos, generadores y resultados de las comprobaciones, incluidos antecedentes del diseño. Los documentos vigentes son los enlazados arriba. Los archivos internos `baseline-*`, `modelo.json`, `modelo_alineado.json` y los generadores antiguos son antecedentes, no el esquema final.
 
 El flujo vigente usa `modelo_revision.py`, `verificar_revision.mjs` y `documentar_revision.py`. Los resultados actuales constan en `resultado_revision.json`: 19 comprobaciones temporales con PGlite. No acreditan validación de una base desplegada ni implementación de todos los procesos de negocio. La reconstrucción de la auditoría del código requiere también el checkout del backend referido en sus fuentes.
+
+La auditoría de cumplimiento añade evidencia **estática**, sin regenerar el modelo: `validar_inventario_negocio.mjs` y `auditar_cumplimiento_app.mjs`, con sus resultados JSON. No sustituye ni repite las pruebas PGlite históricas; identifica incompatibilidades entre datos/formularios y el SQL actual.
 
 Cada decisión posterior debe actualizar su ficha, el esquema general, el SQL si corresponde y la auditoría antes del siguiente commit. No ejecutar los generadores históricos para actualizar los documentos vigentes.
 

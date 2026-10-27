@@ -1,5 +1,21 @@
 # Auditoría de la base programada frente al esquema planificado
 
+## Dictamen vigente: cumplimiento de la aplicación
+
+**27/10/2026.** Nueva pasada solicitada con prioridad explícita en permitir los flujos del prototipo, sin condicionar el avance a calidad arquitectónica, normalización o refactorización. El detalle vigente está en [auditoría funcional, matriz y cambios mínimos FC01–FC14](01_reporte_especifico.md#auditoría-de-cumplimiento-de-la-aplicación). Los apartados históricos siguientes no convierten mejoras de diseño en requisitos.
+
+**Resultado: cumplimiento parcial.** Se aprovechan las tablas y relaciones del recorrido principal, pero el SQL todavía rechaza datos válidos de los formularios (documentos/códigos como texto, hectáreas decimales, transportista privado sin RUC, examen sin resultado y contrato con precio pendiente); no representa fielmente la vinculación de transporte previa al acuerdo, los avances de cosecha y la recepción por proveedor; y no permite la factura con descuentos/cargos que sí calcula el prototipo.
+
+También quedan incompletos los datos de preparación/inspección de Calidad, logística/checklist, contenido completo de guías y documentos de liquidación. Son faltantes de persistencia de funciones existentes, no recomendaciones para ampliar el negocio. Guardar los objetos mediante JSONB en tablas actuales es una alternativa válida si permite recuperarlos y continuar el flujo. No se exige consolidar las tablas duplicadas mientras la aplicación mantenga una correspondencia coherente.
+
+**Lo que ya sirve:** maestros y catálogos de base, relaciones de campaña, contratos/entregas, programación semanal, coordinación y orígenes, carga por proveedor, distribución de guías, pagos/cobros, aplicaciones de adelantos y consultas de saldos. Esto acredita estructura aprovechable, no implementación en el backend ni prueba de toda la aplicación. No se crean tablas para KPI, resúmenes o estados calculables.
+
+**Diferencias de negocio separadas:** varios requerimientos cliente/campaña, kilos reconocidos frente a cargados y varias facturas por viaje conservan los conflictos ya comunicados. No frenan la entrega de esta auditoría ni autorizan nuevos flujos. Archivos continúa diferido; roles extra, multempresa, tarifarios y adelantos a proveedores quedan fuera del alcance.
+
+**Evidencia nueva:** se ejecutó otra vez el verificador estático del inventario (66 tablas, 137 FK, 6 vistas, sin referencias a columnas inexistentes) y `auditar_cumplimiento_app.mjs` (10 contrastes de fuente/SQL y 3 comprobaciones auxiliares de ausencias). `resultado_cumplimiento_app.json` conserva sus fuentes/hash. No se ejecutaron PostgreSQL/PGlite, migraciones o pruebas de navegador. No se modificó SQL ni código funcional; no se afirma estado de una base desplegada. El resultado no es un porcentaje de aplicación terminada.
+
+---
+
 **Revisión adicional:** consulta la validación de negocio al final de este documento y el cuestionario P01–P30 del [reporte específico](01_reporte_especifico.md#validación-de-negocio-y-cuestionario-pendiente).
 
 **Estado posterior a las respuestas del usuario:** el prototipo es la referencia para trasladar funcionalidad a la web. Las [respuestas contrastadas y exclusiones de alcance](01_reporte_especifico.md#respuestas-y-alcance-limitado-al-prototipo) prevalecen sobre las preguntas abiertas de la revisión anterior. Se confirma una agroexportadora, una campaña activa por fruta, un viaje por entrega, coordinación como fuente del viaje, varios viajes diarios por chofer, vinculación de transportista previa al acuerdo y compra/transporte en PEN. La compra solicitada sobre kilos reconocidos contradice el pago actual sobre cargados; varios requerimientos cliente/campaña y varias facturas por carga también contradicen los editores/validadores del prototipo. Se reportan sin modificar SQL, entidades, migraciones ni aplicaciones. Las posibilidades de negocio no cubiertas se excluyen por instrucción del usuario; las validaciones técnicas para implementar los flujos existentes siguen siendo necesarias.

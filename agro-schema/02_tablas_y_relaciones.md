@@ -1,5 +1,7 @@
 # Tablas y relaciones por vista — modelo revisado
 
+**Criterio vigente de auditoría:** [cumplimiento funcional de la aplicación](01_reporte_especifico.md#auditoría-de-cumplimiento-de-la-aplicación). Las relaciones dibujadas son una base aprovechable, pero no acreditan que todos los campos y etapas de los formularios puedan persistirse. La nueva auditoría no cambia el diagrama ni exige normalizarlo; prioriza FC01–FC14 y acepta ampliaciones sencillas/JSONB cuando cubran el flujo.
+
 **Revisión adicional:** consulta la validación de negocio al final de este documento y el cuestionario P01–P30 del [reporte específico](01_reporte_especifico.md#validación-de-negocio-y-cuestionario-pendiente).
 
 [Diccionario con atributos actuales y adicionales](01_reporte_especifico.md) · [SQL de revisión](03_schema_total.sql). Se incluyen 19 tablas actuales y 47 propuestas: 66 en total. archivo queda fuera del esquema, con sus relaciones pendientes. No se modificó la base desplegada.
