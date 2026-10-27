@@ -1,87 +1,189 @@
 {
-  "motor": "PGlite PostgreSQL WASM con btree_gist",
+  "motor": "PGlite PostgreSQL temporal con btree_gist",
+  "schema_sha256": "b0da0d5446b97deaa318132b0675ccc9f5333b6be0444c778b2f837d9b9c00b5",
   "tablas": 66,
   "tablas_actuales": 19,
   "tablas_propuestas": 47,
-  "columnas_actuales_preservadas": 173,
-  "atributos_adicionales": 63,
+  "columnas_actuales_conservadas_por_nombre": 173,
+  "atributos_adicionales": 73,
+  "columnas_modificadas": 44,
   "foreignKeys": 137,
   "pruebas": [
     {
-      "prueba": "Se conservan 173 columnas actuales; archivo queda excluida y se retira finca_id de la participación",
+      "prueba": "Instalación completa en PostgreSQL temporal",
       "resultado": "correcto"
     },
     {
-      "prueba": "Se conservan restricciones actuales salvo las relaciones excluidas a finca/archivo; se adapta la unicidad de participación",
+      "prueba": "Todas las columnas del modelo existen en el SQL ejecutado",
       "resultado": "correcto"
     },
     {
-      "prueba": "Se crean seis vistas de consulta para saldos, control anual, despacho y programación",
+      "prueba": "Se conservan los nombres de las 173 columnas legacy incluidas",
       "resultado": "correcto"
     },
     {
-      "prueba": "66 tablas y todos sus atributos documentados existen en el SQL",
+      "prueba": "Altas, participación sin MTD, contrato pendiente y vínculo de transporte sin acuerdo completo",
       "resultado": "correcto"
     },
     {
-      "prueba": "Las 137 FK se crean; no hay FK a archivo",
+      "prueba": "Texto y ceros iniciales conservados",
       "resultado": "correcto"
     },
     {
-      "prueba": "Las 28 referencias documentales quedan opcionales, sin FK y pendientes de integración",
+      "prueba": "Hectáreas fraccionarias conservadas",
       "resultado": "correcto"
     },
     {
-      "prueba": "Inserción del modelo revisado sin finca en participación y con finca en entrevista",
+      "prueba": "Examen pendiente sin resultado",
       "resultado": "correcto"
     },
     {
-      "prueba": "Año de aplicación 2026 y cuatro aplicaciones al año se conservan como datos distintos",
-      "resultado": "correcto"
-    },
-    {
-      "prueba": "Varios certificados de campaña, dimensiones del vehículo y SCTR siguen admitidos",
-      "resultado": "correcto"
-    },
-    {
-      "prueba": "Segunda campaña activa por fruta",
+      "prueba": "Completar examen sin resultado",
       "resultado": "rechazado como se esperaba"
     },
     {
-      "prueba": "Asignación solapada del chofer",
-      "resultado": "rechazado como se esperaba"
-    },
-    {
-      "prueba": "Código FVV duplicado",
-      "resultado": "rechazado como se esperaba"
-    },
-    {
-      "prueba": "Modificar a acopio una asignación con entrevista",
-      "resultado": "rechazado como se esperaba"
-    },
-    {
-      "prueba": "Capacidad adicional negativa",
-      "resultado": "rechazado como se esperaba"
-    },
-    {
-      "prueba": "Participación duplicada de proveedor en campaña",
-      "resultado": "rechazado como se esperaba"
-    },
-    {
-      "prueba": "Una participación admite entrevistas de distintas fincas del mismo proveedor",
+      "prueba": "Completar examen después del alta",
       "resultado": "correcto"
     },
     {
-      "prueba": "Entrevistar finca de otro proveedor",
+      "prueba": "Empresa sin RUC",
       "resultado": "rechazado como se esperaba"
     },
     {
-      "prueba": "Cambiar proveedor de participación con entrevistas incompatibles",
-      "resultado": "rechazado como se esperaba"
-    },
-    {
-      "prueba": "El análisis puede registrarse por participación y finca antes de existir cosecha, con cosecha_id nulo",
+      "prueba": "Acuerdo borrador sin monto",
       "resultado": "correcto"
+    },
+    {
+      "prueba": "Confirmar acuerdo incompleto",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Completar acuerdo después del vínculo",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Varios requerimientos cliente/campaña",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Contrato con precio pendiente y número interno",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Preparación, avances e inspección recuperables",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Avances no puede ser objeto",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Desglose debe sumar peso de planta",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Reconocido no supera cargado del proveedor",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Principal sin vínculo ficticio e identidad histórica",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Compra sobre cargados en lugar de reconocidos",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Compra con precio ajeno a la participación",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Liquidar segundo proveedor por 360 reconocidos y no 400 cargados",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Liquidar a persona ajena",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Pago completo de compra",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Sobrepago proveedor",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Modificar compra pagada",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "No facturar mientras el precio del contrato esté pendiente",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Varias facturas y total descontado 190",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Total de factura debe incluir ajustes",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Facturas no superan recepción",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Sobre cobro de venta",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Cambiar factura cobrada",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Adelanto y pago dejan saldo cero",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Aplicar más adelanto que el desembolsado",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Registrar adelanto superior al acordado",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Reducir desembolso ya aplicado",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Pago adicional tras adelanto",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Dos viajes consecutivos en el mismo día",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Viajes del chofer realmente solapados",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Análisis previo sin cosecha",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Guía recupera contenido y fincas seleccionadas",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Control anual usa UIT aplicada y no revaloriza el documento",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Sobrepago de certificación",
+      "resultado": "rechazado como se esperaba"
     }
   ]
 }

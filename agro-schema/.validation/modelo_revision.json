@@ -100,6 +100,12 @@
           "definition": "text",
           "status": "AGREGAR",
           "why": "Resumen o justificación del cierre."
+        },
+        {
+          "name": "calidad",
+          "definition": "jsonb NOT NULL DEFAULT '{}'::jsonb",
+          "status": "AGREGAR",
+          "why": "FC08: objeto por canal Industria/Exportación, con incorporación/estado y rechazos; no requiere entrega ficticia."
         }
       ],
       "constraints": [
@@ -110,6 +116,10 @@
         },
         {
           "definition": "CHECK (fecha_fin >= fecha_inicio)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jsonb_typeof(calidad) = 'object')",
           "status": "NUEVA"
         }
       ],
@@ -148,9 +158,9 @@
         },
         {
           "name": "mtd_ceratitis",
-          "definition": "numeric(12,3) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "numeric(12,3)",
+          "status": "MODIFICAR",
+          "why": "FC02: legacy opcional; MTD operativo se registra por finca en medicion_mtd."
         },
         {
           "name": "fruta_convencional_estimado",
@@ -187,6 +197,36 @@
           "definition": "integer",
           "status": "AGREGAR",
           "why": "Vínculo opcional a la cabecera propuesta; revisar su necesidad al quedar la participación sin finca."
+        },
+        {
+          "name": "precio_compra_kg",
+          "definition": "numeric(14,4)",
+          "status": "AGREGAR",
+          "why": "FC02: datos del editor de participación; el precio no requiere un tarifario adicional."
+        },
+        {
+          "name": "moneda",
+          "definition": "varchar(3) NOT NULL DEFAULT 'PEN'",
+          "status": "AGREGAR",
+          "why": "FC02: datos del editor de participación; el precio no requiere un tarifario adicional."
+        },
+        {
+          "name": "disponibilidad_desde",
+          "definition": "date",
+          "status": "AGREGAR",
+          "why": "FC02: datos del editor de participación; el precio no requiere un tarifario adicional."
+        },
+        {
+          "name": "disponibilidad_hasta",
+          "definition": "date",
+          "status": "AGREGAR",
+          "why": "FC02: datos del editor de participación; el precio no requiere un tarifario adicional."
+        },
+        {
+          "name": "observaciones",
+          "definition": "text",
+          "status": "AGREGAR",
+          "why": "FC02: datos del editor de participación; el precio no requiere un tarifario adicional."
         }
       ],
       "constraints": [
@@ -203,6 +243,14 @@
         {
           "name": "UQ_campania_proveedor",
           "definition": "UNIQUE (campania_id, proveedor_id)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (moneda = 'PEN' AND (precio_compra_kg IS NULL OR precio_compra_kg > 0))",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (disponibilidad_hasta >= disponibilidad_desde)",
           "status": "NUEVA"
         }
       ],
@@ -239,9 +287,9 @@
         },
         {
           "name": "document_url",
-          "definition": "text NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "text",
+          "status": "MODIFICAR",
+          "why": "FC04: permitir ficha inicial sin evidencia o fechas todavía completas."
         },
         {
           "name": "costo",
@@ -251,21 +299,21 @@
         },
         {
           "name": "recibo_url",
-          "definition": "text NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "text",
+          "status": "MODIFICAR",
+          "why": "FC04: permitir ficha inicial sin evidencia o fechas todavía completas."
         },
         {
           "name": "fecha_vencimiento",
-          "definition": "date NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "date",
+          "status": "MODIFICAR",
+          "why": "FC04: permitir ficha inicial sin evidencia o fechas todavía completas."
         },
         {
           "name": "estado",
-          "definition": "\"certificado_campana_estado_enum\" NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "\"certificado_campana_estado_enum\"",
+          "status": "MODIFICAR",
+          "why": "FC04: permitir ficha inicial sin evidencia o fechas todavía completas."
         },
         {
           "name": "campania_id",
@@ -308,6 +356,24 @@
           "definition": "integer",
           "status": "AGREGAR",
           "why": "PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración."
+        },
+        {
+          "name": "vigencia_desde",
+          "definition": "date",
+          "status": "AGREGAR",
+          "why": "FC04: inicio de vigencia independiente de la emisión."
+        },
+        {
+          "name": "observaciones",
+          "definition": "text",
+          "status": "AGREGAR",
+          "why": "FC04: notas del editor de certificación."
+        },
+        {
+          "name": "historial_cobertura",
+          "definition": "jsonb NOT NULL DEFAULT '[]'::jsonb",
+          "status": "AGREGAR",
+          "why": "FC04: filas {fecha,kilos,producerIds}; conserva cada selección anterior."
         }
       ],
       "constraints": [
@@ -318,6 +384,14 @@
         },
         {
           "definition": "CHECK (moneda IS NULL OR moneda IN ('PEN','USD','EUR'))",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jsonb_typeof(historial_cobertura) = 'array')",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (fecha_vencimiento >= vigencia_desde)",
           "status": "NUEVA"
         },
         {
@@ -423,9 +497,9 @@
         },
         {
           "name": "correo",
-          "definition": "varchar(320) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "varchar(320)",
+          "status": "MODIFICAR",
+          "why": "FC01: correo opcional según el validador del padrón; no usar cadenas vacías compartidas."
         },
         {
           "name": "id_empresa_transporte_externo",
@@ -498,15 +572,15 @@
         },
         {
           "name": "fecha_asignacion_inicio",
-          "definition": "date NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "timestamptz NOT NULL",
+          "status": "MODIFICAR",
+          "why": "Viajes sucesivos del chofer en un mismo día; intervalo de instantes [inicio,fin)."
         },
         {
           "name": "fecha_asignacion_final",
-          "definition": "date NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "timestamptz NOT NULL",
+          "status": "MODIFICAR",
+          "why": "Viajes sucesivos del chofer en un mismo día; intervalo de instantes [inicio,fin)."
         },
         {
           "name": "id_vehiculo_externo",
@@ -536,13 +610,13 @@
       "constraints": [
         {
           "name": "CHK_asignacion_fechas_validas",
-          "definition": "CHECK ((fecha_asignacion_final >= fecha_asignacion_inicio))",
-          "status": "ACTUAL"
+          "definition": "CHECK (fecha_asignacion_final > fecha_asignacion_inicio)",
+          "status": "NUEVA"
         },
         {
           "name": "EX_chofer_sin_rangos_superpuestos",
-          "definition": "EXCLUDE USING gist (id_chofer_transporte_externo WITH =, daterange(fecha_asignacion_inicio, fecha_asignacion_final, '[]'::text) WITH &&)",
-          "status": "ACTUAL"
+          "definition": "EXCLUDE USING gist (id_chofer_transporte_externo WITH =, tstzrange(fecha_asignacion_inicio, fecha_asignacion_final, '[)') WITH &&)",
+          "status": "NUEVA"
         },
         {
           "name": "PK_chofer_vehiculo_externo",
@@ -605,9 +679,9 @@
         },
         {
           "name": "correo_corporativo",
-          "definition": "varchar(320) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "varchar(320)",
+          "status": "MODIFICAR",
+          "why": "FC01: correo opcional según el validador del padrón; no usar cadenas vacías compartidas."
         },
         {
           "name": "ubicacion",
@@ -672,9 +746,9 @@
         },
         {
           "name": "documento_url",
-          "definition": "text NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "text",
+          "status": "MODIFICAR",
+          "why": "FC05: vinculación inicial sin contrato/adjunto todavía."
         },
         {
           "name": "fecha_registro",
@@ -684,9 +758,9 @@
         },
         {
           "name": "ficha_tecnica_url",
-          "definition": "text NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "text",
+          "status": "MODIFICAR",
+          "why": "FC05: vinculación inicial sin contrato/adjunto todavía."
         },
         {
           "name": "cantidad_kg",
@@ -754,9 +828,7 @@
           "status": "NUEVA"
         }
       ],
-      "indexes": [
-        "CREATE UNIQUE INDEX \"UQ_cliente_negocio_campania\" ON agro.cliente_negocio_campana USING btree (cliente_negocio_id, campania_id)"
-      ]
+      "indexes": []
     },
     "detalle_trazabilidad": {
       "pk": "id_detalle_trazabilidad",
@@ -861,7 +933,7 @@
     "empresa_transporte_externo": {
       "pk": "id_empresa_transporte_externo",
       "existing": true,
-      "description": "Padrón del proveedor logístico externo; datos adicionales previstos para empresas e independientes, con RUC obligatorio actual pendiente de adaptar.",
+      "description": "Padrón de empresas con RUC e independientes identificados por documento; admite correo y dimensiones pendientes en sus subrecursos.",
       "columns": [
         {
           "name": "created_at",
@@ -889,15 +961,15 @@
         },
         {
           "name": "ruc",
-          "definition": "varchar(11) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "varchar(11)",
+          "status": "MODIFICAR",
+          "why": "FC01: independiente identificado por documento; empresa conserva RUC obligatorio por CHECK."
         },
         {
           "name": "correo",
-          "definition": "varchar(320) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "varchar(320)",
+          "status": "MODIFICAR",
+          "why": "FC01: correo opcional según el validador del padrón; no usar cadenas vacías compartidas."
         },
         {
           "name": "numero",
@@ -979,6 +1051,10 @@
         {
           "definition": "CHECK (tipo_transportista IN ('EMPRESA','INDEPENDIENTE'))",
           "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK ((tipo_transportista = 'EMPRESA' AND ruc IS NOT NULL AND ruc ~ '^[0-9]{11}$') OR (tipo_transportista = 'INDEPENDIENTE' AND tipo_documento IS NOT NULL AND numero_documento IS NOT NULL AND length(trim(numero_documento)) > 0))",
+          "status": "NUEVA"
         }
       ],
       "indexes": []
@@ -1008,33 +1084,33 @@
         },
         {
           "name": "densidad",
-          "definition": "numeric(12,3) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "numeric(12,3)",
+          "status": "MODIFICAR",
+          "why": "FC02: el escalar legacy no impide guardar la descripción agronómica del formulario."
         },
         {
           "name": "distanciamiento",
-          "definition": "numeric(12,3) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "numeric(12,3)",
+          "status": "MODIFICAR",
+          "why": "FC02: el escalar legacy no impide guardar la descripción agronómica del formulario."
         },
         {
           "name": "frecuencia",
-          "definition": "numeric(12,3) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "numeric(12,3)",
+          "status": "MODIFICAR",
+          "why": "FC02: el escalar legacy no impide guardar la descripción agronómica del formulario."
         },
         {
           "name": "nombre_aplicacion",
-          "definition": "varchar(255) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "varchar(255)",
+          "status": "MODIFICAR",
+          "why": "FC02: el escalar legacy no impide guardar la descripción agronómica del formulario."
         },
         {
           "name": "anio_aplicacion",
-          "definition": "integer NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "integer",
+          "status": "MODIFICAR",
+          "why": "FC02: el escalar legacy no impide guardar la descripción agronómica del formulario."
         },
         {
           "name": "codigo",
@@ -1161,27 +1237,27 @@
         },
         {
           "name": "resultado",
-          "definition": "\"examen_proveedor_resultado_enum\" NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "\"examen_proveedor_resultado_enum\"",
+          "status": "MODIFICAR",
+          "why": "FC03: dato pendiente hasta completar la etapa correspondiente."
         },
         {
           "name": "origen",
-          "definition": "varchar(255) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "varchar(255)",
+          "status": "MODIFICAR",
+          "why": "FC03: dato pendiente hasta completar la etapa correspondiente."
         },
         {
           "name": "observacion",
-          "definition": "text NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "text",
+          "status": "MODIFICAR",
+          "why": "FC03: dato pendiente hasta completar la etapa correspondiente."
         },
         {
           "name": "documento_url",
-          "definition": "text NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "text",
+          "status": "MODIFICAR",
+          "why": "FC03: dato pendiente hasta completar la etapa correspondiente."
         },
         {
           "name": "proveedor_id",
@@ -1215,9 +1291,9 @@
         },
         {
           "name": "estado_examen",
-          "definition": "varchar(30)",
+          "definition": "varchar(30) NOT NULL DEFAULT 'Pendiente'",
           "status": "AGREGAR",
-          "why": "Estado del trámite. Resultado actual sigue obligatorio: permitir pendiente requiere otro cambio explícito."
+          "why": "FC03: etapa explícita del trámite de laboratorio."
         },
         {
           "name": "documento_archivo_id",
@@ -1231,6 +1307,14 @@
           "name": "PK_f59bf88a67c9cf036782197944b",
           "definition": "PRIMARY KEY (examen_proveedor_id)",
           "status": "ACTUAL"
+        },
+        {
+          "definition": "CHECK (estado_examen IN ('Pendiente','Enviado','Con resultado'))",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (estado_examen <> 'Con resultado' OR resultado IS NOT NULL)",
+          "status": "NUEVA"
         }
       ],
       "indexes": []
@@ -1296,15 +1380,15 @@
         },
         {
           "name": "ha_total_finca",
-          "definition": "integer NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "numeric(12,3) NOT NULL",
+          "status": "MODIFICAR",
+          "why": "FC01: admite hectáreas fraccionarias sin redondear a enteros."
         },
         {
           "name": "ha_cultivo",
-          "definition": "integer NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "numeric(12,3) NOT NULL",
+          "status": "MODIFICAR",
+          "why": "FC01: admite hectáreas fraccionarias sin redondear a enteros."
         },
         {
           "name": "proveedor_id",
@@ -1506,15 +1590,15 @@
         },
         {
           "name": "nmr_documento",
-          "definition": "integer NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "varchar(30) NOT NULL",
+          "status": "MODIFICAR",
+          "why": "FC01: conservar texto/ceros/letras o admitir dato pendiente del formulario."
         },
         {
           "name": "identidad_doc_url",
-          "definition": "text NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "text",
+          "status": "MODIFICAR",
+          "why": "FC01: conservar texto/ceros/letras o admitir dato pendiente del formulario."
         },
         {
           "name": "zona",
@@ -1524,21 +1608,21 @@
         },
         {
           "name": "telefono",
-          "definition": "integer NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "varchar(30) NOT NULL",
+          "status": "MODIFICAR",
+          "why": "FC01: conservar texto/ceros/letras o admitir dato pendiente del formulario."
         },
         {
           "name": "email",
-          "definition": "varchar(320) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "varchar(320)",
+          "status": "MODIFICAR",
+          "why": "FC01: conservar texto/ceros/letras o admitir dato pendiente del formulario."
         },
         {
           "name": "codigo_lugar_produccion",
-          "definition": "integer NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "varchar(60)",
+          "status": "MODIFICAR",
+          "why": "FC01: conservar texto/ceros/letras o admitir dato pendiente del formulario."
         },
         {
           "name": "nombre_agronomico",
@@ -1599,6 +1683,12 @@
           "definition": "integer",
           "status": "AGREGAR",
           "why": "PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración."
+        },
+        {
+          "name": "fecha_registro",
+          "definition": "date",
+          "status": "AGREGAR",
+          "why": "Fecha de registro que muestra el padrón del prototipo."
         }
       ],
       "constraints": [
@@ -1770,39 +1860,39 @@
         },
         {
           "name": "volumen",
-          "definition": "numeric(12,3) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "numeric(12,3)",
+          "status": "MODIFICAR",
+          "why": "FC01: dimensión/peso pendiente no obliga a inventar un valor positivo."
         },
         {
           "name": "ancho",
-          "definition": "numeric(10,3) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "numeric(10,3)",
+          "status": "MODIFICAR",
+          "why": "FC01: dimensión/peso pendiente no obliga a inventar un valor positivo."
         },
         {
           "name": "altura",
-          "definition": "numeric(10,3) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "numeric(10,3)",
+          "status": "MODIFICAR",
+          "why": "FC01: dimensión/peso pendiente no obliga a inventar un valor positivo."
         },
         {
           "name": "profundidad",
-          "definition": "numeric(10,3) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "numeric(10,3)",
+          "status": "MODIFICAR",
+          "why": "FC01: dimensión/peso pendiente no obliga a inventar un valor positivo."
         },
         {
           "name": "peso_neto",
-          "definition": "numeric(14,3) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "numeric(14,3)",
+          "status": "MODIFICAR",
+          "why": "FC01: dimensión/peso pendiente no obliga a inventar un valor positivo."
         },
         {
           "name": "peso_bruto",
-          "definition": "numeric(14,3) NOT NULL",
-          "status": "ACTUAL",
-          "why": "Se conserva de la entidad/migración actual."
+          "definition": "numeric(14,3)",
+          "status": "MODIFICAR",
+          "why": "FC01: dimensión/peso pendiente no obliga a inventar un valor positivo."
         },
         {
           "name": "id_empresa_transporte_externo",
@@ -2460,7 +2550,7 @@
     "acuerdo_compra": {
       "pk": "acuerdo_compra_id",
       "existing": false,
-      "description": "Condiciones de compra por participación de proveedor, variedad y vigencia; no identifica una finca.",
+      "description": "Compatibilidad opcional de condiciones de compra; la participación conserva el precio simple sin exigir tarifario ni vigencias.",
       "columns": [
         {
           "name": "acuerdo_compra_id",
@@ -2476,9 +2566,9 @@
         },
         {
           "name": "fruta_derivada_id",
-          "definition": "integer NOT NULL",
+          "definition": "integer",
           "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
+          "why": "Compatibilidad: el precio simple no exige variedad o vigencia de un tarifario nuevo."
         },
         {
           "name": "precio_kg",
@@ -2494,15 +2584,15 @@
         },
         {
           "name": "fecha_inicio",
-          "definition": "date NOT NULL",
+          "definition": "date",
           "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
+          "why": "Compatibilidad: el precio simple no exige variedad o vigencia de un tarifario nuevo."
         },
         {
           "name": "fecha_fin",
-          "definition": "date NOT NULL",
+          "definition": "date",
           "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
+          "why": "Compatibilidad: el precio simple no exige variedad o vigencia de un tarifario nuevo."
         },
         {
           "name": "estado",
@@ -2521,6 +2611,12 @@
           "definition": "timestamptz NOT NULL DEFAULT now()",
           "status": "TABLA NUEVA",
           "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
+        },
+        {
+          "name": "moneda",
+          "definition": "varchar(3) NOT NULL DEFAULT 'PEN'",
+          "status": "TABLA NUEVA",
+          "why": "Compra en soles según respuesta del usuario."
         }
       ],
       "constraints": [
@@ -2534,6 +2630,10 @@
         },
         {
           "definition": "CHECK (fecha_fin >= fecha_inicio)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (moneda = 'PEN')",
           "status": "NUEVA"
         }
       ],
@@ -2932,9 +3032,9 @@
         },
         {
           "name": "numero",
-          "definition": "varchar(60) NOT NULL",
+          "definition": "varchar(60) NOT NULL DEFAULT ('CTR-' || gen_random_uuid()::text)",
           "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
+          "why": "FC05: identificador interno autogenerado, sin pedir un campo nuevo en UI."
         },
         {
           "name": "canal",
@@ -2956,9 +3056,9 @@
         },
         {
           "name": "precio_kg",
-          "definition": "numeric(14,4) NOT NULL",
+          "definition": "numeric(14,4)",
           "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
+          "why": "FC05: contrato con precio pendiente; completar antes de preparar venta."
         },
         {
           "name": "moneda",
@@ -2995,6 +3095,18 @@
           "definition": "timestamptz NOT NULL DEFAULT now()",
           "status": "TABLA NUEVA",
           "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
+        },
+        {
+          "name": "condiciones_entrega",
+          "definition": "text",
+          "status": "TABLA NUEVA",
+          "why": "FC05: texto propio del contrato que el formulario vuelve a mostrar."
+        },
+        {
+          "name": "observaciones",
+          "definition": "text",
+          "status": "TABLA NUEVA",
+          "why": "FC05: texto propio del contrato que el formulario vuelve a mostrar."
         }
       ],
       "constraints": [
@@ -3384,7 +3496,7 @@
     "acuerdo_transporte": {
       "pk": "acuerdo_transporte_id",
       "existing": false,
-      "description": "Transportista vinculado a campaña y acuerdo de flete autorizado.",
+      "description": "Vínculo empresa/campaña en BORRADOR; al CONFIRMAR conserva monto, moneda PEN, tipo, adelanto previsto y fechas.",
       "columns": [
         {
           "name": "acuerdo_transporte_id",
@@ -3412,21 +3524,21 @@
         },
         {
           "name": "tipo_pago",
-          "definition": "varchar(20) NOT NULL",
+          "definition": "varchar(20)",
           "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
+          "why": "FC06: el vínculo existe como borrador antes de completar las condiciones."
         },
         {
           "name": "monto_acordado",
-          "definition": "numeric(14,2) NOT NULL",
+          "definition": "numeric(14,2)",
           "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
+          "why": "FC06: el vínculo existe como borrador antes de completar las condiciones."
         },
         {
           "name": "fecha_acuerdo",
-          "definition": "date NOT NULL",
+          "definition": "date",
           "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
+          "why": "FC06: el vínculo existe como borrador antes de completar las condiciones."
         },
         {
           "name": "fecha_pago_final",
@@ -3451,6 +3563,30 @@
           "definition": "timestamptz NOT NULL DEFAULT now()",
           "status": "TABLA NUEVA",
           "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
+        },
+        {
+          "name": "estado",
+          "definition": "varchar(20) NOT NULL DEFAULT 'BORRADOR'",
+          "status": "TABLA NUEVA",
+          "why": "FC06: BORRADOR vincula empresa/campaña; CONFIRMADO exige condiciones completas."
+        },
+        {
+          "name": "moneda",
+          "definition": "varchar(3) NOT NULL DEFAULT 'PEN'",
+          "status": "TABLA NUEVA",
+          "why": "Compra/transporte en soles según respuesta del usuario."
+        },
+        {
+          "name": "adelanto_acordado",
+          "definition": "numeric(14,2) NOT NULL DEFAULT 0",
+          "status": "TABLA NUEVA",
+          "why": "Distingue adelanto previsto de los desembolsos reales."
+        },
+        {
+          "name": "referencia_cotizacion",
+          "definition": "text",
+          "status": "TABLA NUEVA",
+          "why": "Texto de cotización del vínculo aun sin una cotización estructurada."
         }
       ],
       "constraints": [
@@ -3468,6 +3604,18 @@
         },
         {
           "definition": "CHECK (tipo_pago IN ('INMEDIATO','CON_ADELANTO','AL_FINAL'))",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (estado IN ('BORRADOR','CONFIRMADO') AND moneda = 'PEN')",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (estado <> 'CONFIRMADO' OR (tipo_pago IS NOT NULL AND monto_acordado IS NOT NULL AND fecha_acuerdo IS NOT NULL AND fecha_pago_final IS NOT NULL))",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (adelanto_acordado >= 0 AND (monto_acordado IS NULL OR adelanto_acordado <= monto_acordado))",
           "status": "NUEVA"
         }
       ],
@@ -3555,6 +3703,18 @@
           "definition": "timestamptz NOT NULL DEFAULT now()",
           "status": "TABLA NUEVA",
           "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
+        },
+        {
+          "name": "flete_asignado",
+          "definition": "numeric(14,2)",
+          "status": "TABLA NUEVA",
+          "why": "FC07: flete de esta entrega, previo a liquidar; observación para exceso del acuerdo."
+        },
+        {
+          "name": "observacion_flete",
+          "definition": "text",
+          "status": "TABLA NUEVA",
+          "why": "FC07: flete de esta entrega, previo a liquidar; observación para exceso del acuerdo."
         }
       ],
       "constraints": [
@@ -3568,6 +3728,15 @@
         },
         {
           "definition": "CHECK (fin_programado >= inicio_programado)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (flete_asignado > 0)",
+          "status": "NUEVA"
+        },
+        {
+          "name": "EX_coordinacion_chofer_sin_solape",
+          "definition": "EXCLUDE USING gist (id_chofer_transporte_externo WITH =, tstzrange(inicio_programado, fin_programado, '[)') WITH &&)",
           "status": "NUEVA"
         }
       ],
@@ -3699,6 +3868,36 @@
           "definition": "timestamptz NOT NULL DEFAULT now()",
           "status": "TABLA NUEVA",
           "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
+        },
+        {
+          "name": "organizacion",
+          "definition": "jsonb NOT NULL DEFAULT '{}'::jsonb",
+          "status": "TABLA NUEVA",
+          "why": "FC08: conserva el objeto/lista homólogo de QualityOperation (organizacion); avances identifican proveedor/finca, fecha, kilos, jabas y responsable."
+        },
+        {
+          "name": "avances",
+          "definition": "jsonb NOT NULL DEFAULT '[]'::jsonb",
+          "status": "TABLA NUEVA",
+          "why": "FC08: conserva el objeto/lista homólogo de QualityOperation (avances); avances identifican proveedor/finca, fecha, kilos, jabas y responsable."
+        },
+        {
+          "name": "cierre",
+          "definition": "jsonb NOT NULL DEFAULT '{}'::jsonb",
+          "status": "TABLA NUEVA",
+          "why": "FC08: conserva el objeto/lista homólogo de QualityOperation (cierre); avances identifican proveedor/finca, fecha, kilos, jabas y responsable."
+        },
+        {
+          "name": "industria",
+          "definition": "jsonb NOT NULL DEFAULT '{}'::jsonb",
+          "status": "TABLA NUEVA",
+          "why": "FC08: conserva el objeto/lista homólogo de QualityOperation (industria); avances identifican proveedor/finca, fecha, kilos, jabas y responsable."
+        },
+        {
+          "name": "observaciones",
+          "definition": "text",
+          "status": "TABLA NUEVA",
+          "why": "Notas de la operación de calidad/cosecha."
         }
       ],
       "constraints": [
@@ -3716,6 +3915,26 @@
         },
         {
           "definition": "CHECK (kilos_aceptados >= 0)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jsonb_typeof(organizacion) = 'object')",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jsonb_typeof(avances) = 'array')",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jsonb_typeof(cierre) = 'object')",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jsonb_typeof(industria) = 'object')",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "UNIQUE (entrega_programada_id)",
           "status": "NUEVA"
         }
       ],
@@ -4414,6 +4633,18 @@
           "definition": "timestamptz NOT NULL DEFAULT now()",
           "status": "TABLA NUEVA",
           "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
+        },
+        {
+          "name": "contenido",
+          "definition": "jsonb NOT NULL DEFAULT '{}'::jsonb",
+          "status": "TABLA NUEVA",
+          "why": "FC09: snapshot completo de RemissionGuideDetails y campos impresos; conserva datos históricos."
+        },
+        {
+          "name": "emitida_at",
+          "definition": "timestamptz",
+          "status": "TABLA NUEVA",
+          "why": "Distingue borrador de guía emitida; el contenido emitido se conserva."
         }
       ],
       "constraints": [
@@ -4435,6 +4666,10 @@
         },
         {
           "definition": "CHECK (unidad_peso = 'KGM')",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jsonb_typeof(contenido) = 'object')",
           "status": "NUEVA"
         }
       ],
@@ -4486,6 +4721,12 @@
           "definition": "timestamptz NOT NULL DEFAULT now()",
           "status": "TABLA NUEVA",
           "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
+        },
+        {
+          "name": "fincas_ids",
+          "definition": "jsonb NOT NULL DEFAULT '[]'::jsonb",
+          "status": "TABLA NUEVA",
+          "why": "FC09: IDs de las fincas de este proveedor seleccionadas para esta guía."
         }
       ],
       "constraints": [
@@ -4495,6 +4736,10 @@
         },
         {
           "definition": "CHECK (kilos_asignados > 0)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jsonb_typeof(fincas_ids) = 'array')",
           "status": "NUEVA"
         }
       ],
@@ -4740,6 +4985,54 @@
           "definition": "timestamptz NOT NULL DEFAULT now()",
           "status": "TABLA NUEVA",
           "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
+        },
+        {
+          "name": "compras",
+          "definition": "jsonb NOT NULL DEFAULT '[]'::jsonb",
+          "status": "TABLA NUEVA",
+          "why": "FC10: datos de LogisticsDelivery; compras guarda providerId, recognizedQuantity, revisión y soporte; checklist conserva no aplica y confirmaciones."
+        },
+        {
+          "name": "logistica",
+          "definition": "jsonb NOT NULL DEFAULT '{}'::jsonb",
+          "status": "TABLA NUEVA",
+          "why": "FC10: datos de LogisticsDelivery; compras guarda providerId, recognizedQuantity, revisión y soporte; checklist conserva no aplica y confirmaciones."
+        },
+        {
+          "name": "checklist",
+          "definition": "jsonb NOT NULL DEFAULT '{}'::jsonb",
+          "status": "TABLA NUEVA",
+          "why": "FC10: datos de LogisticsDelivery; compras guarda providerId, recognizedQuantity, revisión y soporte; checklist conserva no aplica y confirmaciones."
+        },
+        {
+          "name": "documentos",
+          "definition": "jsonb NOT NULL DEFAULT '{}'::jsonb",
+          "status": "TABLA NUEVA",
+          "why": "FC10: datos de LogisticsDelivery; compras guarda providerId, recognizedQuantity, revisión y soporte; checklist conserva no aplica y confirmaciones."
+        },
+        {
+          "name": "descarga_inicio_at",
+          "definition": "timestamptz",
+          "status": "TABLA NUEVA",
+          "why": "FC10: dato de descarga/devolución que no puede reconstruirse desde un único total o fecha."
+        },
+        {
+          "name": "descarga_fin_at",
+          "definition": "timestamptz",
+          "status": "TABLA NUEVA",
+          "why": "FC10: dato de descarga/devolución que no puede reconstruirse desde un único total o fecha."
+        },
+        {
+          "name": "jabas_iniciales",
+          "definition": "integer",
+          "status": "TABLA NUEVA",
+          "why": "FC10: dato de descarga/devolución que no puede reconstruirse desde un único total o fecha."
+        },
+        {
+          "name": "jabas_no_aplica",
+          "definition": "boolean",
+          "status": "TABLA NUEVA",
+          "why": "FC10: dato de descarga/devolución que no puede reconstruirse desde un único total o fecha."
         }
       ],
       "constraints": [
@@ -4765,6 +5058,34 @@
         },
         {
           "definition": "CHECK (hubo_descarte IS DISTINCT FROM true OR descarte_kg > 0)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jsonb_typeof(compras) = 'array')",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jsonb_typeof(logistica) = 'object')",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jsonb_typeof(checklist) = 'object')",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jsonb_typeof(documentos) = 'object')",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (descarga_fin_at >= descarga_inicio_at)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jabas_iniciales >= 0 AND (jabas_iniciales IS NULL OR jabas_devueltas <= jabas_iniciales))",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (descarte_kg <= peso_planta_kg)",
           "status": "NUEVA"
         }
       ],
@@ -4852,6 +5173,48 @@
           "definition": "timestamptz NOT NULL DEFAULT now()",
           "status": "TABLA NUEVA",
           "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
+        },
+        {
+          "name": "kilos_reconocidos",
+          "definition": "numeric(14,3) NOT NULL",
+          "status": "TABLA NUEVA",
+          "why": "FC11: base reconocida y precio históricos, identidad de la persona y datos del documento/control anual."
+        },
+        {
+          "name": "precio_kg_aplicado",
+          "definition": "numeric(14,4) NOT NULL",
+          "status": "TABLA NUEVA",
+          "why": "FC11: base reconocida y precio históricos, identidad de la persona y datos del documento/control anual."
+        },
+        {
+          "name": "moneda",
+          "definition": "varchar(3) NOT NULL DEFAULT 'PEN'",
+          "status": "TABLA NUEVA",
+          "why": "FC11: base reconocida y precio históricos, identidad de la persona y datos del documento/control anual."
+        },
+        {
+          "name": "fecha_vencimiento",
+          "definition": "date",
+          "status": "TABLA NUEVA",
+          "why": "FC11: base reconocida y precio históricos, identidad de la persona y datos del documento/control anual."
+        },
+        {
+          "name": "persona_snapshot",
+          "definition": "jsonb NOT NULL",
+          "status": "TABLA NUEVA",
+          "why": "FC11: base reconocida y precio históricos, identidad de la persona y datos del documento/control anual."
+        },
+        {
+          "name": "aviso_uit_confirmado",
+          "definition": "boolean NOT NULL DEFAULT false",
+          "status": "TABLA NUEVA",
+          "why": "FC11: base reconocida y precio históricos, identidad de la persona y datos del documento/control anual."
+        },
+        {
+          "name": "limite_uit_aplicado",
+          "definition": "numeric(10,2) NOT NULL DEFAULT 75",
+          "status": "TABLA NUEVA",
+          "why": "FC11: base reconocida y precio históricos, identidad de la persona y datos del documento/control anual."
         }
       ],
       "constraints": [
@@ -4869,6 +5232,22 @@
         },
         {
           "definition": "CHECK (valor_uit_aplicado > 0)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (kilos_reconocidos > 0 AND precio_kg_aplicado > 0 AND moneda = 'PEN')",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (importe_compra = round(kilos_reconocidos * precio_kg_aplicado, 2))",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (jsonb_typeof(persona_snapshot) = 'object')",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (limite_uit_aplicado > 0)",
           "status": "NUEVA"
         }
       ],
@@ -4932,6 +5311,24 @@
           "definition": "timestamptz NOT NULL DEFAULT now()",
           "status": "TABLA NUEVA",
           "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
+        },
+        {
+          "name": "fecha_vencimiento",
+          "definition": "date",
+          "status": "TABLA NUEVA",
+          "why": "FC07/11: documento de transporte en soles y su vencimiento/notas."
+        },
+        {
+          "name": "moneda",
+          "definition": "varchar(3) NOT NULL DEFAULT 'PEN'",
+          "status": "TABLA NUEVA",
+          "why": "FC07/11: documento de transporte en soles y su vencimiento/notas."
+        },
+        {
+          "name": "observaciones",
+          "definition": "text",
+          "status": "TABLA NUEVA",
+          "why": "FC07/11: documento de transporte en soles y su vencimiento/notas."
         }
       ],
       "constraints": [
@@ -4945,6 +5342,10 @@
         },
         {
           "definition": "CHECK (flete >= 0)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (moneda = 'PEN')",
           "status": "NUEVA"
         }
       ],
@@ -5240,13 +5641,33 @@
           "definition": "timestamptz NOT NULL DEFAULT now()",
           "status": "TABLA NUEVA",
           "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
+        },
+        {
+          "name": "descuento",
+          "definition": "numeric(14,2) NOT NULL DEFAULT 0",
+          "status": "TABLA NUEVA",
+          "why": "FC12: ajustes/notas y verificación de emisión del prototipo; varias facturas por carga según respuesta explícita."
+        },
+        {
+          "name": "cargos",
+          "definition": "numeric(14,2) NOT NULL DEFAULT 0",
+          "status": "TABLA NUEVA",
+          "why": "FC12: ajustes/notas y verificación de emisión del prototipo; varias facturas por carga según respuesta explícita."
+        },
+        {
+          "name": "observaciones",
+          "definition": "text",
+          "status": "TABLA NUEVA",
+          "why": "FC12: ajustes/notas y verificación de emisión del prototipo; varias facturas por carga según respuesta explícita."
+        },
+        {
+          "name": "verificada_at",
+          "definition": "timestamptz",
+          "status": "TABLA NUEVA",
+          "why": "FC12: ajustes/notas y verificación de emisión del prototipo; varias facturas por carga según respuesta explícita."
         }
       ],
       "constraints": [
-        {
-          "definition": "UNIQUE (carga_id)",
-          "status": "NUEVA"
-        },
         {
           "definition": "UNIQUE (referencia_preparacion)",
           "status": "NUEVA"
@@ -5264,10 +5685,6 @@
           "status": "NUEVA"
         },
         {
-          "definition": "CHECK (importe_venta = round(kilos_facturados * precio_kg_aplicado, 2))",
-          "status": "NUEVA"
-        },
-        {
           "definition": "CHECK (estado IN ('PREPARADA','EMITIDA'))",
           "status": "NUEVA"
         },
@@ -5281,6 +5698,14 @@
         },
         {
           "definition": "CHECK (estado <> 'EMITIDA' OR (numero_factura IS NOT NULL AND fecha_emision IS NOT NULL))",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (descuento >= 0 AND cargos >= 0 AND importe_venta > 0)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (importe_venta = round(kilos_facturados * precio_kg_aplicado - descuento + cargos, 2))",
           "status": "NUEVA"
         }
       ],
@@ -6918,20 +7343,6 @@
       "status": "NUEVA"
     },
     {
-      "child": "liquidacion_proveedor",
-      "cols": [
-        "proveedor_id",
-        "persona_liquidacion_id"
-      ],
-      "parent": "proveedor_x_persona",
-      "targets": [
-        "proveedor_id",
-        "persona_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
       "child": "aplicacion_adelanto",
       "cols": [
         "liquidacion_transporte_id"
@@ -7203,6 +7614,18 @@
       "parent": "finca",
       "targets": [
         "finca_id"
+      ],
+      "onDelete": "RESTRICT",
+      "status": "NUEVA"
+    },
+    {
+      "child": "liquidacion_proveedor",
+      "cols": [
+        "persona_liquidacion_id"
+      ],
+      "parent": "persona",
+      "targets": [
+        "persona_id"
       ],
       "onDelete": "RESTRICT",
       "status": "NUEVA"
@@ -7556,7 +7979,273 @@
   "removed_columns": [
     "campania_x_proveedores.finca_id"
   ],
-  "additional_columns": 63,
+  "additional_columns": 73,
+  "modified_columns": [
+    {
+      "tabla": "proveedor",
+      "columna": "nmr_documento",
+      "antes": "integer NOT NULL",
+      "despues": "varchar(30) NOT NULL"
+    },
+    {
+      "tabla": "proveedor",
+      "columna": "telefono",
+      "antes": "integer NOT NULL",
+      "despues": "varchar(30) NOT NULL"
+    },
+    {
+      "tabla": "proveedor",
+      "columna": "codigo_lugar_produccion",
+      "antes": "integer NOT NULL",
+      "despues": "varchar(60)"
+    },
+    {
+      "tabla": "proveedor",
+      "columna": "identidad_doc_url",
+      "antes": "text NOT NULL",
+      "despues": "text"
+    },
+    {
+      "tabla": "proveedor",
+      "columna": "email",
+      "antes": "varchar(320) NOT NULL",
+      "despues": "varchar(320)"
+    },
+    {
+      "tabla": "finca",
+      "columna": "ha_total_finca",
+      "antes": "integer NOT NULL",
+      "despues": "numeric(12,3) NOT NULL"
+    },
+    {
+      "tabla": "finca",
+      "columna": "ha_cultivo",
+      "antes": "integer NOT NULL",
+      "despues": "numeric(12,3) NOT NULL"
+    },
+    {
+      "tabla": "empresa_transporte_externo",
+      "columna": "ruc",
+      "antes": "varchar(11) NOT NULL",
+      "despues": "varchar(11)"
+    },
+    {
+      "tabla": "empresa_transporte_externo",
+      "columna": "correo",
+      "antes": "varchar(320) NOT NULL",
+      "despues": "varchar(320)"
+    },
+    {
+      "tabla": "chofer_transporte_externo",
+      "columna": "correo",
+      "antes": "varchar(320) NOT NULL",
+      "despues": "varchar(320)"
+    },
+    {
+      "tabla": "cliente_negocio",
+      "columna": "correo_corporativo",
+      "antes": "varchar(320) NOT NULL",
+      "despues": "varchar(320)"
+    },
+    {
+      "tabla": "vehiculo_externo",
+      "columna": "volumen",
+      "antes": "numeric(12,3) NOT NULL",
+      "despues": "numeric(12,3)"
+    },
+    {
+      "tabla": "vehiculo_externo",
+      "columna": "ancho",
+      "antes": "numeric(10,3) NOT NULL",
+      "despues": "numeric(10,3)"
+    },
+    {
+      "tabla": "vehiculo_externo",
+      "columna": "altura",
+      "antes": "numeric(10,3) NOT NULL",
+      "despues": "numeric(10,3)"
+    },
+    {
+      "tabla": "vehiculo_externo",
+      "columna": "profundidad",
+      "antes": "numeric(10,3) NOT NULL",
+      "despues": "numeric(10,3)"
+    },
+    {
+      "tabla": "vehiculo_externo",
+      "columna": "peso_neto",
+      "antes": "numeric(14,3) NOT NULL",
+      "despues": "numeric(14,3)"
+    },
+    {
+      "tabla": "vehiculo_externo",
+      "columna": "peso_bruto",
+      "antes": "numeric(14,3) NOT NULL",
+      "despues": "numeric(14,3)"
+    },
+    {
+      "tabla": "campania_x_proveedores",
+      "columna": "mtd_ceratitis",
+      "antes": "numeric(12,3) NOT NULL",
+      "despues": "numeric(12,3)"
+    },
+    {
+      "tabla": "entrevista_extencion",
+      "columna": "densidad",
+      "antes": "numeric(12,3) NOT NULL",
+      "despues": "numeric(12,3)"
+    },
+    {
+      "tabla": "entrevista_extencion",
+      "columna": "distanciamiento",
+      "antes": "numeric(12,3) NOT NULL",
+      "despues": "numeric(12,3)"
+    },
+    {
+      "tabla": "entrevista_extencion",
+      "columna": "frecuencia",
+      "antes": "numeric(12,3) NOT NULL",
+      "despues": "numeric(12,3)"
+    },
+    {
+      "tabla": "entrevista_extencion",
+      "columna": "nombre_aplicacion",
+      "antes": "varchar(255) NOT NULL",
+      "despues": "varchar(255)"
+    },
+    {
+      "tabla": "entrevista_extencion",
+      "columna": "anio_aplicacion",
+      "antes": "integer NOT NULL",
+      "despues": "integer"
+    },
+    {
+      "tabla": "examen_proveedor",
+      "columna": "resultado",
+      "antes": "\"examen_proveedor_resultado_enum\" NOT NULL",
+      "despues": "\"examen_proveedor_resultado_enum\""
+    },
+    {
+      "tabla": "examen_proveedor",
+      "columna": "documento_url",
+      "antes": "text NOT NULL",
+      "despues": "text"
+    },
+    {
+      "tabla": "examen_proveedor",
+      "columna": "observacion",
+      "antes": "text NOT NULL",
+      "despues": "text"
+    },
+    {
+      "tabla": "examen_proveedor",
+      "columna": "origen",
+      "antes": "varchar(255) NOT NULL",
+      "despues": "varchar(255)"
+    },
+    {
+      "tabla": "examen_proveedor",
+      "columna": "estado_examen",
+      "antes": "varchar(30)",
+      "despues": "varchar(30) NOT NULL DEFAULT 'Pendiente'"
+    },
+    {
+      "tabla": "certificado_campana",
+      "columna": "document_url",
+      "antes": "text NOT NULL",
+      "despues": "text"
+    },
+    {
+      "tabla": "certificado_campana",
+      "columna": "recibo_url",
+      "antes": "text NOT NULL",
+      "despues": "text"
+    },
+    {
+      "tabla": "certificado_campana",
+      "columna": "fecha_vencimiento",
+      "antes": "date NOT NULL",
+      "despues": "date"
+    },
+    {
+      "tabla": "certificado_campana",
+      "columna": "estado",
+      "antes": "\"certificado_campana_estado_enum\" NOT NULL",
+      "despues": "\"certificado_campana_estado_enum\""
+    },
+    {
+      "tabla": "cliente_negocio_campana",
+      "columna": "documento_url",
+      "antes": "text NOT NULL",
+      "despues": "text"
+    },
+    {
+      "tabla": "cliente_negocio_campana",
+      "columna": "ficha_tecnica_url",
+      "antes": "text NOT NULL",
+      "despues": "text"
+    },
+    {
+      "tabla": "contrato_venta",
+      "columna": "precio_kg",
+      "antes": "numeric(14,4) NOT NULL",
+      "despues": "numeric(14,4)"
+    },
+    {
+      "tabla": "contrato_venta",
+      "columna": "numero",
+      "antes": "varchar(60) NOT NULL",
+      "despues": "varchar(60) NOT NULL DEFAULT ('CTR-' || gen_random_uuid()::text)"
+    },
+    {
+      "tabla": "acuerdo_compra",
+      "columna": "fruta_derivada_id",
+      "antes": "integer NOT NULL",
+      "despues": "integer"
+    },
+    {
+      "tabla": "acuerdo_compra",
+      "columna": "fecha_inicio",
+      "antes": "date NOT NULL",
+      "despues": "date"
+    },
+    {
+      "tabla": "acuerdo_compra",
+      "columna": "fecha_fin",
+      "antes": "date NOT NULL",
+      "despues": "date"
+    },
+    {
+      "tabla": "acuerdo_transporte",
+      "columna": "tipo_pago",
+      "antes": "varchar(20) NOT NULL",
+      "despues": "varchar(20)"
+    },
+    {
+      "tabla": "acuerdo_transporte",
+      "columna": "monto_acordado",
+      "antes": "numeric(14,2) NOT NULL",
+      "despues": "numeric(14,2)"
+    },
+    {
+      "tabla": "acuerdo_transporte",
+      "columna": "fecha_acuerdo",
+      "antes": "date NOT NULL",
+      "despues": "date"
+    },
+    {
+      "tabla": "chofer_vehiculo_externo",
+      "columna": "fecha_asignacion_inicio",
+      "antes": "date NOT NULL",
+      "despues": "timestamptz NOT NULL"
+    },
+    {
+      "tabla": "chofer_vehiculo_externo",
+      "columna": "fecha_asignacion_final",
+      "antes": "date NOT NULL",
+      "despues": "timestamptz NOT NULL"
+    }
+  ],
   "enums": {
     "campana_estado_enum": [
       "planificacion",

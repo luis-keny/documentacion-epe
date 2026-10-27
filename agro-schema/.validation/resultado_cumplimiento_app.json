@@ -1,87 +1,81 @@
 {
-  "metodo": "Lectura estática de campos, tipos y restricciones; sin ejecución de SQL ni prueba de UI",
-  "schema_sha256": "8008d1071761cb9621e6af1a2c832919dc7ee7fe42cc407f3dbea3128b043de5",
+  "metodo": "Contraste estático posterior a correcciones; pruebas de ejecución en resultado_revision.json",
+  "schema_sha256": "b0da0d5446b97deaa318132b0675ccc9f5333b6be0444c778b2f837d9b9c00b5",
   "fuentes": {
     "store.tsx": "ab929a3c7f5d67bd2c2ebc4f9fec39b44eaadea39bea7e4badd8778699c6e8d0",
     "business-integrity.ts": "38b894ca04005d96cdadef8082e92bf26a247a07de5bd649ab46335fde075c4d",
     "finance-model.ts": "f01dcf295ff29e85743bd554797e23703af439f9fd556fbf0ea1239d457b1b2f"
   },
-  "incompatibilidades": [
+  "ajustes": [
     {
       "id": "CF01",
       "archivo": "store.tsx",
       "tabla": "proveedor",
       "escenario": "Un documento alfanumérico o con cero inicial no se conserva como integer.",
-      "resultado": "Incompatibilidad corroborada por lectura estática"
+      "resultado": "Ajuste de persistencia presente; comprobar comportamiento con verificar_revision.mjs"
     },
     {
       "id": "CF02",
       "archivo": "store.tsx",
       "tabla": "finca",
       "escenario": "El demo usa 3.5 ha; el esquema exige hectáreas enteras.",
-      "resultado": "Incompatibilidad corroborada por lectura estática"
+      "resultado": "Ajuste de persistencia presente; comprobar comportamiento con verificar_revision.mjs"
     },
     {
       "id": "CF03",
       "archivo": "store.tsx",
       "tabla": "examen_proveedor",
       "escenario": "Guardar examen pendiente sin resultado queda bloqueado.",
-      "resultado": "Incompatibilidad corroborada por lectura estática"
+      "resultado": "Ajuste de persistencia presente; comprobar comportamiento con verificar_revision.mjs"
     },
     {
       "id": "CF04",
       "archivo": "store.tsx",
       "tabla": "acuerdo_transporte",
       "escenario": "El vínculo inicial del transportista no puede representarse únicamente como acuerdo completo.",
-      "resultado": "Incompatibilidad corroborada por lectura estática"
+      "resultado": "Ajuste de persistencia presente; comprobar comportamiento con verificar_revision.mjs"
     },
     {
       "id": "CF05",
       "archivo": "business-integrity.ts",
       "tabla": "empresa_transporte_externo",
       "escenario": "El transportista privado identificado sin RUC no tiene un alta equivalente directa.",
-      "resultado": "Incompatibilidad corroborada por lectura estática"
+      "resultado": "Ajuste de persistencia presente; comprobar comportamiento con verificar_revision.mjs"
     },
     {
       "id": "CF06",
       "archivo": "finance-model.ts",
       "tabla": "factura_venta",
       "escenario": "100 kg × 2 menos descuento 10 da 190; el CHECK obliga 200.",
-      "resultado": "Incompatibilidad corroborada por lectura estática"
+      "resultado": "Ajuste de persistencia presente; comprobar comportamiento con verificar_revision.mjs"
     },
     {
       "id": "CF07",
       "archivo": "store.tsx",
       "tabla": "recepcion_planta",
       "escenario": "Existe peso global en SQL; no hay un desglose reconocido por proveedor en sus tablas declaradas.",
-      "resultado": "Incompatibilidad corroborada por lectura estática"
+      "resultado": "Ajuste de persistencia presente; comprobar comportamiento con verificar_revision.mjs"
     },
     {
       "id": "CF08",
       "archivo": "store.tsx",
       "tabla": "cosecha",
       "escenario": "La cabecera conserva el total; no conserva las filas de avance de la aplicación.",
-      "resultado": "Incompatibilidad corroborada por lectura estática"
+      "resultado": "Ajuste de persistencia presente; comprobar comportamiento con verificar_revision.mjs"
     },
     {
       "id": "CF09",
       "archivo": "store.tsx",
       "tabla": "recepcion_planta",
       "escenario": "La aplicación registra inicio y fin de descarga; SQL solo tiene una fecha de descarga.",
-      "resultado": "Incompatibilidad corroborada por lectura estática"
+      "resultado": "Ajuste de persistencia presente; comprobar comportamiento con verificar_revision.mjs"
     },
     {
       "id": "CF10",
       "archivo": "finance-model.ts",
       "tabla": "liquidacion_proveedor",
       "escenario": "La liquidación no guarda vencimiento, kilos y precio aplicado para reproducir el documento.",
-      "resultado": "Incompatibilidad corroborada por lectura estática"
+      "resultado": "Ajuste de persistencia presente; comprobar comportamiento con verificar_revision.mjs"
     }
-  ],
-  "ausencias_por_nombres_y_revision_manual": {
-    "avance_cosecha": true,
-    "kilos_reconocidos": true,
-    "descuento_factura": true
-  },
-  "nota": "Los nombres ausentes no prueban por sí solos falta de representación; el reporte explica la revisión semántica y las alternativas mínimas."
+  ]
 }

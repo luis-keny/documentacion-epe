@@ -1,8 +1,6 @@
 # Tablas y relaciones por vista — modelo revisado
 
-**Criterio vigente de auditoría:** [cumplimiento funcional de la aplicación](01_reporte_especifico.md#auditoría-de-cumplimiento-de-la-aplicación). Las relaciones dibujadas son una base aprovechable, pero no acreditan que todos los campos y etapas de los formularios puedan persistirse. La nueva auditoría no cambia el diagrama ni exige normalizarlo; prioriza FC01–FC14 y acepta ampliaciones sencillas/JSONB cuando cubran el flujo.
-
-**Revisión adicional:** consulta la validación de negocio al final de este documento y el cuestionario P01–P30 del [reporte específico](01_reporte_especifico.md#validación-de-negocio-y-cuestionario-pendiente).
+**Schema actualizado para cumplimiento — 27/10/2026.** Se incorporan JSONB de formularios y cambios de tipo/nulabilidad; el diccionario vigente distingue MODIFICAR de AGREGAR. Se permiten varios requerimientos cliente/campaña y varias facturas por carga según respuesta del usuario. Los diagramas reflejan las FK y unicidades actuales del SQL objetivo, incluido el vínculo directo persona–liquidación. No se modificó una base existente.
 
 [Diccionario con atributos actuales y adicionales](01_reporte_especifico.md) · [SQL de revisión](03_schema_total.sql). Se incluyen 19 tablas actuales y 47 propuestas: 66 en total. archivo queda fuera del esquema, con sus relaciones pendientes. No se modificó la base desplegada.
 
@@ -52,7 +50,7 @@ erDiagram
     participacion_proveedor_campana ||..o{ participacion_proveedor_x_fruta_derivada : propuesta
     fruta_derivada ||..o{ participacion_proveedor_x_fruta_derivada : propuesta
     campania_x_proveedores ||..o{ acuerdo_compra : propuesta
-    fruta_derivada ||..o{ acuerdo_compra : propuesta
+    fruta_derivada o|..o{ acuerdo_compra : propuesta
     certificado_campana ||..o{ certificado_campana_x_proveedor : propuesta
     campana ||..o{ certificado_campana_x_proveedor : propuesta
     participacion_proveedor_campana ||..o{ certificado_campana_x_proveedor : propuesta
@@ -82,7 +80,7 @@ erDiagram
     chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
     coordinacion_entrega ||..o{ origen_entrega : propuesta
     campania_x_proveedores ||..o{ origen_entrega : propuesta
-    entrega_programada ||..o{ cosecha : propuesta
+    entrega_programada ||..o| cosecha : propuesta
     cosecha o|..o{ analisis_calidad : propuesta
     campania_x_proveedores ||..o{ analisis_calidad : propuesta
     campania_x_proveedores ||..o{ medicion_mtd : propuesta
@@ -115,12 +113,11 @@ erDiagram
     carga ||..o{ gasto_transporte : propuesta
     acuerdo_transporte ||..o{ adelanto_transporte : propuesta
     adelanto_transporte ||..o{ aplicacion_adelanto : propuesta
-    carga ||..o| factura_venta : propuesta
+    carga ||..o{ factura_venta : propuesta
     usuario o|..o{ pago_proveedor : propuesta
     usuario o|..o{ pago_transporte : propuesta
     usuario o|..o{ cobro_venta : propuesta
     vehiculo_externo ||..o{ coordinacion_entrega : propuesta
-    proveedor_x_persona ||..o{ liquidacion_proveedor : propuesta
     liquidacion_transporte ||..o{ aplicacion_adelanto : propuesta
     usuario o|..o{ campana : propuesta
     participacion_proveedor_campana o|..o{ campania_x_proveedores : propuesta
@@ -143,6 +140,7 @@ erDiagram
     finca ||..o{ origen_carga : propuesta
     finca ||..o{ analisis_calidad : propuesta
     finca ||..o{ medicion_mtd : propuesta
+    persona ||..o{ liquidacion_proveedor : propuesta
     parametro_uit
 ```
 
@@ -160,21 +158,21 @@ erDiagram
 
 | Referencia | Estado | Tema | Alcance |
 |---|---|---|---|
-| D01 | Por discutir | Participación adicional | campania_x_proveedores se conserva para agrupar entrevistas del proveedor por campaña. participacion_proveedor_campana sigue en el general como propuesta, pero duplica funciones; no se ha aprobado borrarla ni mantener dos fuentes editables. Revisar también sus tablas de variedades y cobertura. |
+| D01 | Compatibilidad conservada | Participación adicional | Se conservan ambas tablas y sus dependencias. El editor usa campania_x_proveedores con precio simple; el servicio mantiene la correspondencia con la cabecera usada en cargas. No se exige consolidar por calidad ni se elimina una tabla sin autorización. |
 | D02 | Aprobado por el usuario | Fincas entrevistadas | El listado de fincas de una participación se obtiene desde entrevista_extencion. No se vuelve a agregar finca_id a campania_x_proveedores; los orígenes de entrega/carga seleccionan las fincas físicas de recojo. |
 | D03 | Aprobado por el usuario | Análisis antes de cosecha | analisis_calidad identifica cxp_id y finca_id; cosecha_id queda opcional. La campaña se obtiene por la participación, sin otra FK redundante a campaña. El servicio validará coincidencia de campaña y origen si se vincula posteriormente una cosecha. |
 | D04 | Aprobado por el usuario | Una variedad por finca | Se conserva finca.fruta_derivada_id y se obtiene fruta por fruta_derivada.fruta_id. No se agrega una tabla de varios cultivos por finca. El vínculo permanece opcional para datos históricos; completar variedad antes de operar cuando la vista la requiere. |
-| D05 | Por discutir | Autoridad de transporte | chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias. |
-| D06 | Por discutir | Vincular antes del acuerdo | El mockup permite vincular transportista y registrar el acuerdo después. acuerdo_transporte exige condiciones completas en el SQL: evaluar estado borrador con atributos opcionales o un vínculo independiente. No se agrega otra tabla todavía. |
-| D07 | Por discutir | Incorporación de campaña a Calidad | Agregar campaña puede ser habilitación manual por canal o un filtro de las operaciones existentes. Solo si el negocio exige persistir esa habilitación tendría sentido una entidad específica; aún no se añade. |
+| D05 | Confirmado por el usuario | Autoridad de transporte | coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día. |
+| D06 | Incorporado al SQL | Vincular antes del acuerdo | acuerdo_transporte admite BORRADOR sin condiciones completas; CONFIRMADO exige monto, tipo y fechas. No hace falta inventar un segundo vínculo. |
+| D07 | Incorporado al SQL | Incorporación de campaña a Calidad | campana.calidad conserva un objeto por canal con su habilitación/estado, antes de crear cargas o elegir entregas. |
 | D08 | Por discutir | Destinos del cliente | destino_cliente_negocio permite reutilizar plantas y direcciones; no se encontró un editor propio en el recorrido. Decidir si es catálogo de negocio o basta capturar destino en cada programación/documento. |
 | D09 | Por discutir | Cantidad de certificados | El editor dice uno por campaña; el backend y el resumen admiten varios. Se mantiene la capacidad actual hasta decidir si las normas requieren certificados distintos. |
-| D10 | Por discutir | Condiciones de compra | acuerdo_compra permitiría precios por proveedor/variedad/vigencia, pero no tiene editor observado en Entrevista. Decidir si se administra allí o si basta el precio histórico capturado al liquidar. |
-| D11 | Por discutir | Personas y autenticación | persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo. |
-| D12 | Pendiente técnico por decidir | Examen pendiente de resultado | El resultado actual de examen_proveedor sigue obligatorio positivo/negativo. El estado adicional no habilita un examen sin resultado; requiere decidir nulabilidad y adaptar DTO/servicio. |
+| D10 | Incorporado al SQL | Condiciones de compra | El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. acuerdo_compra queda como compatibilidad opcional sin exigir tarifarios/fechas/variedad nuevas. La liquidación conserva kilos reconocidos y precio aplicados. |
+| D11 | Incorporado al SQL | Persona de la liquidación | La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro. |
+| D12 | Incorporado al SQL | Examen por etapas | Pendiente y Enviado admiten resultado/documento ausentes. Con resultado requiere resultado explícito. Se mantienen tipos positivo/negativo del backend para el dato final. |
 | D13 | Decisión previa conservada | Gestión documental diferida | archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa. |
-| D14 | Por discutir | Una carga por entrega | La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla. |
-| D15 | Por discutir | Un requerimiento por cliente/campaña | El listado demo repite Batimix/Mango 2026, mientras el backend exige un vínculo único cliente/campaña. La propuesta conserva esa unicidad y varios contratos como hijos; confirmar si las filas son duplicados de prueba o requerimientos comerciales independientes. |
+| D14 | Confirmado por el usuario | Una carga por entrega | Se conserva un viaje/carga por entrega. Cosecha también es única por entrega. El SQL permite varias facturas de esa carga, con suma de kilos no superior a la recepción, según respuesta explícita del usuario. |
+| D15 | Incorporado según respuesta del usuario | Varios requerimientos cliente/campaña | Se retira la unicidad cliente/campaña para permitir requerimientos independientes. Cada fila conserva sus contratos y entregas. El editor del prototipo aún debe alinearse con esta decisión. |
 
 **Recorrido entre módulos:** Comercial programa la entrega; Campaña coordina transporte y fincas; Calidad registra análisis y carga; el Chofer reporta eventos y recepción; Logística consulta el seguimiento; Facturación registra venta y cobros; Liquidación registra compras, transporte y pagos. Volver a módulos cambia de navegación, sin crear otro registro de negocio.
 
@@ -219,7 +217,7 @@ erDiagram
     usuario ||..o{ sesion_usuario : propuesta
 ```
 
-**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
 
 **Función de las tablas:** consultar la ficha V01 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -282,7 +280,7 @@ erDiagram
 
 **D08 — Destinos del cliente (Por discutir):** destino_cliente_negocio permite reutilizar plantas y direcciones; no se encontró un editor propio en el recorrido. Decidir si es catálogo de negocio o basta capturar destino en cada programación/documento.
 
-**D15 — Un requerimiento por cliente/campaña (Por discutir):** El listado demo repite Batimix/Mango 2026, mientras el backend exige un vínculo único cliente/campaña. La propuesta conserva esa unicidad y varios contratos como hijos; confirmar si las filas son duplicados de prueba o requerimientos comerciales independientes.
+**D15 — Varios requerimientos cliente/campaña (Incorporado según respuesta del usuario):** Se retira la unicidad cliente/campaña para permitir requerimientos independientes. Cada fila conserva sus contratos y entregas. El editor del prototipo aún debe alinearse con esta decisión.
 
 **Función de las tablas:** consultar la ficha V05 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -305,7 +303,7 @@ erDiagram
     entrega_programada ||..o| coordinacion_entrega : propuesta
 ```
 
-**D15 — Un requerimiento por cliente/campaña (Por discutir):** El listado demo repite Batimix/Mango 2026, mientras el backend exige un vínculo único cliente/campaña. La propuesta conserva esa unicidad y varios contratos como hijos; confirmar si las filas son duplicados de prueba o requerimientos comerciales independientes.
+**D15 — Varios requerimientos cliente/campaña (Incorporado según respuesta del usuario):** Se retira la unicidad cliente/campaña para permitir requerimientos independientes. Cada fila conserva sus contratos y entregas. El editor del prototipo aún debe alinearse con esta decisión.
 
 **Función de las tablas:** consultar la ficha V06 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -325,7 +323,7 @@ erDiagram
     contrato_venta ||..o{ entrega_programada : propuesta
 ```
 
-**D15 — Un requerimiento por cliente/campaña (Por discutir):** El listado demo repite Batimix/Mango 2026, mientras el backend exige un vínculo único cliente/campaña. La propuesta conserva esa unicidad y varios contratos como hijos; confirmar si las filas son duplicados de prueba o requerimientos comerciales independientes.
+**D15 — Varios requerimientos cliente/campaña (Incorporado según respuesta del usuario):** Se retira la unicidad cliente/campaña para permitir requerimientos independientes. Cada fila conserva sus contratos y entregas. El editor del prototipo aún debe alinearse con esta decisión.
 
 **Función de las tablas:** consultar la ficha V07 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -352,7 +350,7 @@ erDiagram
 
 **D08 — Destinos del cliente (Por discutir):** destino_cliente_negocio permite reutilizar plantas y direcciones; no se encontró un editor propio en el recorrido. Decidir si es catálogo de negocio o basta capturar destino en cada programación/documento.
 
-**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+**D14 — Una carga por entrega (Confirmado por el usuario):** Se conserva un viaje/carga por entrega. Cosecha también es única por entrega. El SQL permite varias facturas de esa carga, con suma de kilos no superior a la recepción, según respuesta explícita del usuario.
 
 **Función de las tablas:** consultar la ficha V08 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -399,14 +397,14 @@ erDiagram
     cliente_negocio_campana ||..o{ contrato_venta : propuesta
     contrato_venta ||..o{ entrega_programada : propuesta
     entrega_programada ||..o| coordinacion_entrega : propuesta
-    entrega_programada ||..o{ cosecha : propuesta
+    entrega_programada ||..o| cosecha : propuesta
     coordinacion_entrega ||..o| carga : propuesta
     carga ||..o| recepcion_planta : propuesta
     usuario o|..o{ campana : propuesta
     campania_x_proveedores o|..o{ examen_proveedor : propuesta
 ```
 
-**D01 — Participación adicional (Por discutir):** campania_x_proveedores se conserva para agrupar entrevistas del proveedor por campaña. participacion_proveedor_campana sigue en el general como propuesta, pero duplica funciones; no se ha aprobado borrarla ni mantener dos fuentes editables. Revisar también sus tablas de variedades y cobertura.
+**D01 — Participación adicional (Compatibilidad conservada):** Se conservan ambas tablas y sus dependencias. El editor usa campania_x_proveedores con precio simple; el servicio mantiene la correspondencia con la cabecera usada en cargas. No se exige consolidar por calidad ni se elimina una tabla sin autorización.
 
 **D09 — Cantidad de certificados (Por discutir):** El editor dice uno por campaña; el backend y el resumen admiten varios. Se mantiene la capacidad actual hasta decidir si las normas requieren certificados distintos.
 
@@ -445,7 +443,7 @@ erDiagram
     fruta_derivada o|..o{ finca : propuesta
 ```
 
-**D01 — Participación adicional (Por discutir):** campania_x_proveedores se conserva para agrupar entrevistas del proveedor por campaña. participacion_proveedor_campana sigue en el general como propuesta, pero duplica funciones; no se ha aprobado borrarla ni mantener dos fuentes editables. Revisar también sus tablas de variedades y cobertura.
+**D01 — Participación adicional (Compatibilidad conservada):** Se conservan ambas tablas y sus dependencias. El editor usa campania_x_proveedores con precio simple; el servicio mantiene la correspondencia con la cabecera usada en cargas. No se exige consolidar por calidad ni se elimina una tabla sin autorización.
 
 **D02 — Fincas entrevistadas (Aprobado por el usuario):** El listado de fincas de una participación se obtiene desde entrevista_extencion. No se vuelve a agregar finca_id a campania_x_proveedores; los orígenes de entrega/carga seleccionan las fincas físicas de recojo.
 
@@ -469,7 +467,7 @@ erDiagram
     proveedor ||..o{ finca : actual
     fruta ||..o{ fruta_derivada : actual
     campania_x_proveedores ||..o{ acuerdo_compra : propuesta
-    fruta_derivada ||..o{ acuerdo_compra : propuesta
+    fruta_derivada o|..o{ acuerdo_compra : propuesta
     fruta_derivada o|..o{ entrevista_extencion : propuesta
     fruta_derivada o|..o{ finca : propuesta
 ```
@@ -478,7 +476,7 @@ erDiagram
 
 **D04 — Una variedad por finca (Aprobado por el usuario):** Se conserva finca.fruta_derivada_id y se obtiene fruta por fruta_derivada.fruta_id. No se agrega una tabla de varios cultivos por finca. El vínculo permanece opcional para datos históricos; completar variedad antes de operar cuando la vista la requiere.
 
-**D10 — Condiciones de compra (Por discutir):** acuerdo_compra permitiría precios por proveedor/variedad/vigencia, pero no tiene editor observado en Entrevista. Decidir si se administra allí o si basta el precio histórico capturado al liquidar.
+**D10 — Condiciones de compra (Incorporado al SQL):** El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. acuerdo_compra queda como compatibilidad opcional sin exigir tarifarios/fechas/variedad nuevas. La liquidación conserva kilos reconocidos y precio aplicados.
 
 **Función de las tablas:** consultar la ficha V12 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -499,7 +497,7 @@ erDiagram
     finca o|..o{ examen_proveedor : propuesta
 ```
 
-**D12 — Examen pendiente de resultado (Pendiente técnico por decidir):** El resultado actual de examen_proveedor sigue obligatorio positivo/negativo. El estado adicional no habilita un examen sin resultado; requiere decidir nulabilidad y adaptar DTO/servicio.
+**D12 — Examen por etapas (Incorporado al SQL):** Pendiente y Enviado admiten resultado/documento ausentes. Con resultado requiere resultado explícito. Se mantienen tipos positivo/negativo del backend para el dato final.
 
 **D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
 
@@ -530,7 +528,7 @@ erDiagram
     norma o|..o{ certificado_campana : propuesta
 ```
 
-**D01 — Participación adicional (Por discutir):** campania_x_proveedores se conserva para agrupar entrevistas del proveedor por campaña. participacion_proveedor_campana sigue en el general como propuesta, pero duplica funciones; no se ha aprobado borrarla ni mantener dos fuentes editables. Revisar también sus tablas de variedades y cobertura.
+**D01 — Participación adicional (Compatibilidad conservada):** Se conservan ambas tablas y sus dependencias. El editor usa campania_x_proveedores con precio simple; el servicio mantiene la correspondencia con la cabecera usada en cargas. No se exige consolidar por calidad ni se elimina una tabla sin autorización.
 
 **D09 — Cantidad de certificados (Por discutir):** El editor dice uno por campaña; el backend y el resumen admiten varios. Se mantiene la capacidad actual hasta decidir si las normas requieren certificados distintos.
 
@@ -587,7 +585,7 @@ erDiagram
     acuerdo_transporte ||..o{ adelanto_transporte : propuesta
 ```
 
-**D06 — Vincular antes del acuerdo (Por discutir):** El mockup permite vincular transportista y registrar el acuerdo después. acuerdo_transporte exige condiciones completas en el SQL: evaluar estado borrador con atributos opcionales o un vínculo independiente. No se agrega otra tabla todavía.
+**D06 — Vincular antes del acuerdo (Incorporado al SQL):** acuerdo_transporte admite BORRADOR sin condiciones completas; CONFIRMADO exige monto, tipo y fechas. No hace falta inventar un segundo vínculo.
 
 **Función de las tablas:** consultar la ficha V17 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -648,9 +646,9 @@ erDiagram
 
 **D02 — Fincas entrevistadas (Aprobado por el usuario):** El listado de fincas de una participación se obtiene desde entrevista_extencion. No se vuelve a agregar finca_id a campania_x_proveedores; los orígenes de entrega/carga seleccionan las fincas físicas de recojo.
 
-**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+**D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
-**D06 — Vincular antes del acuerdo (Por discutir):** El mockup permite vincular transportista y registrar el acuerdo después. acuerdo_transporte exige condiciones completas en el SQL: evaluar estado borrador con atributos opcionales o un vínculo independiente. No se agrega otra tabla todavía.
+**D06 — Vincular antes del acuerdo (Incorporado al SQL):** acuerdo_transporte admite BORRADOR sin condiciones completas; CONFIRMADO exige monto, tipo y fechas. No hace falta inventar un segundo vínculo.
 
 **Función de las tablas:** consultar la ficha V19 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -696,7 +694,7 @@ erDiagram
     persona o|..o{ proveedor : propuesta
 ```
 
-**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
 
 **Función de las tablas:** consultar la ficha V21 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -718,7 +716,7 @@ erDiagram
     persona o|..o{ proveedor : propuesta
 ```
 
-**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
 
 **Función de las tablas:** consultar la ficha V22 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -774,7 +772,7 @@ erDiagram
     persona o|..o{ empresa_transporte_externo : propuesta
 ```
 
-**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+**D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
 **Función de las tablas:** consultar la ficha V25 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -790,7 +788,7 @@ erDiagram
     empresa_transporte_externo ||..o{ vehiculo_externo : actual
 ```
 
-**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+**D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
 **Función de las tablas:** consultar la ficha V26 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -805,7 +803,7 @@ erDiagram
     empresa_transporte_externo ||..o{ vehiculo_externo : actual
 ```
 
-**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+**D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
 **Función de las tablas:** consultar la ficha V27 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -826,9 +824,9 @@ erDiagram
     persona o|..o{ empresa_transporte_externo : propuesta
 ```
 
-**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+**D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
-**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
 
 **Función de las tablas:** consultar la ficha V28 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -885,11 +883,11 @@ erDiagram
     campana ||..o{ cliente_negocio_campana : actual
     cliente_negocio_campana ||..o{ contrato_venta : propuesta
     contrato_venta ||..o{ entrega_programada : propuesta
-    entrega_programada ||..o{ cosecha : propuesta
+    entrega_programada ||..o| cosecha : propuesta
     carga
 ```
 
-**D07 — Incorporación de campaña a Calidad (Por discutir):** Agregar campaña puede ser habilitación manual por canal o un filtro de las operaciones existentes. Solo si el negocio exige persistir esa habilitación tendría sentido una entidad específica; aún no se añade.
+**D07 — Incorporación de campaña a Calidad (Incorporado al SQL):** campana.calidad conserva un objeto por canal con su habilitación/estado, antes de crear cargas o elegir entregas.
 
 **Función de las tablas:** consultar la ficha V31 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -962,7 +960,7 @@ erDiagram
     entrega_programada ||..o| coordinacion_entrega : propuesta
     empresa_transporte_externo ||..o{ coordinacion_entrega : propuesta
     chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
-    entrega_programada ||..o{ cosecha : propuesta
+    entrega_programada ||..o| cosecha : propuesta
     cosecha o|..o{ analisis_calidad : propuesta
     coordinacion_entrega ||..o| carga : propuesta
     carga ||..o{ proveedor_carga : propuesta
@@ -975,9 +973,9 @@ erDiagram
     finca ||..o{ analisis_calidad : propuesta
 ```
 
-**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+**D14 — Una carga por entrega (Confirmado por el usuario):** Se conserva un viaje/carga por entrega. Cosecha también es única por entrega. El SQL permite varias facturas de esa carga, con suma de kilos no superior a la recepción, según respuesta explícita del usuario.
 
-**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+**D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
 **Función de las tablas:** consultar la ficha V34 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -1002,7 +1000,7 @@ erDiagram
     chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
     coordinacion_entrega ||..o{ origen_entrega : propuesta
     campania_x_proveedores ||..o{ origen_entrega : propuesta
-    entrega_programada ||..o{ cosecha : propuesta
+    entrega_programada ||..o| cosecha : propuesta
     cosecha o|..o{ analisis_calidad : propuesta
     campania_x_proveedores ||..o{ analisis_calidad : propuesta
     campania_x_proveedores ||..o{ medicion_mtd : propuesta
@@ -1021,7 +1019,7 @@ erDiagram
 
 **D03 — Análisis antes de cosecha (Aprobado por el usuario):** analisis_calidad identifica cxp_id y finca_id; cosecha_id queda opcional. La campaña se obtiene por la participación, sin otra FK redundante a campaña. El servicio validará coincidencia de campaña y origen si se vincula posteriormente una cosecha.
 
-**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+**D14 — Una carga por entrega (Confirmado por el usuario):** Se conserva un viaje/carga por entrega. Cosecha también es única por entrega. El SQL permite varias facturas de esa carga, con suma de kilos no superior a la recepción, según respuesta explícita del usuario.
 
 **Función de las tablas:** consultar la ficha V35 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -1054,7 +1052,7 @@ erDiagram
     vehiculo_externo ||..o{ coordinacion_entrega : propuesta
 ```
 
-**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+**D14 — Una carga por entrega (Confirmado por el usuario):** Se conserva un viaje/carga por entrega. Cosecha también es única por entrega. El SQL permite varias facturas de esa carga, con suma de kilos no superior a la recepción, según respuesta explícita del usuario.
 
 **D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
 
@@ -1102,7 +1100,7 @@ erDiagram
 
 **D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
 
-**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+**D14 — Una carga por entrega (Confirmado por el usuario):** Se conserva un viaje/carga por entrega. Cosecha también es única por entrega. El SQL permite varias facturas de esa carga, con suma de kilos no superior a la recepción, según respuesta explícita del usuario.
 
 **Función de las tablas:** consultar la ficha V37 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -1125,7 +1123,7 @@ erDiagram
     carga o|..o{ historial_chofer : propuesta
 ```
 
-**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+**D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
 **Función de las tablas:** consultar la ficha V38 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -1154,7 +1152,7 @@ erDiagram
     vehiculo_externo ||..o{ coordinacion_entrega : propuesta
 ```
 
-**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+**D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
 **Función de las tablas:** consultar la ficha V39 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -1195,7 +1193,7 @@ erDiagram
     finca ||..o{ origen_entrega : propuesta
 ```
 
-**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+**D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
 **D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
 
@@ -1237,7 +1235,7 @@ erDiagram
     contrato_venta ||..o{ entrega_programada : propuesta
     entrega_programada ||..o| coordinacion_entrega : propuesta
     coordinacion_entrega ||..o| carga : propuesta
-    carga ||..o| factura_venta : propuesta
+    carga ||..o{ factura_venta : propuesta
 ```
 
 **Función de las tablas:** consultar la ficha V42 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
@@ -1260,7 +1258,7 @@ erDiagram
     coordinacion_entrega ||..o| carga : propuesta
     carga ||..o{ proveedor_carga : propuesta
     carga ||..o| recepcion_planta : propuesta
-    carga ||..o| factura_venta : propuesta
+    carga ||..o{ factura_venta : propuesta
 ```
 
 **D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
@@ -1279,7 +1277,7 @@ erDiagram
 erDiagram
     cliente_negocio ||..o{ cliente_negocio_campana : actual
     factura_venta ||..o{ cobro_venta : propuesta
-    carga ||..o| factura_venta : propuesta
+    carga ||..o{ factura_venta : propuesta
 ```
 
 **D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
@@ -1355,13 +1353,13 @@ erDiagram
     fruta_derivada ||..o{ proveedor_carga : propuesta
     carga ||..o{ liquidacion_proveedor : propuesta
     proveedor ||..o{ liquidacion_proveedor : propuesta
-    proveedor_x_persona ||..o{ liquidacion_proveedor : propuesta
     persona o|..o{ proveedor : propuesta
+    persona ||..o{ liquidacion_proveedor : propuesta
 ```
 
-**D10 — Condiciones de compra (Por discutir):** acuerdo_compra permitiría precios por proveedor/variedad/vigencia, pero no tiene editor observado en Entrevista. Decidir si se administra allí o si basta el precio histórico capturado al liquidar.
+**D10 — Condiciones de compra (Incorporado al SQL):** El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. acuerdo_compra queda como compatibilidad opcional sin exigir tarifarios/fechas/variedad nuevas. La liquidación conserva kilos reconocidos y precio aplicados.
 
-**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
 
 **Función de las tablas:** consultar la ficha V47 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -1381,8 +1379,8 @@ erDiagram
     carga ||..o{ proveedor_carga : propuesta
     carga ||..o{ liquidacion_proveedor : propuesta
     proveedor ||..o{ liquidacion_proveedor : propuesta
-    proveedor_x_persona ||..o{ liquidacion_proveedor : propuesta
     persona o|..o{ proveedor : propuesta
+    persona ||..o{ liquidacion_proveedor : propuesta
 ```
 
 **D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
@@ -1403,12 +1401,12 @@ erDiagram
     persona ||..o{ proveedor_x_persona : propuesta
     carga ||..o{ liquidacion_proveedor : propuesta
     proveedor ||..o{ liquidacion_proveedor : propuesta
-    proveedor_x_persona ||..o{ liquidacion_proveedor : propuesta
     persona o|..o{ proveedor : propuesta
+    persona ||..o{ liquidacion_proveedor : propuesta
     parametro_uit
 ```
 
-**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
 
 **Función de las tablas:** consultar la ficha V49 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -1438,9 +1436,9 @@ erDiagram
     liquidacion_transporte ||..o{ aplicacion_adelanto : propuesta
 ```
 
-**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+**D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
-**D06 — Vincular antes del acuerdo (Por discutir):** El mockup permite vincular transportista y registrar el acuerdo después. acuerdo_transporte exige condiciones completas en el SQL: evaluar estado borrador con atributos opcionales o un vínculo independiente. No se agrega otra tabla todavía.
+**D06 — Vincular antes del acuerdo (Incorporado al SQL):** acuerdo_transporte admite BORRADOR sin condiciones completas; CONFIRMADO exige monto, tipo y fechas. No hace falta inventar un segundo vínculo.
 
 **D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
 
@@ -1465,7 +1463,7 @@ erDiagram
     gasto_transporte
 ```
 
-**D06 — Vincular antes del acuerdo (Por discutir):** El mockup permite vincular transportista y registrar el acuerdo después. acuerdo_transporte exige condiciones completas en el SQL: evaluar estado borrador con atributos opcionales o un vínculo independiente. No se agrega otra tabla todavía.
+**D06 — Vincular antes del acuerdo (Incorporado al SQL):** acuerdo_transporte admite BORRADOR sin condiciones completas; CONFIRMADO exige monto, tipo y fechas. No hace falta inventar un segundo vínculo.
 
 **Función de las tablas:** consultar la ficha V51 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -1490,7 +1488,7 @@ erDiagram
     campana ||..o{ acuerdo_transporte : propuesta
     entrega_programada ||..o| coordinacion_entrega : propuesta
     acuerdo_transporte ||..o{ coordinacion_entrega : propuesta
-    entrega_programada ||..o{ cosecha : propuesta
+    entrega_programada ||..o| cosecha : propuesta
     coordinacion_entrega ||..o| carga : propuesta
     coordinacion_entrega ||..o{ historial_chofer : propuesta
     carga o|..o{ historial_chofer : propuesta
@@ -1499,13 +1497,13 @@ erDiagram
     carga ||..o| liquidacion_transporte : propuesta
     acuerdo_transporte ||..o{ adelanto_transporte : propuesta
     adelanto_transporte ||..o{ aplicacion_adelanto : propuesta
-    carga ||..o| factura_venta : propuesta
+    carga ||..o{ factura_venta : propuesta
     liquidacion_transporte ||..o{ aplicacion_adelanto : propuesta
 ```
 
 **D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
 
-**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+**D14 — Una carga por entrega (Confirmado por el usuario):** Se conserva un viaje/carga por entrega. Cosecha también es única por entrega. El SQL permite varias facturas de esa carga, con suma de kilos no superior a la recepción, según respuesta explícita del usuario.
 
 **Función de las tablas:** consultar la ficha V52 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -1530,9 +1528,9 @@ erDiagram
     usuario o|..o{ chofer_transporte_externo : propuesta
 ```
 
-**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+**D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
-**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
 
 **Función de las tablas:** consultar la ficha V53 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -1563,7 +1561,7 @@ erDiagram
 
 **D02 — Fincas entrevistadas (Aprobado por el usuario):** El listado de fincas de una participación se obtiene desde entrevista_extencion. No se vuelve a agregar finca_id a campania_x_proveedores; los orígenes de entrega/carga seleccionan las fincas físicas de recojo.
 
-**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+**D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
 **Función de las tablas:** consultar la ficha V54 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -1606,7 +1604,7 @@ erDiagram
     coordinacion_entrega ||..o| carga : propuesta
 ```
 
-**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+**D14 — Una carga por entrega (Confirmado por el usuario):** Se conserva un viaje/carga por entrega. Cosecha también es única por entrega. El SQL permite varias facturas de esa carga, con suma de kilos no superior a la recepción, según respuesta explícita del usuario.
 
 **Función de las tablas:** consultar la ficha V56 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -1623,7 +1621,7 @@ erDiagram
     proveedor ||..o{ campania_x_proveedores : actual
     proveedor ||..o{ finca : actual
     campania_x_proveedores ||..o{ acuerdo_compra : propuesta
-    fruta_derivada ||..o{ acuerdo_compra : propuesta
+    fruta_derivada o|..o{ acuerdo_compra : propuesta
     entrega_programada ||..o| coordinacion_entrega : propuesta
     coordinacion_entrega ||..o{ origen_entrega : propuesta
     campania_x_proveedores ||..o{ origen_entrega : propuesta
@@ -1642,9 +1640,9 @@ erDiagram
 
 **D04 — Una variedad por finca (Aprobado por el usuario):** Se conserva finca.fruta_derivada_id y se obtiene fruta por fruta_derivada.fruta_id. No se agrega una tabla de varios cultivos por finca. El vínculo permanece opcional para datos históricos; completar variedad antes de operar cuando la vista la requiere.
 
-**D10 — Condiciones de compra (Por discutir):** acuerdo_compra permitiría precios por proveedor/variedad/vigencia, pero no tiene editor observado en Entrevista. Decidir si se administra allí o si basta el precio histórico capturado al liquidar.
+**D10 — Condiciones de compra (Incorporado al SQL):** El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. acuerdo_compra queda como compatibilidad opcional sin exigir tarifarios/fechas/variedad nuevas. La liquidación conserva kilos reconocidos y precio aplicados.
 
-**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+**D14 — Una carga por entrega (Confirmado por el usuario):** Se conserva un viaje/carga por entrega. Cosecha también es única por entrega. El SQL permite varias facturas de esa carga, con suma de kilos no superior a la recepción, según respuesta explícita del usuario.
 
 **Función de las tablas:** consultar la ficha V57 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
 
@@ -1670,7 +1668,7 @@ erDiagram
     proveedor
 ```
 
-**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+**D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
 **D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
 
@@ -1751,6 +1749,3 @@ erDiagram
 **D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
 
 **Función de las tablas:** consultar la ficha V62 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
-## Estado de validación de negocio — 27/10/2026
-
-Este mapa conserva la propuesta de 66 tablas para revisión. No implica aprobación definitiva de sus duplicidades ni de todas sus cardinalidades. La [validación adicional y sus 30 preguntas](01_reporte_especifico.md#validación-de-negocio-y-cuestionario-pendiente) identifican decisiones que pueden modificar participaciones, viajes, cosecha, recepción y documentos económicos. No se alteran relaciones hasta resolverlas. La comprobación nueva es estática; las comprobaciones PGlite citadas en estos documentos son anteriores.

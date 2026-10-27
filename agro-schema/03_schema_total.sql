@@ -1,14 +1,16 @@
 -- MODELO DOCUMENTADO PARA REVISION MANUAL. No modifica entidades TypeORM ni la base desplegada.
 
+-- Actualización funcional FC01-FC14: tipos/borradores, detalle JSON, recepción reconocida, ajustes y cardinalidades autorizadas.
+
 -- Instalación nueva en agro: incluye 19 tablas actuales y 47 propuestas; archivo queda excluida por decisión de negocio.
 
--- Conserva 173 columnas actuales; retira la tabla archivo y campania_x_proveedores.finca_id. Referencias documentales opcionales, sin FK, pendientes de integración.
+-- Conserva los nombres de 173 columnas actuales y adapta tipos/nulabilidad para los formularios; retira archivo y campania_x_proveedores.finca_id. Referencias documentales opcionales, sin FK, pendientes de integración.
 
 -- Decisión aprobada 2026-10-27: análisis previo por participación/finca; analisis_calidad.cosecha_id es opcional. Una variedad por finca; fruta se obtiene de la variedad.
 
 -- Retira su FK e índices por finca; propone unicidad campaña/proveedor y adapta los triggers de entrevistas. Agrega atributos y 47 tablas propuestas.
 
--- Los atributos opcionales adicionales no sustituyen campos legacy. Revisar los pendientes funcionales del Markdown.
+-- Se modifican tipos y nulabilidad legacy documentados en modified_columns; no es una migración sobre datos existentes.
 
 -- No es una migración de producción. Si agro existe, se aborta. Requiere btree_gist para la exclusión actual de choferes.
 
@@ -55,8 +57,10 @@ CREATE TABLE "campana" (
   "cerrada_at" timestamptz,
   "cerrada_por_usuario_id" integer,
   "motivo_cierre" text,
+  "calidad" jsonb NOT NULL DEFAULT '{}'::jsonb,
   CONSTRAINT "PK_e3b63797c6e9a2204d9b3b58f22" PRIMARY KEY (campania_id),
-  CHECK (fecha_fin >= fecha_inicio)
+  CHECK (fecha_fin >= fecha_inicio),
+  CHECK (jsonb_typeof(calidad) = 'object')
 );
 
 -- TABLA ACTUAL AMPLIADA: campania_x_proveedores
@@ -66,16 +70,23 @@ CREATE TABLE "campania_x_proveedores" (
   "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
   "cxp_id" serial NOT NULL,
   "cantidad_proveedor" numeric(12,3) NOT NULL,
-  "mtd_ceratitis" numeric(12,3) NOT NULL,
+  "mtd_ceratitis" numeric(12,3),
   "fruta_convencional_estimado" integer,
   "tipo_proveedor" "campania_x_proveedores_tipo_proveedor_enum" NOT NULL,
   "estado" "campania_x_proveedores_estado_enum" NOT NULL DEFAULT 'sin validar'::campania_x_proveedores_estado_enum,
   "campania_id" integer NOT NULL,
   "proveedor_id" integer NOT NULL,
   "participacion_proveedor_campana_id" integer,
+  "precio_compra_kg" numeric(14,4),
+  "moneda" varchar(3) NOT NULL DEFAULT 'PEN',
+  "disponibilidad_desde" date,
+  "disponibilidad_hasta" date,
+  "observaciones" text,
   CONSTRAINT "CHK_fruta_convencional_solo_productor" CHECK (((tipo_proveedor = 'productor'::campania_x_proveedores_tipo_proveedor_enum) OR (fruta_convencional_estimado IS NULL))),
   CONSTRAINT "PK_fd78570e9beb123e572cbc5914a" PRIMARY KEY (cxp_id),
-  CONSTRAINT "UQ_campania_proveedor" UNIQUE (campania_id, proveedor_id)
+  CONSTRAINT "UQ_campania_proveedor" UNIQUE (campania_id, proveedor_id),
+  CHECK (moneda = 'PEN' AND (precio_compra_kg IS NULL OR precio_compra_kg > 0)),
+  CHECK (disponibilidad_hasta >= disponibilidad_desde)
 );
 
 -- TABLA ACTUAL AMPLIADA: certificado_campana
@@ -85,11 +96,11 @@ CREATE TABLE "certificado_campana" (
   "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
   "certificado_id" serial NOT NULL,
   "nombre" varchar(255) NOT NULL,
-  "document_url" text NOT NULL,
+  "document_url" text,
   "costo" numeric(12,2) NOT NULL,
-  "recibo_url" text NOT NULL,
-  "fecha_vencimiento" date NOT NULL,
-  "estado" "certificado_campana_estado_enum" NOT NULL,
+  "recibo_url" text,
+  "fecha_vencimiento" date,
+  "estado" "certificado_campana_estado_enum",
   "campania_id" integer NOT NULL,
   "codigo" varchar(80),
   "norma_id" integer,
@@ -97,8 +108,13 @@ CREATE TABLE "certificado_campana" (
   "fecha_emision" date,
   "moneda" varchar(3),
   "documento_archivo_id" integer,
+  "vigencia_desde" date,
+  "observaciones" text,
+  "historial_cobertura" jsonb NOT NULL DEFAULT '[]'::jsonb,
   CONSTRAINT "PK_1856de725430dd73744896b9e4f" PRIMARY KEY (certificado_id),
   CHECK (moneda IS NULL OR moneda IN ('PEN','USD','EUR')),
+  CHECK (jsonb_typeof(historial_cobertura) = 'array'),
+  CHECK (fecha_vencimiento >= vigencia_desde),
   UNIQUE (certificado_id, campania_id)
 );
 
@@ -123,7 +139,7 @@ CREATE TABLE "chofer_transporte_externo" (
   "id_chofer_transporte_externo" serial NOT NULL,
   "nombre" varchar(255) NOT NULL,
   "telefono" varchar(20) NOT NULL,
-  "correo" varchar(320) NOT NULL,
+  "correo" varchar(320),
   "id_empresa_transporte_externo" integer NOT NULL,
   "persona_id" integer,
   "activo" boolean NOT NULL DEFAULT true,
@@ -139,14 +155,14 @@ CREATE TABLE "chofer_vehiculo_externo" (
   "created_at" timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
   "id_chofer_vehiculo_externo" serial NOT NULL,
-  "fecha_asignacion_inicio" date NOT NULL,
-  "fecha_asignacion_final" date NOT NULL,
+  "fecha_asignacion_inicio" timestamptz NOT NULL,
+  "fecha_asignacion_final" timestamptz NOT NULL,
   "id_vehiculo_externo" integer NOT NULL,
   "id_chofer_transporte_externo" integer NOT NULL,
   "id_trazabilidad_transporte" integer NOT NULL,
   "coordinacion_entrega_id" integer,
-  CONSTRAINT "CHK_asignacion_fechas_validas" CHECK ((fecha_asignacion_final >= fecha_asignacion_inicio)),
-  CONSTRAINT "EX_chofer_sin_rangos_superpuestos" EXCLUDE USING gist (id_chofer_transporte_externo WITH =, daterange(fecha_asignacion_inicio, fecha_asignacion_final, '[]'::text) WITH &&),
+  CONSTRAINT "CHK_asignacion_fechas_validas" CHECK (fecha_asignacion_final > fecha_asignacion_inicio),
+  CONSTRAINT "EX_chofer_sin_rangos_superpuestos" EXCLUDE USING gist (id_chofer_transporte_externo WITH =, tstzrange(fecha_asignacion_inicio, fecha_asignacion_final, '[)') WITH &&),
   CONSTRAINT "PK_chofer_vehiculo_externo" PRIMARY KEY (id_chofer_vehiculo_externo)
 );
 
@@ -160,7 +176,7 @@ CREATE TABLE "cliente_negocio" (
   "nombre_contacto" varchar(255) NOT NULL,
   "telefono" varchar(20) NOT NULL,
   "ruc" varchar(11) NOT NULL,
-  "correo_corporativo" varchar(320) NOT NULL,
+  "correo_corporativo" varchar(320),
   "ubicacion" text NOT NULL,
   "tipo_cliente" "cliente_negocio_tipo_cliente_enum" NOT NULL,
   "fecha_registro" date,
@@ -175,9 +191,9 @@ CREATE TABLE "cliente_negocio_campana" (
   "created_at" timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
   "cliente_negocio_campana_id" serial NOT NULL,
-  "documento_url" text NOT NULL,
+  "documento_url" text,
   "fecha_registro" date NOT NULL,
-  "ficha_tecnica_url" text NOT NULL,
+  "ficha_tecnica_url" text,
   "cantidad_kg" numeric(14,3) NOT NULL DEFAULT '0'::numeric,
   "kilos_acordados" numeric(14,3) NOT NULL,
   "cliente_negocio_id" integer NOT NULL,
@@ -218,8 +234,8 @@ CREATE TABLE "empresa_transporte_externo" (
   "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
   "id_empresa_transporte_externo" serial NOT NULL,
   "nombre_completo" varchar(255) NOT NULL,
-  "ruc" varchar(11) NOT NULL,
-  "correo" varchar(320) NOT NULL,
+  "ruc" varchar(11),
+  "correo" varchar(320),
   "numero" varchar(20) NOT NULL,
   "tipo_transportista" varchar(20) NOT NULL DEFAULT 'EMPRESA',
   "tipo_documento" varchar(20),
@@ -233,7 +249,8 @@ CREATE TABLE "empresa_transporte_externo" (
   CONSTRAINT "PK_empresa_transporte_externo" PRIMARY KEY (id_empresa_transporte_externo),
   CONSTRAINT "UQ_empresa_transporte_correo" UNIQUE (correo),
   CONSTRAINT "UQ_empresa_transporte_ruc" UNIQUE (ruc),
-  CHECK (tipo_transportista IN ('EMPRESA','INDEPENDIENTE'))
+  CHECK (tipo_transportista IN ('EMPRESA','INDEPENDIENTE')),
+  CHECK ((tipo_transportista = 'EMPRESA' AND ruc IS NOT NULL AND ruc ~ '^[0-9]{11}$') OR (tipo_transportista = 'INDEPENDIENTE' AND tipo_documento IS NOT NULL AND numero_documento IS NOT NULL AND length(trim(numero_documento)) > 0))
 );
 
 -- TABLA ACTUAL AMPLIADA: entrevista_extencion
@@ -242,11 +259,11 @@ CREATE TABLE "entrevista_extencion" (
   "created_at" timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
   "entrevista_id" serial NOT NULL,
-  "densidad" numeric(12,3) NOT NULL,
-  "distanciamiento" numeric(12,3) NOT NULL,
-  "frecuencia" numeric(12,3) NOT NULL,
-  "nombre_aplicacion" varchar(255) NOT NULL,
-  "anio_aplicacion" integer NOT NULL,
+  "densidad" numeric(12,3),
+  "distanciamiento" numeric(12,3),
+  "frecuencia" numeric(12,3),
+  "nombre_aplicacion" varchar(255),
+  "anio_aplicacion" integer,
   "codigo" varchar(255) NOT NULL,
   "cam_x_prov_id" integer NOT NULL,
   "finca_id" integer NOT NULL,
@@ -271,18 +288,20 @@ CREATE TABLE "examen_proveedor" (
   "examen_proveedor_id" serial NOT NULL,
   "fecha" date NOT NULL,
   "tipo_examen" varchar(150) NOT NULL,
-  "resultado" "examen_proveedor_resultado_enum" NOT NULL,
-  "origen" varchar(255) NOT NULL,
-  "observacion" text NOT NULL,
-  "documento_url" text NOT NULL,
+  "resultado" "examen_proveedor_resultado_enum",
+  "origen" varchar(255),
+  "observacion" text,
+  "documento_url" text,
   "proveedor_id" integer NOT NULL,
   "cxp_id" integer,
   "finca_id" integer,
   "codigo_muestra" varchar(80),
   "fecha_envio" date,
-  "estado_examen" varchar(30),
+  "estado_examen" varchar(30) NOT NULL DEFAULT 'Pendiente',
   "documento_archivo_id" integer,
-  CONSTRAINT "PK_f59bf88a67c9cf036782197944b" PRIMARY KEY (examen_proveedor_id)
+  CONSTRAINT "PK_f59bf88a67c9cf036782197944b" PRIMARY KEY (examen_proveedor_id),
+  CHECK (estado_examen IN ('Pendiente','Enviado','Con resultado')),
+  CHECK (estado_examen <> 'Con resultado' OR resultado IS NOT NULL)
 );
 
 -- TABLA ACTUAL AMPLIADA: finca
@@ -297,8 +316,8 @@ CREATE TABLE "finca" (
   "distrito" varchar(100) NOT NULL,
   "latitud" numeric(10,7) NOT NULL,
   "longitud" numeric(10,7) NOT NULL,
-  "ha_total_finca" integer NOT NULL,
-  "ha_cultivo" integer NOT NULL,
+  "ha_total_finca" numeric(12,3) NOT NULL,
+  "ha_cultivo" numeric(12,3) NOT NULL,
   "proveedor_id" integer NOT NULL,
   "codigo_lugar_produccion" varchar(60),
   "codigo_catastral" varchar(60),
@@ -343,12 +362,12 @@ CREATE TABLE "proveedor" (
   "nombres" varchar(150) NOT NULL,
   "apellido" varchar(150) NOT NULL,
   "tipo_documento" "proveedor_tipo_documento_enum" NOT NULL,
-  "nmr_documento" integer NOT NULL,
-  "identidad_doc_url" text NOT NULL,
+  "nmr_documento" varchar(30) NOT NULL,
+  "identidad_doc_url" text,
   "zona" text NOT NULL,
-  "telefono" integer NOT NULL,
-  "email" varchar(320) NOT NULL,
-  "codigo_lugar_produccion" integer NOT NULL,
+  "telefono" varchar(30) NOT NULL,
+  "email" varchar(320),
+  "codigo_lugar_produccion" varchar(60),
   "nombre_agronomico" varchar(255),
   "densidad_plantacion" numeric(12,3),
   "distanciamiento" numeric(12,3),
@@ -359,6 +378,7 @@ CREATE TABLE "proveedor" (
   "persona_id" integer,
   "activo" boolean NOT NULL DEFAULT true,
   "documento_archivo_id" integer,
+  "fecha_registro" date,
   CONSTRAINT "PK_b3bd1980252a2b7058e8aadefee" PRIMARY KEY (proveedor_id)
 );
 
@@ -397,12 +417,12 @@ CREATE TABLE "vehiculo_externo" (
   "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
   "id_vehiculo_externo" serial NOT NULL,
   "placa" varchar(15) NOT NULL,
-  "volumen" numeric(12,3) NOT NULL,
-  "ancho" numeric(10,3) NOT NULL,
-  "altura" numeric(10,3) NOT NULL,
-  "profundidad" numeric(10,3) NOT NULL,
-  "peso_neto" numeric(14,3) NOT NULL,
-  "peso_bruto" numeric(14,3) NOT NULL,
+  "volumen" numeric(12,3),
+  "ancho" numeric(10,3),
+  "altura" numeric(10,3),
+  "profundidad" numeric(10,3),
+  "peso_neto" numeric(14,3),
+  "peso_bruto" numeric(14,3),
   "id_empresa_transporte_externo" integer NOT NULL,
   "capacidad_kg" numeric(14,3),
   CONSTRAINT "CHK_vehiculo_dimensiones_positivas" CHECK (((volumen > (0)::numeric) AND (ancho > (0)::numeric) AND (altura > (0)::numeric) AND (profundidad > (0)::numeric))),
@@ -559,17 +579,19 @@ CREATE TABLE "participacion_proveedor_x_fruta_derivada" (
 CREATE TABLE "acuerdo_compra" (
   "acuerdo_compra_id" integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   "cxp_id" integer NOT NULL,
-  "fruta_derivada_id" integer NOT NULL,
+  "fruta_derivada_id" integer,
   "precio_kg" numeric(14,4) NOT NULL,
   "kilos_acordados" numeric(14,3),
-  "fecha_inicio" date NOT NULL,
-  "fecha_fin" date NOT NULL,
+  "fecha_inicio" date,
+  "fecha_fin" date,
   "estado" varchar(25) NOT NULL DEFAULT 'VIGENTE',
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
+  "moneda" varchar(3) NOT NULL DEFAULT 'PEN',
   CHECK (precio_kg > 0),
   CHECK (kilos_acordados >= 0),
-  CHECK (fecha_fin >= fecha_inicio)
+  CHECK (fecha_fin >= fecha_inicio),
+  CHECK (moneda = 'PEN')
 );
 
 -- TABLA PROPUESTA: norma
@@ -663,17 +685,19 @@ CREATE TABLE "cliente_negocio_campana_x_fruta_derivada" (
 CREATE TABLE "contrato_venta" (
   "contrato_venta_id" integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   "cliente_negocio_campana_id" integer NOT NULL,
-  "numero" varchar(60) NOT NULL,
+  "numero" varchar(60) NOT NULL DEFAULT ('CTR-' || gen_random_uuid()::text),
   "canal" varchar(20) NOT NULL,
   "fecha" date NOT NULL,
   "kilos_acordados" numeric(14,3) NOT NULL,
-  "precio_kg" numeric(14,4) NOT NULL,
+  "precio_kg" numeric(14,4),
   "moneda" varchar(3) NOT NULL,
   "estado" varchar(25) NOT NULL DEFAULT 'VIGENTE',
   "condiciones_pago" text,
   "archivo_id" integer,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
+  "condiciones_entrega" text,
+  "observaciones" text,
   UNIQUE (numero),
   CHECK (kilos_acordados > 0),
   CHECK (precio_kg > 0),
@@ -767,17 +791,24 @@ CREATE TABLE "acuerdo_transporte" (
   "campania_id" integer NOT NULL,
   "id_empresa_transporte_externo" integer NOT NULL,
   "cotizacion_transporte_id" integer,
-  "tipo_pago" varchar(20) NOT NULL,
-  "monto_acordado" numeric(14,2) NOT NULL,
-  "fecha_acuerdo" date NOT NULL,
+  "tipo_pago" varchar(20),
+  "monto_acordado" numeric(14,2),
+  "fecha_acuerdo" date,
   "fecha_pago_final" date,
   "archivo_id" integer,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
+  "estado" varchar(20) NOT NULL DEFAULT 'BORRADOR',
+  "moneda" varchar(3) NOT NULL DEFAULT 'PEN',
+  "adelanto_acordado" numeric(14,2) NOT NULL DEFAULT 0,
+  "referencia_cotizacion" text,
   UNIQUE (campania_id, id_empresa_transporte_externo),
   UNIQUE (acuerdo_transporte_id, id_empresa_transporte_externo),
   CHECK (monto_acordado > 0),
-  CHECK (tipo_pago IN ('INMEDIATO','CON_ADELANTO','AL_FINAL'))
+  CHECK (tipo_pago IN ('INMEDIATO','CON_ADELANTO','AL_FINAL')),
+  CHECK (estado IN ('BORRADOR','CONFIRMADO') AND moneda = 'PEN'),
+  CHECK (estado <> 'CONFIRMADO' OR (tipo_pago IS NOT NULL AND monto_acordado IS NOT NULL AND fecha_acuerdo IS NOT NULL AND fecha_pago_final IS NOT NULL)),
+  CHECK (adelanto_acordado >= 0 AND (monto_acordado IS NULL OR adelanto_acordado <= monto_acordado))
 );
 
 -- TABLA PROPUESTA: coordinacion_entrega
@@ -796,9 +827,13 @@ CREATE TABLE "coordinacion_entrega" (
   "observaciones" text,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
+  "flete_asignado" numeric(14,2),
+  "observacion_flete" text,
   UNIQUE (entrega_programada_id),
   UNIQUE (coordinacion_entrega_id, entrega_programada_id),
-  CHECK (fin_programado >= inicio_programado)
+  CHECK (fin_programado >= inicio_programado),
+  CHECK (flete_asignado > 0),
+  CONSTRAINT "EX_coordinacion_chofer_sin_solape" EXCLUDE USING gist (id_chofer_transporte_externo WITH =, tstzrange(inicio_programado, fin_programado, '[)') WITH &&)
 );
 
 -- TABLA PROPUESTA: origen_entrega
@@ -828,10 +863,20 @@ CREATE TABLE "cosecha" (
   "evidencia_id" integer,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
+  "organizacion" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "avances" jsonb NOT NULL DEFAULT '[]'::jsonb,
+  "cierre" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "industria" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "observaciones" text,
   UNIQUE (codigo_lote),
   CHECK (kilos_estimados >= 0),
   CHECK (kilos_cosechados >= 0),
-  CHECK (kilos_aceptados >= 0)
+  CHECK (kilos_aceptados >= 0),
+  CHECK (jsonb_typeof(organizacion) = 'object'),
+  CHECK (jsonb_typeof(avances) = 'array'),
+  CHECK (jsonb_typeof(cierre) = 'object'),
+  CHECK (jsonb_typeof(industria) = 'object'),
+  UNIQUE (entrega_programada_id)
 );
 
 -- TABLA PROPUESTA: analisis_calidad
@@ -979,11 +1024,14 @@ CREATE TABLE "guia_remision" (
   "observaciones" text,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
+  "contenido" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "emitida_at" timestamptz,
   UNIQUE (numero),
   UNIQUE (guia_remision_id, carga_id),
   CHECK (peso_bruto_kg > 0),
   CHECK (numero_bultos > 0),
-  CHECK (unidad_peso = 'KGM')
+  CHECK (unidad_peso = 'KGM'),
+  CHECK (jsonb_typeof(contenido) = 'object')
 );
 
 -- TABLA PROPUESTA: proveedor_guia
@@ -996,8 +1044,10 @@ CREATE TABLE "proveedor_guia" (
   "kilos_asignados" numeric(14,3) NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
+  "fincas_ids" jsonb NOT NULL DEFAULT '[]'::jsonb,
   UNIQUE (guia_remision_id, proveedor_carga_id),
-  CHECK (kilos_asignados > 0)
+  CHECK (kilos_asignados > 0),
+  CHECK (jsonb_typeof(fincas_ids) = 'array')
 );
 
 -- TABLA PROPUESTA: guia_x_norma
@@ -1050,12 +1100,27 @@ CREATE TABLE "recepcion_planta" (
   "observaciones" text,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
+  "compras" jsonb NOT NULL DEFAULT '[]'::jsonb,
+  "logistica" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "checklist" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "documentos" jsonb NOT NULL DEFAULT '{}'::jsonb,
+  "descarga_inicio_at" timestamptz,
+  "descarga_fin_at" timestamptz,
+  "jabas_iniciales" integer,
+  "jabas_no_aplica" boolean,
   UNIQUE (carga_id),
   CHECK (peso_planta_kg > 0),
   CHECK (descarte_kg >= 0),
   CHECK (jabas_devueltas >= 0),
   CHECK (hubo_descarte IS DISTINCT FROM false OR descarte_kg = 0),
-  CHECK (hubo_descarte IS DISTINCT FROM true OR descarte_kg > 0)
+  CHECK (hubo_descarte IS DISTINCT FROM true OR descarte_kg > 0),
+  CHECK (jsonb_typeof(compras) = 'array'),
+  CHECK (jsonb_typeof(logistica) = 'object'),
+  CHECK (jsonb_typeof(checklist) = 'object'),
+  CHECK (jsonb_typeof(documentos) = 'object'),
+  CHECK (descarga_fin_at >= descarga_inicio_at),
+  CHECK (jabas_iniciales >= 0 AND (jabas_iniciales IS NULL OR jabas_devueltas <= jabas_iniciales)),
+  CHECK (descarte_kg <= peso_planta_kg)
 );
 
 -- TABLA PROPUESTA: liquidacion_proveedor
@@ -1074,10 +1139,21 @@ CREATE TABLE "liquidacion_proveedor" (
   "observaciones" text,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
+  "kilos_reconocidos" numeric(14,3) NOT NULL,
+  "precio_kg_aplicado" numeric(14,4) NOT NULL,
+  "moneda" varchar(3) NOT NULL DEFAULT 'PEN',
+  "fecha_vencimiento" date,
+  "persona_snapshot" jsonb NOT NULL,
+  "aviso_uit_confirmado" boolean NOT NULL DEFAULT false,
+  "limite_uit_aplicado" numeric(10,2) NOT NULL DEFAULT 75,
   UNIQUE (carga_id, proveedor_id),
   UNIQUE (numero),
   CHECK (importe_compra > 0),
-  CHECK (valor_uit_aplicado > 0)
+  CHECK (valor_uit_aplicado > 0),
+  CHECK (kilos_reconocidos > 0 AND precio_kg_aplicado > 0 AND moneda = 'PEN'),
+  CHECK (importe_compra = round(kilos_reconocidos * precio_kg_aplicado, 2)),
+  CHECK (jsonb_typeof(persona_snapshot) = 'object'),
+  CHECK (limite_uit_aplicado > 0)
 );
 
 -- TABLA PROPUESTA: liquidacion_transporte
@@ -1092,9 +1168,13 @@ CREATE TABLE "liquidacion_transporte" (
   "archivo_id" integer,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
+  "fecha_vencimiento" date,
+  "moneda" varchar(3) NOT NULL DEFAULT 'PEN',
+  "observaciones" text,
   UNIQUE (carga_id),
   UNIQUE (numero),
-  CHECK (flete >= 0)
+  CHECK (flete >= 0),
+  CHECK (moneda = 'PEN')
 );
 
 -- TABLA PROPUESTA: gasto_transporte
@@ -1160,16 +1240,20 @@ CREATE TABLE "factura_venta" (
   "archivo_id" integer,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (carga_id),
+  "descuento" numeric(14,2) NOT NULL DEFAULT 0,
+  "cargos" numeric(14,2) NOT NULL DEFAULT 0,
+  "observaciones" text,
+  "verificada_at" timestamptz,
   UNIQUE (referencia_preparacion),
   UNIQUE (numero_factura),
   CHECK (kilos_facturados > 0),
   CHECK (precio_kg_aplicado > 0),
-  CHECK (importe_venta = round(kilos_facturados * precio_kg_aplicado, 2)),
   CHECK (estado IN ('PREPARADA','EMITIDA')),
   CHECK (moneda IN ('PEN','USD','EUR')),
   CHECK (fecha_vencimiento >= fecha_emision),
-  CHECK (estado <> 'EMITIDA' OR (numero_factura IS NOT NULL AND fecha_emision IS NOT NULL))
+  CHECK (estado <> 'EMITIDA' OR (numero_factura IS NOT NULL AND fecha_emision IS NOT NULL)),
+  CHECK (descuento >= 0 AND cargos >= 0 AND importe_venta > 0),
+  CHECK (importe_venta = round(kilos_facturados * precio_kg_aplicado - descuento + cargos, 2))
 );
 
 -- TABLA PROPUESTA: pago_proveedor
@@ -1449,53 +1533,53 @@ ALTER TABLE "proveedor_guia" ADD CONSTRAINT "fk_revision_112" FOREIGN KEY ("guia
 
 ALTER TABLE "proveedor_guia" ADD CONSTRAINT "fk_revision_113" FOREIGN KEY ("proveedor_carga_id", "carga_id") REFERENCES "proveedor_carga" ("proveedor_carga_id", "carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "liquidacion_proveedor" ADD CONSTRAINT "fk_revision_114" FOREIGN KEY ("proveedor_id", "persona_liquidacion_id") REFERENCES "proveedor_x_persona" ("proveedor_id", "persona_id") ON DELETE RESTRICT;
+ALTER TABLE "aplicacion_adelanto" ADD CONSTRAINT "fk_revision_114" FOREIGN KEY ("liquidacion_transporte_id") REFERENCES "liquidacion_transporte" ("liquidacion_transporte_id") ON DELETE RESTRICT;
 
-ALTER TABLE "aplicacion_adelanto" ADD CONSTRAINT "fk_revision_115" FOREIGN KEY ("liquidacion_transporte_id") REFERENCES "liquidacion_transporte" ("liquidacion_transporte_id") ON DELETE RESTRICT;
+ALTER TABLE "campana" ADD CONSTRAINT "fk_revision_115" FOREIGN KEY ("responsable_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "campana" ADD CONSTRAINT "fk_revision_116" FOREIGN KEY ("responsable_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "campana" ADD CONSTRAINT "fk_revision_116" FOREIGN KEY ("cerrada_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "campana" ADD CONSTRAINT "fk_revision_117" FOREIGN KEY ("cerrada_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "campania_x_proveedores" ADD CONSTRAINT "fk_revision_117" FOREIGN KEY ("participacion_proveedor_campana_id") REFERENCES "participacion_proveedor_campana" ("participacion_proveedor_campana_id") ON DELETE RESTRICT;
 
-ALTER TABLE "campania_x_proveedores" ADD CONSTRAINT "fk_revision_118" FOREIGN KEY ("participacion_proveedor_campana_id") REFERENCES "participacion_proveedor_campana" ("participacion_proveedor_campana_id") ON DELETE RESTRICT;
+ALTER TABLE "certificado_campana" ADD CONSTRAINT "fk_revision_118" FOREIGN KEY ("norma_id") REFERENCES "norma" ("norma_id") ON DELETE RESTRICT;
 
-ALTER TABLE "certificado_campana" ADD CONSTRAINT "fk_revision_119" FOREIGN KEY ("norma_id") REFERENCES "norma" ("norma_id") ON DELETE RESTRICT;
+ALTER TABLE "chofer_transporte_externo" ADD CONSTRAINT "fk_revision_119" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
 
-ALTER TABLE "chofer_transporte_externo" ADD CONSTRAINT "fk_revision_120" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
+ALTER TABLE "proveedor" ADD CONSTRAINT "fk_revision_120" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor" ADD CONSTRAINT "fk_revision_121" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
+ALTER TABLE "chofer_transporte_externo" ADD CONSTRAINT "fk_revision_121" FOREIGN KEY ("usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "chofer_transporte_externo" ADD CONSTRAINT "fk_revision_122" FOREIGN KEY ("usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "chofer_vehiculo_externo" ADD CONSTRAINT "fk_revision_122" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
 
-ALTER TABLE "chofer_vehiculo_externo" ADD CONSTRAINT "fk_revision_123" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
+ALTER TABLE "detalle_trazabilidad" ADD CONSTRAINT "fk_revision_123" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "detalle_trazabilidad" ADD CONSTRAINT "fk_revision_124" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
+ALTER TABLE "detalle_trazabilidad" ADD CONSTRAINT "fk_revision_124" FOREIGN KEY ("guia_remision_id") REFERENCES "guia_remision" ("guia_remision_id") ON DELETE RESTRICT;
 
-ALTER TABLE "detalle_trazabilidad" ADD CONSTRAINT "fk_revision_125" FOREIGN KEY ("guia_remision_id") REFERENCES "guia_remision" ("guia_remision_id") ON DELETE RESTRICT;
+ALTER TABLE "empresa_transporte_externo" ADD CONSTRAINT "fk_revision_125" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
 
-ALTER TABLE "empresa_transporte_externo" ADD CONSTRAINT "fk_revision_126" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
+ALTER TABLE "entrevista_extencion" ADD CONSTRAINT "fk_revision_126" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
 
-ALTER TABLE "entrevista_extencion" ADD CONSTRAINT "fk_revision_127" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
+ALTER TABLE "entrevista_extencion" ADD CONSTRAINT "fk_revision_127" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "entrevista_extencion" ADD CONSTRAINT "fk_revision_128" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "examen_proveedor" ADD CONSTRAINT "fk_revision_128" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
 
-ALTER TABLE "examen_proveedor" ADD CONSTRAINT "fk_revision_129" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
+ALTER TABLE "examen_proveedor" ADD CONSTRAINT "fk_revision_129" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
 
-ALTER TABLE "examen_proveedor" ADD CONSTRAINT "fk_revision_130" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
+ALTER TABLE "finca" ADD CONSTRAINT "fk_revision_130" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
 
-ALTER TABLE "finca" ADD CONSTRAINT "fk_revision_131" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
+ALTER TABLE "trazabilidad_transporte" ADD CONSTRAINT "fk_revision_131" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
 
-ALTER TABLE "trazabilidad_transporte" ADD CONSTRAINT "fk_revision_132" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
+ALTER TABLE "trazabilidad_transporte" ADD CONSTRAINT "fk_revision_132" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "trazabilidad_transporte" ADD CONSTRAINT "fk_revision_133" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
+ALTER TABLE "origen_entrega" ADD CONSTRAINT "fk_revision_133" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
 
-ALTER TABLE "origen_entrega" ADD CONSTRAINT "fk_revision_134" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
+ALTER TABLE "origen_carga" ADD CONSTRAINT "fk_revision_134" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
 
-ALTER TABLE "origen_carga" ADD CONSTRAINT "fk_revision_135" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
+ALTER TABLE "analisis_calidad" ADD CONSTRAINT "fk_revision_135" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
 
-ALTER TABLE "analisis_calidad" ADD CONSTRAINT "fk_revision_136" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
+ALTER TABLE "medicion_mtd" ADD CONSTRAINT "fk_revision_136" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
 
-ALTER TABLE "medicion_mtd" ADD CONSTRAINT "fk_revision_137" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
+ALTER TABLE "liquidacion_proveedor" ADD CONSTRAINT "fk_revision_137" FOREIGN KEY ("persona_liquidacion_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
 
 CREATE UNIQUE INDEX "UQ_campana_fruta_activa" ON agro.campana USING btree (fruta_id) WHERE (estado <> 'terminado'::campana_estado_enum);
 
@@ -1508,8 +1592,6 @@ CREATE INDEX "IDX_asignacion_chofer" ON agro.chofer_vehiculo_externo USING btree
 CREATE INDEX "IDX_asignacion_trazabilidad" ON agro.chofer_vehiculo_externo USING btree (id_trazabilidad_transporte);
 
 CREATE INDEX "IDX_asignacion_vehiculo" ON agro.chofer_vehiculo_externo USING btree (id_vehiculo_externo);
-
-CREATE UNIQUE INDEX "UQ_cliente_negocio_campania" ON agro.cliente_negocio_campana USING btree (cliente_negocio_id, campania_id);
 
 CREATE INDEX "IDX_detalle_trazabilidad" ON agro.detalle_trazabilidad USING btree (id_trazabilidad_transporte);
 
@@ -1711,53 +1793,53 @@ CREATE INDEX "ix_revision_112" ON "proveedor_guia" ("guia_remision_id", "carga_i
 
 CREATE INDEX "ix_revision_113" ON "proveedor_guia" ("proveedor_carga_id", "carga_id");
 
-CREATE INDEX "ix_revision_114" ON "liquidacion_proveedor" ("proveedor_id", "persona_liquidacion_id");
+CREATE INDEX "ix_revision_114" ON "aplicacion_adelanto" ("liquidacion_transporte_id");
 
-CREATE INDEX "ix_revision_115" ON "aplicacion_adelanto" ("liquidacion_transporte_id");
+CREATE INDEX "ix_revision_115" ON "campana" ("responsable_usuario_id");
 
-CREATE INDEX "ix_revision_116" ON "campana" ("responsable_usuario_id");
+CREATE INDEX "ix_revision_116" ON "campana" ("cerrada_por_usuario_id");
 
-CREATE INDEX "ix_revision_117" ON "campana" ("cerrada_por_usuario_id");
+CREATE INDEX "ix_revision_117" ON "campania_x_proveedores" ("participacion_proveedor_campana_id");
 
-CREATE INDEX "ix_revision_118" ON "campania_x_proveedores" ("participacion_proveedor_campana_id");
+CREATE INDEX "ix_revision_118" ON "certificado_campana" ("norma_id");
 
-CREATE INDEX "ix_revision_119" ON "certificado_campana" ("norma_id");
+CREATE INDEX "ix_revision_119" ON "chofer_transporte_externo" ("persona_id");
 
-CREATE INDEX "ix_revision_120" ON "chofer_transporte_externo" ("persona_id");
+CREATE INDEX "ix_revision_120" ON "proveedor" ("persona_id");
 
-CREATE INDEX "ix_revision_121" ON "proveedor" ("persona_id");
+CREATE INDEX "ix_revision_121" ON "chofer_transporte_externo" ("usuario_id");
 
-CREATE INDEX "ix_revision_122" ON "chofer_transporte_externo" ("usuario_id");
+CREATE INDEX "ix_revision_122" ON "chofer_vehiculo_externo" ("coordinacion_entrega_id");
 
-CREATE INDEX "ix_revision_123" ON "chofer_vehiculo_externo" ("coordinacion_entrega_id");
+CREATE INDEX "ix_revision_123" ON "detalle_trazabilidad" ("carga_id");
 
-CREATE INDEX "ix_revision_124" ON "detalle_trazabilidad" ("carga_id");
+CREATE INDEX "ix_revision_124" ON "detalle_trazabilidad" ("guia_remision_id");
 
-CREATE INDEX "ix_revision_125" ON "detalle_trazabilidad" ("guia_remision_id");
+CREATE INDEX "ix_revision_125" ON "empresa_transporte_externo" ("persona_id");
 
-CREATE INDEX "ix_revision_126" ON "empresa_transporte_externo" ("persona_id");
+CREATE INDEX "ix_revision_126" ON "entrevista_extencion" ("fruta_derivada_id");
 
-CREATE INDEX "ix_revision_127" ON "entrevista_extencion" ("fruta_derivada_id");
+CREATE INDEX "ix_revision_127" ON "entrevista_extencion" ("registrado_por_usuario_id");
 
-CREATE INDEX "ix_revision_128" ON "entrevista_extencion" ("registrado_por_usuario_id");
+CREATE INDEX "ix_revision_128" ON "examen_proveedor" ("cxp_id");
 
-CREATE INDEX "ix_revision_129" ON "examen_proveedor" ("cxp_id");
+CREATE INDEX "ix_revision_129" ON "examen_proveedor" ("finca_id");
 
-CREATE INDEX "ix_revision_130" ON "examen_proveedor" ("finca_id");
+CREATE INDEX "ix_revision_130" ON "finca" ("fruta_derivada_id");
 
-CREATE INDEX "ix_revision_131" ON "finca" ("fruta_derivada_id");
+CREATE INDEX "ix_revision_131" ON "trazabilidad_transporte" ("coordinacion_entrega_id");
 
-CREATE INDEX "ix_revision_132" ON "trazabilidad_transporte" ("coordinacion_entrega_id");
+CREATE INDEX "ix_revision_132" ON "trazabilidad_transporte" ("carga_id");
 
-CREATE INDEX "ix_revision_133" ON "trazabilidad_transporte" ("carga_id");
+CREATE INDEX "ix_revision_133" ON "origen_entrega" ("finca_id");
 
-CREATE INDEX "ix_revision_134" ON "origen_entrega" ("finca_id");
+CREATE INDEX "ix_revision_134" ON "origen_carga" ("finca_id");
 
-CREATE INDEX "ix_revision_135" ON "origen_carga" ("finca_id");
+CREATE INDEX "ix_revision_135" ON "analisis_calidad" ("finca_id");
 
-CREATE INDEX "ix_revision_136" ON "analisis_calidad" ("finca_id");
+CREATE INDEX "ix_revision_136" ON "medicion_mtd" ("finca_id");
 
-CREATE INDEX "ix_revision_137" ON "medicion_mtd" ("finca_id");
+CREATE INDEX "ix_revision_137" ON "liquidacion_proveedor" ("persona_liquidacion_id");
 
 CREATE FUNCTION "validar_entrevista_extencion_productor"()
       RETURNS trigger
@@ -1879,7 +1961,188 @@ JOIN contrato_venta c ON c.contrato_venta_id=e.contrato_venta_id
 JOIN cliente_negocio_campana r ON r.cliente_negocio_campana_id=c.cliente_negocio_campana_id
 LEFT JOIN coordinacion_entrega co ON co.entrega_programada_id=e.entrega_programada_id;
 
--- Las reglas financieras/procesos del modelo nuevo requieren implementación de servicio y revisión transaccional.
+-- Protecciones funcionales acotadas: no sustituye servicios de permisos/cierre.
+CREATE FUNCTION validar_recepcion_compras() RETURNS trigger
+LANGUAGE plpgsql SET search_path = agro, pg_temp AS $$
+DECLARE item jsonb; ids integer[] := '{}'; pid integer; total numeric := 0; completos boolean := true; cargado numeric;
+BEGIN
+  FOR item IN SELECT value FROM jsonb_array_elements(NEW.compras) LOOP
+    IF jsonb_typeof(item) <> 'object' OR NOT item ? 'providerId' THEN
+      RAISE EXCEPTION 'Cada compra requiere providerId y datos de revisión';
+    END IF;
+    pid := (item->>'providerId')::integer;
+    IF pid IS NULL OR pid = ANY(ids) THEN RAISE EXCEPTION 'Proveedor duplicado o inválido en recepción'; END IF;
+    ids := array_append(ids, pid);
+    SELECT sum(pc.kilos_cargados) INTO cargado FROM proveedor_carga pc
+      JOIN participacion_proveedor_campana p ON p.participacion_proveedor_campana_id=pc.participacion_proveedor_campana_id
+      WHERE pc.carga_id=NEW.carga_id AND p.proveedor_id=pid;
+    IF cargado IS NULL THEN RAISE EXCEPTION 'El proveedor no pertenece a esta carga'; END IF;
+    IF item->>'recognizedQuantity' IS NULL THEN completos := false;
+    ELSE
+      IF (item->>'recognizedQuantity')::numeric <= 0 OR (item->>'recognizedQuantity')::numeric > cargado + 0.01 THEN
+        RAISE EXCEPTION 'Kilos reconocidos fuera de los kilos cargados del proveedor';
+      END IF;
+      total := total + (item->>'recognizedQuantity')::numeric;
+    END IF;
+  END LOOP;
+  IF jsonb_array_length(NEW.compras)>0 AND completos THEN
+    IF NEW.peso_planta_kg IS NULL OR abs(total-NEW.peso_planta_kg)>0.01 THEN
+      RAISE EXCEPTION 'La suma reconocida debe coincidir con el peso de planta';
+    END IF;
+    IF cardinality(ids) <> (SELECT count(DISTINCT p.proveedor_id) FROM proveedor_carga pc
+      JOIN participacion_proveedor_campana p ON p.participacion_proveedor_campana_id=pc.participacion_proveedor_campana_id WHERE pc.carga_id=NEW.carga_id) THEN
+      RAISE EXCEPTION 'Completa el desglose de todos los proveedores';
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_recepcion_compras BEFORE INSERT OR UPDATE OF compras,peso_planta_kg,carga_id
+ON recepcion_planta FOR EACH ROW EXECUTE FUNCTION validar_recepcion_compras();
+
+CREATE FUNCTION validar_persona_liquidacion() RETURNS trigger
+LANGUAGE plpgsql SET search_path = agro, pg_temp AS $$
+DECLARE p persona%ROWTYPE; titular boolean; reconocidos numeric; proveedores integer; precio_acuerdo numeric;
+BEGIN
+  SELECT * INTO STRICT p FROM persona WHERE persona_id=NEW.persona_liquidacion_id;
+  SELECT (proveedor.persona_id=p.persona_id OR (proveedor.nmr_documento=p.numero_documento AND proveedor.tipo_documento::text=p.tipo_documento))
+    INTO titular FROM proveedor WHERE proveedor_id=NEW.proveedor_id;
+  IF NOT coalesce(titular,false) AND NOT EXISTS(SELECT 1 FROM proveedor_x_persona
+    WHERE proveedor_id=NEW.proveedor_id AND persona_id=p.persona_id AND activo) THEN
+    RAISE EXCEPTION 'La persona no es el proveedor principal ni una persona vinculada activa';
+  END IF;
+  SELECT (x->>'recognizedQuantity')::numeric INTO reconocidos FROM recepcion_planta r,
+    LATERAL jsonb_array_elements(r.compras) x WHERE r.carga_id=NEW.carga_id AND (x->>'providerId')::integer=NEW.proveedor_id;
+  IF reconocidos IS NULL THEN
+    SELECT count(DISTINCT p.proveedor_id) INTO proveedores FROM proveedor_carga pc JOIN participacion_proveedor_campana p
+      ON p.participacion_proveedor_campana_id=pc.participacion_proveedor_campana_id WHERE pc.carga_id=NEW.carga_id;
+    IF proveedores=1 AND EXISTS(SELECT 1 FROM proveedor_carga pc JOIN participacion_proveedor_campana p
+      ON p.participacion_proveedor_campana_id=pc.participacion_proveedor_campana_id WHERE pc.carga_id=NEW.carga_id AND p.proveedor_id=NEW.proveedor_id) THEN
+      SELECT peso_planta_kg INTO reconocidos FROM recepcion_planta WHERE carga_id=NEW.carga_id;
+    END IF;
+  END IF;
+  IF reconocidos IS NULL OR abs(reconocidos-NEW.kilos_reconocidos)>0.01 THEN RAISE EXCEPTION 'Liquida los kilos reconocidos del proveedor en planta'; END IF;
+  SELECT cxp.precio_compra_kg INTO precio_acuerdo FROM campania_x_proveedores cxp
+    JOIN coordinacion_entrega co ON co.coordinacion_entrega_id=(SELECT coordinacion_entrega_id FROM carga WHERE carga_id=NEW.carga_id)
+    JOIN entrega_programada e ON e.entrega_programada_id=co.entrega_programada_id
+    JOIN contrato_venta cv ON cv.contrato_venta_id=e.contrato_venta_id
+    JOIN cliente_negocio_campana cc ON cc.cliente_negocio_campana_id=cv.cliente_negocio_campana_id
+    WHERE cxp.campania_id=cc.campania_id AND cxp.proveedor_id=NEW.proveedor_id;
+  IF precio_acuerdo IS NULL OR precio_acuerdo IS DISTINCT FROM NEW.precio_kg_aplicado THEN RAISE EXCEPTION 'Completa el precio de compra de la participación antes de liquidar'; END IF;
+  IF TG_OP='INSERT' THEN
+    NEW.persona_snapshot := jsonb_build_object('nombres',p.nombres,'apellidos',p.apellidos,'tipoDocumento',p.tipo_documento,'dni',p.numero_documento);
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_persona_liquidacion BEFORE INSERT OR UPDATE OF persona_liquidacion_id,proveedor_id,carga_id,kilos_reconocidos,precio_kg_aplicado
+ON liquidacion_proveedor FOR EACH ROW EXECUTE FUNCTION validar_persona_liquidacion();
+
+CREATE FUNCTION proteger_documento_financiero() RETURNS trigger
+LANGUAGE plpgsql SET search_path = agro, pg_temp AS $$
+DECLARE tiene_movimientos boolean; recibido numeric; facturado numeric; precio_contrato numeric; moneda_contrato text;
+BEGIN
+  IF TG_TABLE_NAME='factura_venta' THEN
+    -- Serializa documentos de la misma carga antes de repartir los kilos recibidos.
+    PERFORM 1 FROM carga WHERE carga_id=NEW.carga_id FOR UPDATE;
+    SELECT cv.precio_kg,cv.moneda INTO precio_contrato,moneda_contrato FROM carga c
+      JOIN coordinacion_entrega co ON co.coordinacion_entrega_id=c.coordinacion_entrega_id
+      JOIN entrega_programada e ON e.entrega_programada_id=co.entrega_programada_id
+      JOIN contrato_venta cv ON cv.contrato_venta_id=e.contrato_venta_id WHERE c.carga_id=NEW.carga_id;
+    IF TG_OP='INSERT' AND (precio_contrato IS NULL OR precio_contrato IS DISTINCT FROM NEW.precio_kg_aplicado OR moneda_contrato IS DISTINCT FROM NEW.moneda) THEN
+      RAISE EXCEPTION 'Completa el precio y usa la moneda del contrato antes de facturar';
+    END IF;
+    SELECT peso_planta_kg INTO recibido FROM recepcion_planta WHERE carga_id=NEW.carga_id;
+    SELECT coalesce(sum(kilos_facturados),0) INTO facturado FROM factura_venta WHERE carga_id=NEW.carga_id AND factura_venta_id<>NEW.factura_venta_id;
+    IF recibido IS NULL OR facturado+NEW.kilos_facturados>recibido+0.01 THEN RAISE EXCEPTION 'Las facturas superan los kilos recibidos de la carga'; END IF;
+    tiene_movimientos := EXISTS(SELECT 1 FROM cobro_venta WHERE factura_venta_id=NEW.factura_venta_id);
+    IF TG_OP='UPDATE' AND tiene_movimientos AND
+      (NEW.carga_id,NEW.kilos_facturados,NEW.precio_kg_aplicado,NEW.descuento,NEW.cargos,NEW.importe_venta,NEW.moneda)
+      IS DISTINCT FROM (OLD.carga_id,OLD.kilos_facturados,OLD.precio_kg_aplicado,OLD.descuento,OLD.cargos,OLD.importe_venta,OLD.moneda) THEN RAISE EXCEPTION 'Conserva los importes y origen de la factura cobrada'; END IF;
+  ELSIF TG_TABLE_NAME='liquidacion_proveedor' THEN
+    tiene_movimientos := EXISTS(SELECT 1 FROM pago_proveedor WHERE liquidacion_proveedor_id=NEW.liquidacion_proveedor_id);
+    IF TG_OP='UPDATE' AND tiene_movimientos AND
+      (NEW.carga_id,NEW.proveedor_id,NEW.persona_liquidacion_id,NEW.persona_snapshot,NEW.kilos_reconocidos,NEW.precio_kg_aplicado,NEW.importe_compra)
+      IS DISTINCT FROM (OLD.carga_id,OLD.proveedor_id,OLD.persona_liquidacion_id,OLD.persona_snapshot,OLD.kilos_reconocidos,OLD.precio_kg_aplicado,OLD.importe_compra) THEN RAISE EXCEPTION 'Conserva el documento de compra con pagos'; END IF;
+  ELSE
+    tiene_movimientos := EXISTS(SELECT 1 FROM pago_transporte WHERE liquidacion_transporte_id=NEW.liquidacion_transporte_id)
+      OR EXISTS(SELECT 1 FROM aplicacion_adelanto WHERE liquidacion_transporte_id=NEW.liquidacion_transporte_id);
+    IF TG_OP='UPDATE' AND tiene_movimientos AND (NEW.carga_id,NEW.flete) IS DISTINCT FROM (OLD.carga_id,OLD.flete) THEN RAISE EXCEPTION 'Conserva el flete liquidado con movimientos'; END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_documento_venta BEFORE INSERT OR UPDATE ON factura_venta FOR EACH ROW EXECUTE FUNCTION proteger_documento_financiero();
+CREATE TRIGGER trg_documento_compra BEFORE UPDATE ON liquidacion_proveedor FOR EACH ROW EXECUTE FUNCTION proteger_documento_financiero();
+CREATE TRIGGER trg_documento_transporte BEFORE UPDATE ON liquidacion_transporte FOR EACH ROW EXECUTE FUNCTION proteger_documento_financiero();
+
+CREATE FUNCTION validar_movimiento_financiero() RETURNS trigger
+LANGUAGE plpgsql SET search_path = agro, pg_temp AS $$
+DECLARE limite numeric; usado numeric; credito numeric; acuerdo_adelanto integer; acuerdo_carga integer;
+BEGIN
+  IF TG_TABLE_NAME='pago_proveedor' THEN
+    IF TG_OP='UPDATE' AND NEW.liquidacion_proveedor_id<>OLD.liquidacion_proveedor_id THEN RAISE EXCEPTION 'Conserva el documento del pago'; END IF;
+    SELECT importe_compra INTO limite FROM liquidacion_proveedor WHERE liquidacion_proveedor_id=NEW.liquidacion_proveedor_id FOR UPDATE;
+    SELECT coalesce(sum(monto),0) INTO usado FROM pago_proveedor WHERE liquidacion_proveedor_id=NEW.liquidacion_proveedor_id AND pago_proveedor_id<>NEW.pago_proveedor_id;
+  ELSIF TG_TABLE_NAME='cobro_venta' THEN
+    IF TG_OP='UPDATE' AND NEW.factura_venta_id<>OLD.factura_venta_id THEN RAISE EXCEPTION 'Conserva el documento del cobro'; END IF;
+    SELECT importe_venta INTO limite FROM factura_venta WHERE factura_venta_id=NEW.factura_venta_id FOR UPDATE;
+    SELECT coalesce(sum(monto),0) INTO usado FROM cobro_venta WHERE factura_venta_id=NEW.factura_venta_id AND cobro_venta_id<>NEW.cobro_venta_id;
+  ELSIF TG_TABLE_NAME='pago_certificado_campana' THEN
+    IF TG_OP='UPDATE' AND NEW.certificado_id<>OLD.certificado_id THEN RAISE EXCEPTION 'Conserva el certificado del pago'; END IF;
+    SELECT costo INTO limite FROM certificado_campana WHERE certificado_id=NEW.certificado_id FOR UPDATE;
+    SELECT coalesce(sum(monto),0) INTO usado FROM pago_certificado_campana WHERE certificado_id=NEW.certificado_id AND pago_certificado_campana_id<>NEW.pago_certificado_campana_id;
+  ELSE
+    IF TG_OP='UPDATE' AND NEW.liquidacion_transporte_id<>OLD.liquidacion_transporte_id THEN RAISE EXCEPTION 'Conserva la liquidación del movimiento'; END IF;
+    IF TG_TABLE_NAME='aplicacion_adelanto' THEN
+      IF TG_OP='UPDATE' AND NEW.adelanto_transporte_id<>OLD.adelanto_transporte_id THEN RAISE EXCEPTION 'Conserva el origen del adelanto'; END IF;
+      SELECT monto,acuerdo_transporte_id INTO credito,acuerdo_adelanto FROM adelanto_transporte WHERE adelanto_transporte_id=NEW.adelanto_transporte_id FOR UPDATE;
+      SELECT coalesce(sum(monto),0) INTO usado FROM aplicacion_adelanto WHERE adelanto_transporte_id=NEW.adelanto_transporte_id AND aplicacion_adelanto_id<>NEW.aplicacion_adelanto_id;
+      IF credito IS NULL OR usado+NEW.monto>credito THEN RAISE EXCEPTION 'El adelanto aplicado supera el disponible'; END IF;
+      SELECT co.acuerdo_transporte_id INTO acuerdo_carga FROM liquidacion_transporte l JOIN carga c ON c.carga_id=l.carga_id
+        JOIN coordinacion_entrega co ON co.coordinacion_entrega_id=c.coordinacion_entrega_id WHERE l.liquidacion_transporte_id=NEW.liquidacion_transporte_id;
+      IF acuerdo_carga IS DISTINCT FROM acuerdo_adelanto THEN RAISE EXCEPTION 'Adelanto de otra empresa o campaña'; END IF;
+    END IF;
+    SELECT flete INTO limite FROM liquidacion_transporte WHERE liquidacion_transporte_id=NEW.liquidacion_transporte_id FOR UPDATE;
+    limite := limite + coalesce((SELECT sum(g.monto) FROM gasto_transporte g JOIN liquidacion_transporte l ON l.carga_id=g.carga_id WHERE l.liquidacion_transporte_id=NEW.liquidacion_transporte_id AND g.incluido_en_liquidacion),0);
+    IF TG_TABLE_NAME='pago_transporte' THEN
+      SELECT coalesce(sum(monto),0) INTO usado FROM pago_transporte WHERE liquidacion_transporte_id=NEW.liquidacion_transporte_id AND pago_transporte_id<>NEW.pago_transporte_id;
+      usado := usado + coalesce((SELECT sum(monto) FROM aplicacion_adelanto WHERE liquidacion_transporte_id=NEW.liquidacion_transporte_id),0);
+    ELSE
+      SELECT coalesce(sum(monto),0) INTO usado FROM aplicacion_adelanto WHERE liquidacion_transporte_id=NEW.liquidacion_transporte_id AND aplicacion_adelanto_id<>NEW.aplicacion_adelanto_id;
+      usado := usado + coalesce((SELECT sum(monto) FROM pago_transporte WHERE liquidacion_transporte_id=NEW.liquidacion_transporte_id),0);
+    END IF;
+  END IF;
+  IF limite IS NULL OR usado+NEW.monto>limite THEN RAISE EXCEPTION 'El movimiento supera el saldo del documento'; END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_pago_proveedor BEFORE INSERT OR UPDATE ON pago_proveedor FOR EACH ROW EXECUTE FUNCTION validar_movimiento_financiero();
+CREATE TRIGGER trg_pago_transporte BEFORE INSERT OR UPDATE ON pago_transporte FOR EACH ROW EXECUTE FUNCTION validar_movimiento_financiero();
+CREATE TRIGGER trg_cobro_venta BEFORE INSERT OR UPDATE ON cobro_venta FOR EACH ROW EXECUTE FUNCTION validar_movimiento_financiero();
+CREATE TRIGGER trg_pago_certificado BEFORE INSERT OR UPDATE ON pago_certificado_campana FOR EACH ROW EXECUTE FUNCTION validar_movimiento_financiero();
+CREATE TRIGGER trg_aplicacion_adelanto BEFORE INSERT OR UPDATE ON aplicacion_adelanto FOR EACH ROW EXECUTE FUNCTION validar_movimiento_financiero();
+
+CREATE FUNCTION validar_desembolso_adelanto() RETURNS trigger
+LANGUAGE plpgsql SET search_path = agro, pg_temp AS $$
+DECLARE previsto numeric; usado numeric; tipo text;
+BEGIN
+  IF TG_OP='UPDATE' AND EXISTS(SELECT 1 FROM aplicacion_adelanto WHERE adelanto_transporte_id=OLD.adelanto_transporte_id)
+    AND (NEW.monto,NEW.acuerdo_transporte_id) IS DISTINCT FROM (OLD.monto,OLD.acuerdo_transporte_id) THEN
+    RAISE EXCEPTION 'Conserva el adelanto ya aplicado';
+  END IF;
+  SELECT adelanto_acordado,tipo_pago INTO previsto,tipo FROM acuerdo_transporte WHERE acuerdo_transporte_id=NEW.acuerdo_transporte_id FOR UPDATE;
+  SELECT coalesce(sum(monto),0) INTO usado FROM adelanto_transporte WHERE acuerdo_transporte_id=NEW.acuerdo_transporte_id AND adelanto_transporte_id<>NEW.adelanto_transporte_id;
+  IF tipo IS DISTINCT FROM 'CON_ADELANTO' OR usado+NEW.monto>previsto THEN RAISE EXCEPTION 'El desembolso supera el adelanto acordado'; END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_desembolso_adelanto BEFORE INSERT OR UPDATE ON adelanto_transporte FOR EACH ROW EXECUTE FUNCTION validar_desembolso_adelanto();
+
+-- La vista anual conserva el parámetro aplicado al documento, no revaloriza el pasado.
+CREATE OR REPLACE VIEW v_control_uit AS
+SELECT l.persona_liquidacion_id, extract(year FROM l.fecha)::integer AS anio, sum(l.importe_compra) AS acumulado,
+l.valor_uit_aplicado AS valor,l.limite_uit_aplicado AS limite_uit,
+l.valor_uit_aplicado*l.limite_uit_aplicado-sum(l.importe_compra) AS disponible
+FROM liquidacion_proveedor l GROUP BY l.persona_liquidacion_id,extract(year FROM l.fecha)::integer,l.valor_uit_aplicado,l.limite_uit_aplicado;
+
+
+-- Las reglas de transición, permisos y cierre completo requieren implementación de servicio; las protecciones financieras incluidas se prueban por separado.
 
 -- No se importan datos ni se calculan pagos/contratos automáticamente a partir de URLs o pesos históricos.
 

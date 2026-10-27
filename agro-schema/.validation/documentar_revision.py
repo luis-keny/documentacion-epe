@@ -1,6 +1,9 @@
 from pathlib import Path
 import ast,json,re
 R=Path(__file__).resolve().parent.parent
+previous=(R/'01_reporte_especifico.md').read_text(encoding='utf8')
+history=previous.split('## Validación de negocio y cuestionario pendiente',1)
+history=('## Validación de negocio y cuestionario pendiente'+history[1]).split('## Schema actualizado tras la auditoría de cumplimiento',1)[0].rstrip() if len(history)>1 else ''
 M=json.loads((R/'.validation/modelo_revision.json').read_text(encoding='utf8'))
 T=M['tables']; F=M['refs']; A={x['table']:x for x in json.loads((R/'.validation/modelo_actual.json').read_text(encoding='utf8'))}
 rename=json.loads((R/'.validation/renombres_tablas.json').read_text(encoding='utf8'))
@@ -428,42 +431,17 @@ def tablegroups(scope):
     if new:out+=['**Tablas propuestas para revisar:** '+', '.join('`'+t+'`' for t in new)+'.','']
     return out
 
-intro='''# Base de datos por vista — modelo revisado sobre el backend actual
-
-Este documento incorpora la [auditoría](auditoria-bd-actual-vs-planificada.md) y prepara el modelo para tu revisión manual contra las vistas. **No se cambiaron entidades TypeORM, migraciones ni una base desplegada.** El [SQL de revisión](03_schema_total.sql) crea una instalación nueva separada en `agro`; no es una actualización sobre tu base existente.
-
-**Base revisada al 27/10/2026:** se incluyen 19 de las 20 tablas actuales; `archivo` queda fuera del esquema por decisión de negocio. Se conservan **173 columnas actuales**: se excluyen las diez de archivo y se retira `campania_x_proveedores.finca_id`, su FK y sus tres índices asociados. El SQL propone unicidad por campaña/proveedor; las validaciones de entrevista se adaptan para comprobar la propiedad de la finca sin exigirla en la participación. El backend real sigue sin cambios.
-
-**Modelo vigente:** 66 tablas: 19 actuales más 47 propuestas. Se conservan `trazabilidad_transporte`, `chofer_vehiculo_externo` y `detalle_trazabilidad` con sus nombres actuales. `archivo` no se crea ni aparece como entidad en los diagramas. Sus referencias documentales se reservan como columnas opcionales, **sin FK y pendientes de relación**; no deben rellenarse con identificadores inventados. La integración, almacenamiento y obligatoriedad de evidencias se definirán después.
-
-**Atributos adicionales:** 63 columnas nuevas en las tablas actuales incluidas. Las referencias documentales pendientes son opcionales. Se retiran las comprobaciones que exigían identificadores de archivo para pagos, evidencia de descarte, salida o factura; las reglas locales de montos, kilos y datos de emisión se conservan. La exigencia de respaldos y su validación se definirán al retomar la integración documental.
-
-**Cómo leer cada vista:** se muestran sus tablas actuales y propuestas, relaciones Mermaid y el diccionario de cada tabla en su primera aparición. **ACTUAL** conserva la definición existente. **AGREGAR** es una columna adicional en una tabla actual. **TABLA NUEVA** pertenece a una entidad aún no programada. PK = clave primaria; FK = vínculo a otra tabla; NULL = dato opcional. Los nombres de columna se alinean con las claves reales: por ejemplo, `campania_id`, `cxp_id` y `fruta_derivada_id`.
-
-**Reglas conservadas y cambio aprobado:** una campaña activa por fruta, vínculo único cliente/campaña, certificados múltiples por campaña, códigos FVV, rangos de asignación inclusivos y bajas CASCADE/RESTRICT permanecen. Cambia la selección directa de finca en la participación; la finca se identifica en entrevista u origen operativo. Antes de migrar, revisar proveedores con varias participaciones en la misma campaña: no sumar cantidades ni consolidar entrevistas o transportes automáticamente. Tampoco se convierten documentos/teléfonos enteros, hectáreas enteras o enums.
-
-**Pendientes antes de implementar:** el RUC de transportista y el resultado del examen siguen siendo obligatorios en el backend; añadir tipo de transportista o estado del examen no permite por sí solo un independiente sin RUC ni un examen sin resultado. La incorporación manual de una campaña a Calidad tampoco tiene aún una decisión de persistencia propia: no se inventó una tabla para ese punto. La cabecera adicional de participación y los vínculos entre transporte actual y carga futura deben revisarse antes de llenarse.
-
-**Alcance del SQL:** estructura, relaciones y restricciones del modelo revisado, conservando las protecciones ya programadas en el backend. No incorpora los triggers financieros experimentales del plan anterior de 64 tablas: saldos, aplicación de adelantos, distribución de kilos entre guías, permisos del chofer y cierre completo requieren validar e implementar sus servicios/transacciones después de tu revisión. No se presenta esta versión como un sistema financiero terminado ni se reutilizan las 29 pruebas de aquel SQL distinto.
-
-**Fuentes y fecha de revisión:** nuevo recorrido de [la aplicación de referencia](https://campaign-management-system-umber.vercel.app/) el **27/10/2026, America/Lima**, por los ocho módulos del administrador y los perfiles de chofer Miguel Torres y Elena Ruiz. Las 62 fichas agrupan listados, detalles y formularios relacionados; una ficha no representa necesariamente una URL distinta. No se guardaron formularios de negocio ni se ejecutaron pagos, emisiones o cierres. Al abrir Preparar guía el mockup mostró automáticamente un borrador y aviso de sincronización; esa navegación debe revisarse como posible creación implícita. Se conserva como antecedente la auditoría del código local y sus nueve migraciones; no se hizo una nueva auditoría de producción.
-
-**Decisiones confirmadas en esta revisión:** campania_x_proveedores agrupa las entrevistas por proveedor/campaña; las fincas de esa participación son las de entrevista_extencion. Cada finca tendrá una variedad por ahora. Los análisis se registran por participación/finca antes de cosecha y su cosecha_id queda opcional. No se elimina ninguna otra tabla por una recomendación: las propuestas por discutir conservan ese estado explícito.
-
-**Cómo se documenta cada tabla dentro de una vista:** Escritura esperada significa que el futuro servicio creará/actualizará esa entidad desde la acción indicada; Consulta significa que aporta contexto o resultados. Por discutir identifica una propuesta cuya función o existencia debe afinarse. Compatibilidad corresponde a tablas actuales sin editor propio observado en esa pantalla. Estos usos describen el desarrollo esperado; el SQL no implementa por sí solo los flujos ni los permisos.
-
-**Resumen de los atributos adicionales sobre las tablas actuales:**
-
-| Tabla actual | Atributos para agregar | Para qué se añaden |
-|---|---|---|
-'''
-detail=[intro]
+from cumplimiento_documentacion import ajustar,introduccion,cierre
+views,decisions=ajustar(views,decisions)
+intro=introduccion(M,results)
+detail=[intro,'## Columnas adicionales en tablas actuales','','| Tabla actual | Atributos para agregar | Para qué se añaden |','|---|---|---|']
 for t,table in T.items():
     if not table['existing']:continue
     extra=[c for c in table['columns'] if c['status']=='AGREGAR']
     detail.append('| `'+t+'` | '+(', '.join('`'+c['name']+'`' for c in extra) if extra else 'Ninguno en esta revisión')+' | '+('Consultar la finalidad de cada columna en su diccionario por vista.' if extra else 'Se conserva el catálogo o asociación actual.')+' |')
 detail+=['']
 general=['# Tablas y relaciones por vista — modelo revisado','',
+'**Schema actualizado para cumplimiento — 27/10/2026.** Se incorporan JSONB de formularios y cambios de tipo/nulabilidad; el diccionario vigente distingue MODIFICAR de AGREGAR. Se permiten varios requerimientos cliente/campaña y varias facturas por carga según respuesta del usuario. Los diagramas reflejan las FK y unicidades actuales del SQL objetivo, incluido el vínculo directo persona–liquidación. No se modificó una base existente.','',
 '[Diccionario con atributos actuales y adicionales](01_reporte_especifico.md) · [SQL de revisión](03_schema_total.sql). Se incluyen 19 tablas actuales y 47 propuestas: 66 en total. archivo queda fuera del esquema, con sus relaciones pendientes. No se modificó la base desplegada.','',
 'Los nombres de las tablas actuales coinciden con las entidades TypeORM. Este documento no incluye atributos. Las tablas propuestas complementan el flujo; no sustituyen por nombre a las tablas actuales de transporte.','']
 legend='**Mermaid:** `||` = exactamente uno; `o|` = cero o uno; `o{` = cero o muchos. Cada caja es una tabla del esquema general. Las líneas son FK del SQL revisado: actual indica relación ya programada y propuesta indica una relación del diseño revisado, sin afirmar aprobación definitiva ni despliegue. Las FK compuestas del mismo par se agrupan. Una tabla aislada se consulta o participa en una decisión de diseño, sin FK directa en ese recorte. No se dibujan relaciones de navegación como si fueran FK.'
@@ -553,9 +531,12 @@ for i,v in enumerate(views,1):
         if table['indexes']:detail += ['**Índices actuales conservados:** '+'; '.join('`'+x+'`' for x in table['indexes'])+'.','']
         if added:detail += ['**Restricciones propuestas para revisar:** '+'; '.join('`'+x+'`' for x in added)+'.','']
 assert seen==set(T)
-detail += ['**Verificación de este SQL revisado:** instalación en una base PostgreSQL temporal PGlite con btree_gist; '+str(len(results['pruebas']))+' comprobaciones de estructura y compatibilidad. No se ejecutó sobre una instancia del usuario. No verifica los procesos nuevos de liquidación/cobro/cierre, que siguen pendientes.','','| Comprobación | Resultado |','|---|---|']
+detail += ['**Verificación de este SQL revisado:** instalación en PostgreSQL temporal PGlite con btree_gist; '+str(len(results['pruebas']))+' comprobaciones de persistencia y reglas financieras acotadas. No se ejecutó en la base del usuario, ni verifica la UI, los permisos, la concurrencia multiconexión o el cierre completo.','','| Comprobación | Resultado |','|---|---|']
 detail += ['| '+p['prueba']+' | '+p['resultado']+' |' for p in results['pruebas']]
 detail += ['','**Antes de aplicar cambios a tu base:** revisar vista por vista los atributos marcados AGREGAR y las tablas nuevas; decidir cuáles se implementan primero; preparar migraciones TypeORM aditivas con backfill validado. Este archivo SQL total es una referencia de instalación nueva, no una migración de tus registros.','']
+if history:
+    detail += ['## Historial anterior a esta actualización del SQL','','Los hallazgos y frases en tiempo presente que siguen describen las revisiones anteriores. El dictamen y estado actuales son la introducción, los diccionarios regenerados y el apartado final Schema actualizado.','',history,'']
+detail += [cierre(M,results)]
 (R/'01_reporte_especifico.md').write_text('\n'.join(detail),encoding='utf8')
 (R/'02_tablas_y_relaciones.md').write_text('\n'.join(general),encoding='utf8')
 print(f'{len(views)} vistas, {len(seen)} diccionarios; columnas ACTUAL/AGREGAR/TABLA NUEVA; nombres y claves alineados al backend.')

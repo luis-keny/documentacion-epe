@@ -4,7 +4,7 @@ Este repositorio contiene la documentación discutida y el SQL de revisión. El 
 
 ## Documentos vigentes
 
-- **[Auditoría vigente: cumplimiento de la aplicación](agro-schema/01_reporte_especifico.md#auditoría-de-cumplimiento-de-la-aplicación):** matriz funcional, faltantes FC01–FC14 y orden mínimo para cubrir el prototipo. Se prioriza funcionamiento sobre calidad del diseño; el SQL no se modificó en esta pasada.
+- **[Schema actualizado tras la auditoría](agro-schema/01_reporte_especifico.md#schema-actualizado-tras-la-auditoría-de-cumplimiento):** ajustes FC01–FC13 incorporados al SQL, contrato de JSONB, tipos modificados y límites de implementación. FC14 (archivos) continúa diferido. Se prioriza funcionamiento sobre calidad del diseño.
 - [Reporte por vista](agro-schema/01_reporte_especifico.md): 62 fichas con navegación, función de cada tabla, atributos, relaciones y decisiones D01–D15.
 - [Antecedente: validación de negocio y cuestionario original](agro-schema/01_reporte_especifico.md#validación-de-negocio-y-cuestionario-pendiente): sus 30 preguntas no son requisitos adicionales; las respuestas y el criterio de cumplimiento posteriores determinan el alcance vigente.
 - [Respuestas del usuario y alcance limitado al prototipo](agro-schema/01_reporte_especifico.md#respuestas-y-alcance-limitado-al-prototipo): estado vigente del cuestionario, explicación de la duplicidad, reglas encontradas y diferencias por consultar. Los negocios adicionales solo se reportan y quedan fuera del alcance.
@@ -17,18 +17,19 @@ Este repositorio contiene la documentación discutida y el SQL de revisión. El 
 
 - La prioridad es cubrir los flujos de la aplicación usando el prototipo como referencia. No se exige normalizar, refactorizar o mejorar arquitectura para avanzar. Los negocios ausentes del prototipo se reportan y quedan fuera del alcance; las contradicciones con respuestas explícitas se mantienen identificadas.
 - Esta etapa comprende documentación y SQL para revisión manual; no se modifican entidades TypeORM, migraciones ni bases desplegadas.
+- Se incorporaron los ajustes funcionales al SQL: compra sobre kilos reconocidos, varios requerimientos cliente/campaña, varias facturas por carga con ajustes, borradores de exámenes/contratos/transporte y detalle de cosecha/recepción mediante JSONB. El prototipo/web/backend todavía deben adoptar los contratos y cardinalidades actualizados.
 - Se conservan los nombres físicos actuales. El modelo revisado incluye 66 tablas: 19 actuales y 47 propuestas. Una propuesta documentada no equivale a aprobación definitiva de implementación.
 - `campania_x_proveedores` se mantiene y agrupa al proveedor y sus entrevistas dentro de una campaña. Se retira su vínculo directo a finca en el modelo objetivo.
 - Las fincas de esa participación se obtienen mediante `entrevista_extencion`, que reutiliza los datos de finca y agrega los datos de la visita/campaña. Los orígenes de entrega y carga identifican la finca de recojo.
 - Cada finca tendrá una sola variedad por ahora. La fruta se obtiene desde `fruta_derivada`; no se añade una tabla de varios cultivos por finca.
 - `analisis_calidad` puede registrarse antes de cosecha, por participación y finca. Su vínculo con cosecha es opcional.
 - `archivo` queda fuera del SQL y de los diagramas por ahora. Sus 28 referencias documentales quedan opcionales, sin FK y pendientes de relación.
-- Se incluyen empresas de transporte, vehículos, choferes y sus asignaciones actuales. No se sustituyen automáticamente por las entidades propuestas del viaje multiproveedor.
+- Se incluyen empresas de transporte, vehículos, choferes y sus asignaciones actuales por compatibilidad. La coordinación es la fuente del viaje; las reservas usan instantes con intervalos [inicio, fin), permitiendo varios viajes sucesivos en el día.
 - Administrador y Chofer comparten entidades. Los tableros, resúmenes y pestañas no crean una tabla de negocio independiente por pantalla.
 
 ## Decisiones pendientes
 
-Las referencias D01–D15 de los reportes describen el estado y las vistas afectadas. Destacan la posible duplicidad de `participacion_proveedor_campana`, la autoridad entre las asignaciones actuales y `coordinacion_entrega`, la vinculación de transporte antes del acuerdo completo, la incorporación manual a Calidad, los destinos, los acuerdos de compra y las reglas de unicidad observadas en el mockup.
+Las referencias D01–D15 de los reportes describen el estado vigente y las vistas afectadas. Se mantienen ambas participaciones por compatibilidad, sin exigir consolidación. La vinculación previa al acuerdo usa BORRADOR; Calidad por canal se conserva en `campana.calidad`; el precio simple vive en la participación. Las validaciones de contenido JSON, permisos, sincronización entre tablas conservadas y cierre completo requieren los servicios del backend. La gestión documental sigue diferida.
 
 No se ha aprobado eliminar `campania_x_proveedores`. Tampoco se ha aprobado retirar automáticamente la cabecera adicional: su función sigue por discutir. La gestión documental se retomará en otra etapa.
 
@@ -36,9 +37,9 @@ No se ha aprobado eliminar `campania_x_proveedores`. Tampoco se ha aprobado reti
 
 La carpeta `agro-schema/.validation` conserva modelos, generadores y resultados de las comprobaciones, incluidos antecedentes del diseño. Los documentos vigentes son los enlazados arriba. Los archivos internos `baseline-*`, `modelo.json`, `modelo_alineado.json` y los generadores antiguos son antecedentes, no el esquema final.
 
-El flujo vigente usa `modelo_revision.py`, `verificar_revision.mjs` y `documentar_revision.py`. Los resultados actuales constan en `resultado_revision.json`: 19 comprobaciones temporales con PGlite. No acreditan validación de una base desplegada ni implementación de todos los procesos de negocio. La reconstrucción de la auditoría del código requiere también el checkout del backend referido en sus fuentes.
+El flujo vigente usa `modelo_revision.py` (con `cumplimiento_modelo.py` y `cumplimiento_reglas.sql`), `verificar_revision.mjs` (entrada de `verificar_cumplimiento.mjs`) y `documentar_revision.py` (con `cumplimiento_documentacion.py`). El resultado actual consta en `resultado_revision.json`: **44 comprobaciones ejecutadas en PGlite**. No acreditan validación de una base desplegada, concurrencia con múltiples conexiones o implementación de toda la aplicación. Se conservan 66 tablas, 137 FK y seis vistas; 173 columnas legacy por nombre, con 35 definiciones modificadas y 73 columnas adicionales en tablas actuales.
 
-La auditoría de cumplimiento añade evidencia **estática**, sin regenerar el modelo: `validar_inventario_negocio.mjs` y `auditar_cumplimiento_app.mjs`, con sus resultados JSON. No sustituye ni repite las pruebas PGlite históricas; identifica incompatibilidades entre datos/formularios y el SQL actual.
+La evidencia **estática** complementaria usa `validar_inventario_negocio.mjs` y `auditar_cumplimiento_app.mjs`, con sus resultados JSON. El segundo comprueba ahora la presencia de los ajustes; las incompatibilidades originales quedan como motivación histórica. La instalación y pruebas de comportamiento actuales se ejecutan con `verificar_revision.mjs`.
 
 Cada decisión posterior debe actualizar su ficha, el esquema general, el SQL si corresponde y la auditoría antes del siguiente commit. No ejecutar los generadores históricos para actualizar los documentos vigentes.
 

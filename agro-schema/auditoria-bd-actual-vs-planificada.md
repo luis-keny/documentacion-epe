@@ -1,6 +1,20 @@
 # Auditoría de la base programada frente al esquema planificado
 
-## Dictamen vigente: cumplimiento de la aplicación
+## Estado vigente: schema actualizado por cumplimiento
+
+**27/10/2026.** Se aplican al SQL de revisión los ajustes funcionales FC01–FC13; FC14 sigue diferido por acuerdo. Los [diccionarios por vista](01_reporte_especifico.md), [diagramas](02_tablas_y_relaciones.md) y [SQL total](03_schema_total.sql) se regeneran desde el mismo modelo. El [resumen actual](01_reporte_especifico.md#schema-actualizado-tras-la-auditoría-de-cumplimiento) detalla el contrato JSONB, columnas modificadas y trabajo restante.
+
+Se mantienen 66 tablas (19 actuales ampliadas y 47 propuestas), 137 FK y seis vistas. Se conservan 173 nombres de columnas legacy incluidas, pero 35 definiciones actuales cambian y se agregan 73 columnas a tablas actuales. No se presenta esto como una migración compatible sin backfill/revisión de datos.
+
+**Incorporado:** maestros con texto/decimales y datos pendientes; precio de participación; examen y contrato por etapas; transporte BORRADOR/CONFIRMADO; reservas con hora; flete por entrega; Calidad/cosecha/Industria y logística en JSONB; recepción reconocida por proveedor; identidad histórica de liquidación principal/vinculada; factura con ajustes; varios requerimientos y facturas según respuestas explícitas. La FK que obligaba a liquidar mediante `proveedor_x_persona` se sustituye por persona directa y validación de titular/vínculo. Los diagramas reflejan esa relación y las cardinalidades nuevas.
+
+**Verificación ejecutada:** instalación del SQL en PGlite con btree_gist y **44 comprobaciones correctas**, incluidas altas por etapas, JSON recuperable, reconocidos, principales, múltiples documentos, descuentos, sobrepagos/cobros, adelantos y viajes consecutivos/solapados. Resultado/hash: `.validation/resultado_revision.json`. Se repitió también el inventario estático y el contraste de 10 ajustes con las fuentes del prototipo.
+
+**Límites:** no se cambian entidades/DTO, migraciones TypeORM, web, prototipo ni una base desplegada. Los permisos, validación completa del contenido JSON, emisión documental, sumas restantes y cierre completo deben implementarse en servicios; no se verificó concurrencia de varias conexiones ni UI de extremo a extremo. Las diferencias del prototipo frente a respuestas explícitas pasan a ser trabajo de alineación de aplicación, no un bloqueo para preparar el SQL.
+
+Los apartados siguientes conservan las auditorías anteriores y su estado en ese momento; este apartado y los diccionarios regenerados prevalecen sobre sus afirmaciones anteriores de que el SQL no se había modificado.
+
+## Auditoría anterior: cumplimiento de la aplicación
 
 **27/10/2026.** Nueva pasada solicitada con prioridad explícita en permitir los flujos del prototipo, sin condicionar el avance a calidad arquitectónica, normalización o refactorización. El detalle vigente está en [auditoría funcional, matriz y cambios mínimos FC01–FC14](01_reporte_especifico.md#auditoría-de-cumplimiento-de-la-aplicación). Los apartados históricos siguientes no convierten mejoras de diseño en requisitos.
 
