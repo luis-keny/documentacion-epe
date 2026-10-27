@@ -5,6 +5,7 @@ Este repositorio contiene la documentación discutida y el SQL de revisión. El 
 ## Documentos vigentes
 
 - [Reporte por vista](agro-schema/01_reporte_especifico.md): 62 fichas con navegación, función de cada tabla, atributos, relaciones y decisiones D01–D15.
+- [Validación de negocio y 30 preguntas pendientes](agro-schema/01_reporte_especifico.md#validación-de-negocio-y-cuestionario-pendiente): revisión adicional del 27/10/2026; incluye contradicciones entre documentos y código del prototipo y prioridades antes de implementar.
 - [Esquema general y relaciones Mermaid por vista](agro-schema/02_tablas_y_relaciones.md): mapa de las 66 tablas, flujo funcional y recortes por vista.
 - [SQL total de revisión](agro-schema/03_schema_total.sql): instalación nueva en el esquema PostgreSQL `agro`; no es una migración sobre la base existente.
 - [Auditoría del backend frente al modelo previsto](agro-schema/auditoria-bd-actual-vs-planificada.md): comparación, decisiones confirmadas y pendientes. Se incorpora desde la documentación del backend para que también quede en este historial.

@@ -1,5 +1,7 @@
 # Auditoría de la base programada frente al esquema planificado
 
+**Revisión adicional:** consulta la validación de negocio al final de este documento y el cuestionario P01–P30 del [reporte específico](01_reporte_especifico.md#validación-de-negocio-y-cuestionario-pendiente).
+
 **Modelo documentado actualizado para revisión manual — 27/10/2026:** el [reporte específico](01_reporte_especifico.md), el [modelo general Mermaid](02_tablas_y_relaciones.md) y el [SQL de revisión](03_schema_total.sql) incorporan el retiro de `campania_x_proveedores.finca_id` y la exclusión temporal de `archivo`. Se incluyen **19 tablas actuales y 173 columnas actuales**, con **63 atributos adicionales** y **47 tablas propuestas**: **66 tablas, 137 FK y seis vistas**. Cuatro tablas propuestas de origen/calidad identifican directamente la finca. Las 28 referencias documentales quedan opcionales, sin FK y pendientes de integración. No se modificaron entidades, migraciones ni la base desplegada.
 
 Las referencias de esta auditoría al **plan anterior de 64 tablas**, sus claves genéricas o sus omisiones describen el antecedente auditado. Las **19 comprobaciones** del SQL revisado se documentan al final del reporte específico; las pruebas antiguas se conservan como historial. El inventario de 20 tablas, 184 columnas y 23 FK sigue describiendo el código auditado; el objetivo incorpora las exclusiones aprobadas.
@@ -1028,3 +1030,10 @@ En la pasada anterior, el SQL objetivo con nombres actualizados se instaló y pa
 6. **Permitir el cierre de campaña al completar los pendientes:** conservar siempre la historia de los registros.
 
 **Decisión inmediata:** elegir el primer módulo a completar. Este documento explica qué adaptar; no obliga a reconstruir toda tu base ni indica que debas crear de golpe las 64 tablas del plan.
+## Validación adicional de negocio — 27/10/2026
+
+Se preservaron los avances locales antes de revisar: backend `e03a2a0`, web `b76f8e3` y documentación/prototipo `3d8b5ac`. Esta pasada contrasta el SQL objetivo con los documentos y tipos/reglas locales del prototipo; no repite la auditoría completa de metadatos ni verifica una base desplegada.
+
+El [reporte específico](01_reporte_especifico.md#validación-de-negocio-y-cuestionario-pendiente) contiene H01–H10 y P01–P30. Destacan la doble participación del proveedor, la autoridad de los dos modelos de transporte, la diferencia entre compra sobre recepción documentada y compra sobre kilos cargados del código más reciente, las monedas ausentes en acuerdos/liquidaciones, los ajustes de facturación no representables y el detalle faltante de avances/recepción. Las decisiones previas aprobadas se conservan; no se convirtió ninguna pregunta en un cambio de esquema.
+
+La verificación estática nueva (`.validation/validar_inventario_negocio.mjs`) confirma 66 tablas, 137 FK y 6 vistas, sin referencias a columnas inexistentes. El resultado incluye el hash del SQL. No se logró repetir PGlite: falta su dependencia local y falló la resolución de `registry.npmjs.org`. Las pruebas anteriores mencionadas debajo siguen siendo evidencia histórica. No se modificaron SQL, entidades, DTO, migraciones ni bases.

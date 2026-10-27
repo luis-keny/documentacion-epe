@@ -1,5 +1,7 @@
 # Base de datos por vista — modelo revisado sobre el backend actual
 
+**Revisión adicional del 27/10/2026:** ver [validación de negocio y cuestionario pendiente](#validación-de-negocio-y-cuestionario-pendiente). Contrasta los archivos locales del prototipo con el SQL y distingue reglas documentadas de comportamientos posteriores del código. Las preguntas no constituyen decisiones aprobadas.
+
 Este documento incorpora la [auditoría](auditoria-bd-actual-vs-planificada.md) y prepara el modelo para tu revisión manual contra las vistas. **No se cambiaron entidades TypeORM, migraciones ni una base desplegada.** El [SQL de revisión](03_schema_total.sql) crea una instalación nueva separada en `agro`; no es una actualización sobre tu base existente.
 
 **Base revisada al 27/10/2026:** se incluyen 19 de las 20 tablas actuales; `archivo` queda fuera del esquema por decisión de negocio. Se conservan **173 columnas actuales**: se excluyen las diez de archivo y se retira `campania_x_proveedores.finca_id`, su FK y sus tres índices asociados. El SQL propone unicidad por campaña/proveedor; las validaciones de entrevista se adaptan para comprobar la propiedad de la finca sin exigirla en la participación. El backend real sigue sin cambios.
@@ -5347,3 +5349,76 @@ erDiagram
 | El análisis puede registrarse por participación y finca antes de existir cosecha, con cosecha_id nulo | correcto |
 
 **Antes de aplicar cambios a tu base:** revisar vista por vista los atributos marcados AGREGAR y las tablas nuevas; decidir cuáles se implementan primero; preparar migraciones TypeORM aditivas con backfill validado. Este archivo SQL total es una referencia de instalación nueva, no una migración de tus registros.
+
+## Validación de negocio y cuestionario pendiente
+
+Fecha: **27/10/2026, America/Lima**. Referencias locales preservadas antes de revisar: backend `e03a2a0`, web `b76f8e3` y documentación/prototipo `3d8b5ac`. No se modificaron el SQL, las entidades, los DTO ni las migraciones.
+
+### Resultado de la revisión
+
+**La propuesta sirve como base de diseño, pero aún no está lista para convertirse en migraciones definitivas.** La cadena cliente–contrato–entrega–coordinación–carga–guía–recepción–liquidación está representada y permite conservar el origen de cada operación. Separar compra, venta y transporte, admitir varios proveedores por carga y registrar movimientos separados de los documentos son decisiones coherentes con los flujos revisados.
+
+Hay diferencias de negocio que afectan tablas, atributos y cardinalidades; no se resuelven agregando FK. El prototipo guarda su negocio principalmente en un snapshot JSON de Supabase (`agro_prototype_state`); sus migraciones no son el modelo relacional final. La web avanzada también contiene almacenes locales: una vista funcional no acredita persistencia en el backend.
+
+Se respetan los acuerdos ya registrados: conservar `campania_x_proveedores`, identificar las fincas mediante entrevistas y orígenes, una variedad por finca, permitir análisis previos a cosecha y diferir la gestión documental. No se vuelven a presentar estos acuerdos como preguntas abiertas.
+
+| Hallazgo | Evidencia local | Consecuencia para el diseño |
+|---|---|---|
+| H01. Dos participaciones para el mismo proveedor/campaña | `campania_x_proveedores` y `participacion_proveedor_campana` tienen ambas unicidad por campaña/proveedor; el vínculo opcional entre ellas solo referencia el ID. Entrevistas y acuerdos usan la primera; cargas y cobertura usan la segunda. | Pueden divergir proveedor, campaña, kilos y estado. Definir una autoridad; si se conservan ambas, documentar funciones diferentes y garantizar su correspondencia. D01 sigue abierto. |
+| H02. Asignación y transporte duplicados | El SQL conserva `trazabilidad_transporte`, `chofer_vehiculo_externo` y `detalle_trazabilidad`, y añade `coordinacion_entrega`. | La exclusión de choferes por fechas protege la asignación antigua; por sí sola no evita solapamientos insertados en la coordinación nueva. Definir autoridad y granularidad temporal. D05–D06. |
+| H03. Compra: documentación y código discrepan | `FLUJOS-LIQUIDACION.md` describe kilos reconocidos y ajustes; `src/finance-flow.ts:validateLiquidation` exige kilos cargados, PEN y cero deducciones/adicionales; `provider-settlement-payment.ts` registra esa regla. | Decidir qué comportamiento está aprobado antes de fijar la base, moneda y restricciones. No asumir que la última implementación es una aprobación de negocio. |
+| H04. Datos económicos incompletos | `acuerdo_compra` y `acuerdo_transporte` no tienen moneda. `liquidacion_proveedor` solo guarda importe, sin kilos liquidados, precio aplicado, moneda, vencimiento o tipo de cambio. `v_control_uit` suma ese importe directamente. | Falta reconstruir el cálculo y distinguir base bruta/neto. Si hay varias monedas, el acumulado anual no sería comparable sin conversión histórica documentada. No se valida normativa tributaria en esta revisión. |
+| H05. Facturas sin ajustes representables | `finance-model.ts` calcula kilos × precio − descuento + cargos; `factura_venta` obliga importe = kilos × precio y carece de esos ajustes. | Una factura con ajustes del prototipo no puede guardarse con su desglose en el SQL actual. También falta decidir serie, emisor y ámbito de unicidad del número. |
+| H06. Cosecha con solo cabecera | `QualityOperation.organization`, `.advances` y `.closure` en `src/store.tsx`, y `src/export-harvest.tsx`, guardan preparación, confirmaciones y avances por finca/proveedor. `cosecha` no representa ese detalle. | Se pierden fechas, kilos, jabas y responsables de cada avance, además de confirmaciones de preparación. Definir registros propios o una representación explícita, sin forzar una tabla por pantalla. |
+| H07. Recepción solo global | `LogisticsDelivery.purchases[].recognizedQuantity` conserva pesos reconocidos por proveedor; `recepcion_planta` solo guarda el peso del camión. | Falta conservar el desglose y sus diferencias respecto de los kilos cargados. La decisión de pagar sobre carga no elimina necesariamente la necesidad de registrar recepción por proveedor. |
+| H08. Cardinalidades todavía por confirmar | Una coordinación/carga y una factura por entrega/carga; una liquidación por carga/proveedor; un acuerdo por campaña/transportista. Guías pueden ser varias. | Entregas parciales, distintas variedades/precios, refacturación o renegociación podrían exigir otro detalle o historial. Confirmar casos reales antes de cambiar unicidades. D14–D15. |
+| H09. No basta añadir campos opcionales a los legacy | Examen mantiene resultado y URL obligatorios; transportista mantiene RUC obligatorio; MTD de participación sigue obligatorio además de su historial por finca; documentos/teléfonos/hectáreas conservan tipos actuales. | Los borradores y datos incompletos del prototipo requieren reglas de obligatoriedad por etapa y migraciones explícitas. No rellenar con cero, resultado supuesto o URL ficticia para satisfacer un NOT NULL. |
+| H10. Integridad entre procesos pendiente | Hay FK individuales para finca, participación y campaña; las validaciones de propiedad por trigger solo cubren entrevistas. El SQL declara expresamente pendientes los procesos nuevos. | Falta validar orígenes, fruta/variedad, campaña del transportista, suma de kilos, adelantos, sobrepagos, bloqueo tras emisión/cierre y concurrencia. Definir qué se garantiza en BD y qué mediante servicios transaccionales. |
+
+**Comprobación ejecutada en esta revisión:** `.validation/validar_inventario_negocio.mjs` confirmó estáticamente 66 tablas, 137 declaraciones de FK y 6 vistas; todas las columnas citadas en esas FK están declaradas. Resultado y hash del SQL en `.validation/resultado_inventario_negocio.json`. Esta comprobación no ejecuta SQL ni prueba unicidades, triggers o flujos financieros. Las 19 comprobaciones PGlite anteriores son evidencia histórica: no pudieron repetirse porque PGlite no estaba instalado y la resolución de `registry.npmjs.org` falló. No se inspeccionó una base desplegada ni se ejecutaron migraciones.
+
+### Preguntas para cerrar el modelo
+
+Responder primero **P01–P15**, porque cambian la estructura y los cálculos principales. Las recomendaciones son propuestas para discutir; no sustituyen tus respuestas ni cambian las decisiones D01–D15.
+
+| ID | Pregunta | Qué permite definir |
+|---|---|---|
+| P01 | Cuando documento, prototipo y web difieren, ¿cuál representa el negocio aprobado y quién valida las excepciones? En particular, ¿está aprobado el cambio de compra a kilos cargados, PEN y sin ajustes? | Fuente de verdad funcional y resolución de H03. |
+| P02 | Conservando `campania_x_proveedores`, ¿hay una función de negocio diferente que justifique `participacion_proveedor_campana`, o consolidamos sus atributos y dependencias en la tabla existente? Recomiendo una sola participación editable. | D01; evita dos fuentes de kilos/estado. |
+| P03 | ¿El sistema atenderá a una sola agroexportadora? Dentro de ella, ¿solo puede haber una campaña sin terminar por fruta, incluso si cambian temporada, zona o cliente? | Aislamiento empresarial y unicidad de campaña activa. |
+| P04 | ¿Un cliente tiene una sola participación por campaña con varios contratos, o puede registrar varios requerimientos independientes? | D15; distingue requerimiento de vínculo cliente/campaña. |
+| P05 | ¿Una entrega se cumple siempre con un viaje y una carga, o puede dividirse entre fechas/camiones? Si sobra o falta fruta, ¿se reprograma el saldo o se cierra con diferencia autorizada? | D14; cardinalidad entrega–viaje–carga y saldo de kilos. |
+| P06 | ¿La coordinación será el registro principal del viaje y las tablas actuales quedarán como historial, o deben seguir operando? ¿Un chofer puede hacer varios viajes el mismo día? | D05; transición del modelo y uso de horas en reservas. |
+| P07 | ¿Se permite vincular un transportista antes de completar su acuerdo? ¿Qué datos mínimos y aprobaciones habilitan asignarle un viaje? | D06; vínculo, borrador y condiciones comerciales. |
+| P08 | ¿La compra se paga sobre kilos cargados/cosechados o reconocidos en planta? ¿Quién asume merma, descarte y diferencia de balanza? | Base de liquidación y responsables; resuelve H03. |
+| P09 | ¿Compra y transporte operarán exclusivamente en PEN o admitirán otras monedas? Para ventas/gastos en otra moneda, ¿qué fecha, fuente y responsable fijan la conversión? | Moneda explícita por acuerdo/documento y conversión histórica. |
+| P10 | ¿El precio de compra es único por proveedor/campaña o cambia por variedad, finca, fecha o calidad? ¿Una carga puede incluir varios precios para el mismo proveedor? | Detalle/vigencia del acuerdo y líneas de liquidación; D10. |
+| P11 | En un camión compartido, ¿se exige peso reconocido por proveedor y finca o solo por proveedor? ¿Cómo se asignan diferencias si planta solo entrega un peso total y quién aprueba el reparto? | Desglose de recepción; nunca prorratear sin regla aprobada. |
+| P12 | ¿El monto del acuerdo de transporte es un tope total de campaña, una tarifa por viaje o una estimación? ¿Cuándo se fija el flete de la carga y qué autoriza excederlo? | Acuerdo frente a flete reservado/liquidado e historial de cambios. |
+| P13 | ¿Se permiten adelantos solo al transportista o también a proveedores? ¿Cómo se aplican entre cargas y cómo se devuelve o compensa un saldo sobrante? | Adelantos reales, aplicaciones y devoluciones sin doble descuento. |
+| P14 | ¿Una carga siempre produce una sola factura o habrá facturas parciales, agrupadas, anuladas o corregidas? ¿Se admiten descuentos, cargos o impuestos y cómo se documentan? | Cardinalidad, líneas, ajustes y conservación del documento emitido. |
+| P15 | ¿La persona de una liquidación puede ser el proveedor principal o un tercero autorizado? ¿Qué evidencia permite asignarla y cómo debe acumularse el control anual entre campañas y proveedores? | Titularidad, identidad histórica y vínculo proveedor/persona. El alcance tributario debe confirmarse con el responsable contable. |
+
+| ID | Pregunta | Qué permite definir |
+|---|---|---|
+| P16 | ¿Agregar campaña a Calidad es una habilitación manual persistente, por canal Industria/Exportación, o solo una forma de filtrar campañas disponibles? | D07; persistencia y autorización del alta en Calidad. |
+| P17 | ¿Qué análisis y qué medición MTD habilitan cosechar: los últimos, los vigentes o una aprobación explícita? ¿Cuánto duran y quién puede autorizar una excepción al bloqueo? | Vigencia, trazabilidad de la decisión y relación análisis–carga. |
+| P18 | ¿Una muestra/análisis puede cubrir varias fincas o cada resultado pertenece exclusivamente a una finca? ¿Un rechazo y su reevaluación deben conservarse como registros distintos? | Granularidad de muestreo y conservación de resultados. |
+| P19 | Para preparar/cerrar cosecha, ¿deben persistirse jefe de cuadrilla, confirmaciones, capacitación y cada avance por proveedor/finca? ¿Se permiten correcciones y varios avances el mismo día? | Detalle de cosecha y auditoría; no guardar solo el total. |
+| P20 | Si participa un acopiador, ¿se exige conocer al productor y finca de origen de toda su fruta, o puede operar sin finca propia? ¿Puede una persona actuar en ambos roles en una campaña? | Origen real, rol comercial y compatibilidad con la participación única. |
+| P21 | ¿Habrá uno o varios certificados por campaña, norma o certificadora? ¿La cobertura y el consumo de kilos se controlan por proveedor, finca, variedad o guía, y cómo se reparten las ampliaciones? | D09; certificados y cupos sin consumo duplicado. |
+| P22 | ¿Un examen se crea pendiente y se completa después? ¿Su vigencia es global del proveedor o específica de campaña/finca, y qué significa positivo/negativo para aprobarlo? | D12; nulabilidad, estados y reutilización de resultados. |
+| P23 | ¿Los destinos serán plantas reutilizables del cliente o datos escritos en cada entrega? ¿Una guía puede reunir varios puntos de partida y habrá guías separadas para fruta orgánica/convencional o por norma? | D08; destinos, orígenes y partición de guías. |
+| P24 | ¿Se necesitan hectáreas fraccionarias, documentos con ceros iniciales/ letras y teléfonos internacionales? ¿Qué campos de ubicación y SENASA son obligatorios al registrar y cuáles antes de operar? | Tipos y obligatoriedad por etapa; migración de datos legacy. |
+| P25 | ¿Qué pendientes impiden cerrar una campaña y quién puede aprobar diferencias? ¿Se permite reabrirla o registrar ajustes posteriores al cierre? | Estados, bloqueo e historial de cierre/reapertura. |
+| P26 | Tras emitir una guía/factura, registrar un pago o liquidar una carga, ¿qué se puede corregir y quién lo autoriza? ¿Las anulaciones conservan el registro original y un motivo? | Auditoría y reversión; evita sobrescribir historia económica. |
+| P27 | Además de Administrador y Chofer, ¿qué funciones tendrán Calidad, Logística, Tesorería y Contabilidad? ¿El chofer solo informa recepción y peso o también confirma descarte/cierre? | Roles, permisos por acción y responsables de cada dato. |
+| P28 | ¿El chofer debe trabajar sin internet y sincronizar después? Si dos personas editan la misma carga o registran pagos a la vez, ¿qué política de conflicto espera el negocio? | Idempotencia, control de versiones y transacciones; no exige replicar el snapshot del prototipo. |
+| P29 | ¿Qué bases y datos deben conservarse: desarrollo, demostración o producción? ¿Hay participaciones repetidas, viajes, certificados o archivos que deban migrarse y reconciliarse manualmente? | Plan de migración, backfill, duplicados y reversibilidad. |
+| P30 | ¿Qué flujo debe quedar completo primero y con qué casos reales se aceptará? Propongo validar una entrega con dos proveedores y varias fincas, desde programación hasta cobro/pago y cierre, incluyendo un rechazo y una diferencia de peso. | Alcance de implementación y criterios de aceptación verificables. |
+
+La gestión de archivos sigue diferida por el acuerdo D13. Al retomar esa etapa se decidirán almacenamiento y relaciones; aquí solo se señala qué procesos necesitan evidencia y se evita tratar los IDs reservados como documentos reales.
+
+### Siguiente paso tras las respuestas
+
+Actualizar las decisiones existentes, retirar duplicidades aprobadas, completar los detalles de cosecha/recepción/documentos económicos y revisar las restricciones de extremo a extremo. Después preparar migraciones TypeORM con conservación de históricos y pruebas transaccionales de kilos, pagos y cierres. No aplicar `03_schema_total.sql` sobre la base existente.

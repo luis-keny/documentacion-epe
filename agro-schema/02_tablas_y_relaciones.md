@@ -1,5 +1,7 @@
 # Tablas y relaciones por vista — modelo revisado
 
+**Revisión adicional:** consulta la validación de negocio al final de este documento y el cuestionario P01–P30 del [reporte específico](01_reporte_especifico.md#validación-de-negocio-y-cuestionario-pendiente).
+
 [Diccionario con atributos actuales y adicionales](01_reporte_especifico.md) · [SQL de revisión](03_schema_total.sql). Se incluyen 19 tablas actuales y 47 propuestas: 66 en total. archivo queda fuera del esquema, con sus relaciones pendientes. No se modificó la base desplegada.
 
 Los nombres de las tablas actuales coinciden con las entidades TypeORM. Este documento no incluye atributos. Las tablas propuestas complementan el flujo; no sustituyen por nombre a las tablas actuales de transporte.
@@ -1747,3 +1749,6 @@ erDiagram
 **D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
 
 **Función de las tablas:** consultar la ficha V62 del [reporte específico](01_reporte_especifico.md); este documento conserva nombres, relaciones y decisiones, sin repetir atributos.
+## Estado de validación de negocio — 27/10/2026
+
+Este mapa conserva la propuesta de 66 tablas para revisión. No implica aprobación definitiva de sus duplicidades ni de todas sus cardinalidades. La [validación adicional y sus 30 preguntas](01_reporte_especifico.md#validación-de-negocio-y-cuestionario-pendiente) identifican decisiones que pueden modificar participaciones, viajes, cosecha, recepción y documentos económicos. No se alteran relaciones hasta resolverlas. La comprobación nueva es estática; las comprobaciones PGlite citadas en estos documentos son anteriores.

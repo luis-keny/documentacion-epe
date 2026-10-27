@@ -1,0 +1,85 @@
+{
+  "metodo": "Inspección estática de declaraciones SQL; no valida ejecución, restricciones ni transacciones",
+  "schema_sha256": "8008d1071761cb9621e6af1a2c832919dc7ee7fe42cc407f3dbea3128b043de5",
+  "tablas": 66,
+  "claves_foraneas": 137,
+  "vistas": [
+    "v_saldo_proveedor",
+    "v_saldo_factura",
+    "v_saldo_transporte",
+    "v_control_uit",
+    "v_estado_despacho",
+    "v_programa_semanal"
+  ],
+  "errores_referencias": [],
+  "columnas_financieras": {
+    "acuerdo_compra": [
+      "acuerdo_compra_id",
+      "cxp_id",
+      "fruta_derivada_id",
+      "precio_kg",
+      "kilos_acordados",
+      "fecha_inicio",
+      "fecha_fin",
+      "estado",
+      "created_at",
+      "updated_at"
+    ],
+    "acuerdo_transporte": [
+      "acuerdo_transporte_id",
+      "campania_id",
+      "id_empresa_transporte_externo",
+      "cotizacion_transporte_id",
+      "tipo_pago",
+      "monto_acordado",
+      "fecha_acuerdo",
+      "fecha_pago_final",
+      "archivo_id",
+      "created_at",
+      "updated_at"
+    ],
+    "liquidacion_proveedor": [
+      "liquidacion_proveedor_id",
+      "carga_id",
+      "proveedor_id",
+      "persona_liquidacion_id",
+      "numero",
+      "fecha",
+      "importe_compra",
+      "valor_uit_aplicado",
+      "registrado_por_usuario_id",
+      "archivo_id",
+      "observaciones",
+      "created_at",
+      "updated_at"
+    ],
+    "liquidacion_transporte": [
+      "liquidacion_transporte_id",
+      "carga_id",
+      "numero",
+      "fecha",
+      "flete",
+      "registrado_por_usuario_id",
+      "archivo_id",
+      "created_at",
+      "updated_at"
+    ],
+    "factura_venta": [
+      "factura_venta_id",
+      "carga_id",
+      "referencia_preparacion",
+      "fecha_preparacion",
+      "estado",
+      "numero_factura",
+      "fecha_emision",
+      "fecha_vencimiento",
+      "kilos_facturados",
+      "precio_kg_aplicado",
+      "moneda",
+      "importe_venta",
+      "archivo_id",
+      "created_at",
+      "updated_at"
+    ]
+  }
+}
