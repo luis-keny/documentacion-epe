@@ -1,0 +1,636 @@
+Project agro_simplificado {
+  database_type: 'PostgreSQL'
+  Note: 'Modelo lógico simplificado para explicar el prototipo. No sustituye el SQL completo ni implementa por sí mismo sus validaciones.'
+}
+
+Table personas {
+  id bigint [pk, increment]
+  tipo_documento varchar(20) [not null]
+  numero_documento varchar(30) [not null]
+  nombres varchar(120) [not null]
+  apellidos varchar(120) [not null]
+  telefono varchar(30)
+  correo varchar(180)
+  indexes {
+    (tipo_documento,numero_documento) [unique]
+  }
+}
+
+Table roles {
+  id bigint [pk, increment]
+  nombre varchar(40) [not null, unique]
+}
+
+Table usuarios {
+  id bigint [pk, increment]
+  persona_id bigint [not null, unique]
+  rol_id bigint [not null]
+  usuario varchar(80) [not null, unique]
+  password_hash text [not null]
+  activo boolean [not null]
+  Note: 'Un rol por usuario en este modelo compacto. Ampliar a usuario_rol si se requieren roles simultáneos.'
+}
+
+Table archivos {
+  id bigint [pk, increment]
+  nombre varchar(255) [not null]
+  ruta_storage text [not null, unique]
+  tipo_mime varchar(100) [not null]
+  subido_por bigint
+  fecha_subida timestamptz [not null]
+}
+
+Table frutas {
+  id bigint [pk, increment]
+  nombre varchar(80) [not null, unique]
+}
+
+Table variedades {
+  id bigint [pk, increment]
+  fruta_id bigint [not null]
+  nombre varchar(100) [not null]
+  indexes {
+    (fruta_id,nombre) [unique]
+  }
+}
+
+Table campanias {
+  id bigint [pk, increment]
+  nombre varchar(120) [not null]
+  temporada varchar(30) [not null]
+  fecha_inicio date [not null]
+  fecha_fin date [not null]
+  estado varchar(25) [not null]
+  responsable_id bigint
+}
+
+Table proveedores {
+  id bigint [pk, increment]
+  persona_principal_id bigint [not null, unique]
+  codigo varchar(40) [not null, unique]
+  tipo varchar(20) [not null]
+  zona varchar(120)
+  activo boolean [not null]
+}
+
+Table personas_proveedor {
+  id bigint [pk, increment]
+  proveedor_id bigint [not null]
+  persona_id bigint [not null]
+  vinculo varchar(60) [not null]
+  activo boolean [not null]
+  indexes {
+    (proveedor_id,persona_id) [unique]
+  }
+  Note: 'Incluye al principal con vínculo PRINCIPAL y a cada persona vinculada. No crea usuarios ni proveedores duplicados. Una misma persona conserva su identidad única aunque tenga varios vínculos.'
+}
+
+Table fincas {
+  id bigint [pk, increment]
+  proveedor_id bigint [not null]
+  nombre varchar(150) [not null]
+  codigo_produccion varchar(60)
+  departamento varchar(80) [not null]
+  provincia varchar(80) [not null]
+  distrito varchar(80) [not null]
+  ubigeo varchar(6) [not null]
+  direccion text [not null]
+  latitud numeric(10,7)
+  longitud numeric(10,7)
+  hectareas numeric(12,4) [not null]
+  hectareas_cultivo numeric(12,4) [not null]
+  datos_agronomicos jsonb
+  Note: 'Ubigeo y coordenadas del lugar real de recojo. Datos agronómicos vigentes en JSON; si se requiere historial normalizado se debe ampliar.'
+}
+
+Table acuerdos_compra {
+  id bigint [pk, increment]
+  campania_id bigint [not null]
+  finca_id bigint [not null]
+  variedad_id bigint [not null]
+  tipo_fruta varchar(20) [not null]
+  precio_kg numeric(14,4) [not null]
+  kilos_acordados numeric(14,3) [not null]
+  fecha_inicio date [not null]
+  fecha_fin date [not null]
+  estado varchar(25) [not null]
+  Note: 'Participación en campaña y precio unificados por finca y variedad. PEN. ORGÁNICA o CONVENCIONAL. No modificar condiciones que ya se utilizaron en una liquidación.'
+}
+
+Table entrevistas {
+  id bigint [pk, increment]
+  acuerdo_compra_id bigint [not null]
+  codigo varchar(60) [not null, unique]
+  fecha date [not null]
+  resultado text
+  archivo_id bigint
+}
+
+Table examenes {
+  id bigint [pk, increment]
+  acuerdo_compra_id bigint [not null]
+  fecha date [not null]
+  tipo varchar(80) [not null]
+  resultado varchar(150) [not null]
+  archivo_id bigint
+}
+
+Table normas {
+  id bigint [pk, increment]
+  codigo varchar(40) [not null, unique]
+  nombre varchar(180) [not null]
+}
+
+Table certificaciones {
+  id bigint [pk, increment]
+  campania_id bigint
+  norma_id bigint [not null]
+  codigo varchar(80) [not null]
+  fecha_emision date [not null]
+  fecha_vencimiento date [not null]
+  archivo_id bigint
+  Note: 'El certificado puede ser propio o de campaña; certificacion_proveedor identifica a las personas comerciales cubiertas. Se omite el subflujo de pagos/ampliaciones del certificado en este diagrama compacto.'
+}
+
+Table certificacion_proveedor {
+  id bigint [pk, increment]
+  certificacion_id bigint [not null]
+  proveedor_id bigint [not null]
+  kilos_autorizados numeric(14,3)
+  indexes {
+    (certificacion_id,proveedor_id) [unique]
+  }
+}
+
+Table clientes {
+  id bigint [pk, increment]
+  razon_social varchar(180) [not null]
+  ruc varchar(11) [not null, unique]
+  telefono varchar(30)
+  correo varchar(180)
+}
+
+Table destinos_cliente {
+  id bigint [pk, increment]
+  cliente_id bigint [not null]
+  nombre varchar(150) [not null]
+  ubigeo varchar(6) [not null]
+  direccion text [not null]
+  codigo_establecimiento varchar(4) [not null]
+  latitud numeric(10,7)
+  longitud numeric(10,7)
+}
+
+Table contratos_venta {
+  id bigint [pk, increment]
+  campania_id bigint [not null]
+  cliente_id bigint [not null]
+  numero varchar(60) [not null, unique]
+  canal varchar(20) [not null]
+  fecha date [not null]
+  kilos_acordados numeric(14,3) [not null]
+  moneda varchar(3) [not null]
+  estado varchar(25) [not null]
+  condiciones_pago text
+  archivo_id bigint
+  Note: 'Requerimiento, negociación y contrato se representan como etapas del mismo registro mediante estado. Exportación requiere fruta orgánica.'
+}
+
+Table precios_venta {
+  id bigint [pk, increment]
+  contrato_id bigint [not null]
+  variedad_id bigint [not null]
+  precio_kg numeric(14,4) [not null]
+  indexes {
+    (contrato_id,variedad_id) [unique]
+  }
+  Note: 'Necesaria si un contrato tiene varias variedades con precios distintos. No es un detalle genérico.'
+}
+
+Table entregas_programadas {
+  id bigint [pk, increment]
+  contrato_id bigint [not null]
+  destino_id bigint [not null]
+  fecha date [not null]
+  kilos_programados numeric(14,3) [not null]
+  estado varchar(25) [not null]
+  Note: 'Una entrega por carga en esta versión. La variedad y los proveedores efectivos se conocen desde proveedores_carga.'
+}
+
+Table empresas_transporte {
+  id bigint [pk, increment]
+  razon_social varchar(180) [not null]
+  ruc varchar(11) [not null, unique]
+  registro_mtc varchar(80)
+  telefono varchar(30)
+}
+
+Table vehiculos {
+  id bigint [pk, increment]
+  empresa_id bigint [not null]
+  placa varchar(15) [not null, unique]
+  capacidad_kg numeric(14,3) [not null]
+  activo boolean [not null]
+}
+
+Table choferes {
+  id bigint [pk, increment]
+  empresa_id bigint [not null]
+  persona_id bigint [not null, unique]
+  usuario_id bigint [unique]
+  licencia varchar(40) [not null]
+  activo boolean [not null]
+}
+
+Table acuerdos_transporte {
+  id bigint [pk, increment]
+  campania_id bigint [not null]
+  empresa_id bigint [not null]
+  tipo_pago varchar(20) [not null]
+  monto_acordado numeric(14,2) [not null]
+  fecha_acuerdo date [not null]
+  fecha_pago_final date
+  archivo_id bigint
+}
+
+Table cosechas {
+  id bigint [pk, increment]
+  acuerdo_compra_id bigint [not null]
+  codigo_lote varchar(60) [not null, unique]
+  fecha date [not null]
+  kilos_finales numeric(14,3)
+  estado varchar(25) [not null]
+  evidencia_id bigint
+  Note: 'Unifica operación y lote: cada fila identifica la cosecha de un acuerdo concreto. El modelo compacto solo conserva el peso final, no avances ni análisis por lote.'
+}
+
+Table cargas {
+  id bigint [pk, increment]
+  entrega_id bigint [not null, unique]
+  acuerdo_transporte_id bigint [not null]
+  vehiculo_id bigint [not null]
+  chofer_id bigint [not null]
+  codigo varchar(80) [not null, unique]
+  fecha_carga date [not null]
+  inicio_programado timestamptz
+  fin_programado timestamptz
+  estado varchar(25) [not null]
+  viaticos_movilidad numeric(14,2) [not null]
+  viaticos_insumos numeric(14,2) [not null]
+  guia_salida_id bigint
+  guia_salida_registrada_at timestamptz
+  Note: 'Unifica coordinación, carga y guía de salida. La campaña y empresa se obtienen del acuerdo. No guarda flete: se ingresa al liquidar. PEN. Los viáticos son el presupuesto de origen.'
+}
+
+Table proveedores_carga {
+  id bigint [pk, increment]
+  carga_id bigint [not null]
+  cosecha_id bigint [not null]
+  kilos_cargados numeric(14,3) [not null]
+  precio_compra_kg_aplicado numeric(14,4)
+  jabas_cargadas integer [not null]
+  jabas_vacias integer [not null]
+  bines_cargados integer [not null]
+  bines_vacios integer [not null]
+  mallas_cargadas integer [not null]
+  mallas_vacias integer [not null]
+  indexes {
+    (carga_id,cosecha_id) [unique]
+  }
+  Note: 'Relación indispensable: una carga reúne varias cosechas/proveedores y una cosecha puede distribuirse entre cargas. El precio aplicado es una captura del acuerdo al liquidar, no un segundo precio editable.'
+}
+
+Table guias_remision {
+  id bigint [pk, increment]
+  carga_id bigint [not null]
+  numero varchar(30) [not null, unique]
+  fecha_inicio_traslado date [not null]
+  fecha_entrega_transportista date
+  peso_bruto_kg numeric(14,3) [not null]
+  numero_bultos integer [not null]
+  finca_partida_id bigint [not null]
+  destino_id bigint [not null]
+  ubigeo_partida_snapshot varchar(6) [not null]
+  direccion_partida_snapshot text [not null]
+  establecimiento_partida_snapshot varchar(4) [not null]
+  ubigeo_llegada_snapshot varchar(6) [not null]
+  direccion_llegada_snapshot text [not null]
+  establecimiento_llegada_snapshot varchar(4) [not null]
+  ruc_transportista_snapshot varchar(11) [not null]
+  mtc_snapshot varchar(80)
+  placa_snapshot varchar(15) [not null]
+  conductor_documento_snapshot varchar(30) [not null]
+  conductor_nombre_snapshot varchar(180) [not null]
+  conductor_licencia_snapshot varchar(40) [not null]
+  archivo_id bigint
+  observaciones text
+  Note: 'Las direcciones, vehículo y conductor se conservan como capturas históricas al emitir. Todos los proveedores de la guía deben corresponder a esa carga y al mismo punto físico de partida.'
+}
+
+Table proveedores_guia {
+  id bigint [pk, increment]
+  guia_id bigint [not null]
+  proveedor_carga_id bigint [not null]
+  kilos_asignados numeric(14,3) [not null]
+  indexes {
+    (guia_id,proveedor_carga_id) [unique]
+  }
+  Note: 'Conserva los kilos de cada origen asignados a cada guía. Evita duplicar kilos cuando una carga genera varias guías.'
+}
+
+Table normas_guia {
+  id bigint [pk, increment]
+  guia_id bigint [not null]
+  norma_id bigint [not null]
+  indexes {
+    (guia_id,norma_id) [unique]
+  }
+}
+
+Table historial_chofer {
+  id bigint [pk, increment]
+  carga_id bigint [not null]
+  chofer_id bigint [not null]
+  estado varchar(25) [not null]
+  fecha_hora timestamptz [not null]
+  indexes {
+    (carga_id,estado) [unique]
+  }
+}
+
+Table recepciones_planta {
+  id bigint [pk, increment]
+  carga_id bigint [not null, unique]
+  chofer_id bigint [not null]
+  fecha_recepcion timestamptz [not null]
+  peso_planta_kg numeric(14,3) [not null]
+  descarte_kg numeric(14,3) [not null]
+  evidencia_descarte_id bigint
+  recepcion_confirmada_at timestamptz
+  descarte_confirmado_at timestamptz
+  jabas_devueltas integer
+  jabas_devolucion_at timestamptz
+  Note: 'Peso origen = suma de kilos cargados. Porcentaje de descarte = descarte_kg / peso origen * 100. Se calcula; no se guarda otra copia. Consolida el checklist de recepción, descarte y devolución.'
+}
+
+Table liquidaciones_proveedor {
+  id bigint [pk, increment]
+  carga_id bigint [not null]
+  proveedor_id bigint [not null]
+  persona_liquidacion_id bigint [not null]
+  numero varchar(40) [not null, unique]
+  fecha date [not null]
+  importe_compra numeric(14,2) [not null]
+  valor_uit_aplicado numeric(14,2) [not null]
+  registrado_por bigint [not null]
+  observaciones text
+  indexes {
+    (carga_id,proveedor_id) [unique]
+  }
+  Note: 'PEN. La carga sigue perteneciendo al proveedor principal. La persona del documento debe pertenecer a personas_proveedor. El acumulado anual se consulta por persona, sin transferir operaciones anteriores. El importe es la captura histórica de SUM(kilos cargados * precio aplicado) de ese proveedor, no un importe libre.'
+}
+
+Table pagos_proveedor {
+  id bigint [pk, increment]
+  liquidacion_id bigint [not null]
+  fecha date [not null]
+  monto numeric(14,2) [not null]
+  medio varchar(30) [not null]
+  referencia varchar(100) [not null]
+  comprobante_id bigint
+  indexes {
+    (liquidacion_id,referencia) [unique]
+  }
+}
+
+Table liquidaciones_transporte {
+  id bigint [pk, increment]
+  carga_id bigint [not null, unique]
+  numero varchar(40) [not null, unique]
+  fecha date [not null]
+  flete numeric(14,2) [not null]
+  registrado_por bigint [not null]
+  Note: 'PEN. Guardar una liquidación no registra un pago ni aplica adelantos. El flete se ingresa aquí y solo se puede editar mientras no tenga movimientos.'
+}
+
+Table gastos_transporte {
+  id bigint [pk, increment]
+  carga_id bigint [not null]
+  concepto varchar(150) [not null]
+  monto numeric(14,2) [not null]
+  origen varchar(20) [not null]
+  incluido_en_liquidacion boolean [not null]
+  Note: 'Los conceptos de viáticos se copian una sola vez como gastos al liquidar. Si se reemplazan por gastos reales no se suman nuevamente los viáticos de cargas. Las filas incluidas quedan protegidas con la liquidación.'
+}
+
+Table adelantos_transporte {
+  id bigint [pk, increment]
+  acuerdo_id bigint [not null]
+  fecha date [not null]
+  monto numeric(14,2) [not null]
+  referencia varchar(100) [not null]
+  comprobante_id bigint
+  indexes {
+    (acuerdo_id,referencia) [unique]
+  }
+  Note: 'Dinero realmente entregado a la empresa. Su comprobante se visualiza desde aquí. El tipo de pago del acuerdo no crea automáticamente un movimiento.'
+}
+
+Table aplicaciones_adelanto {
+  id bigint [pk, increment]
+  adelanto_id bigint [not null]
+  liquidacion_id bigint [not null]
+  fecha date [not null]
+  monto numeric(14,2) [not null]
+  Note: 'Consume parte de un adelanto ya entregado en una liquidación de carga. No constituye un segundo desembolso.'
+}
+
+Table pagos_transporte {
+  id bigint [pk, increment]
+  liquidacion_id bigint [not null]
+  fecha date [not null]
+  monto numeric(14,2) [not null]
+  medio varchar(30) [not null]
+  referencia varchar(100) [not null]
+  comprobante_id bigint
+  indexes {
+    (liquidacion_id,referencia) [unique]
+  }
+}
+
+Table facturas_venta {
+  id bigint [pk, increment]
+  carga_id bigint [not null, unique]
+  referencia_preparacion varchar(40) [not null, unique]
+  fecha_preparacion date [not null]
+  estado varchar(25) [not null]
+  numero_factura varchar(80) [unique]
+  fecha_emision date
+  fecha_vencimiento date
+  importe_venta numeric(14,2) [not null]
+  archivo_id bigint
+  Note: 'Unifica preparación de venta y factura emitida en un registro con estado. Una preparación pendiente no permite cobrar. Conserva el importe aprobado y la moneda proviene del contrato de la carga.'
+}
+
+Table cobros_venta {
+  id bigint [pk, increment]
+  factura_id bigint [not null]
+  fecha date [not null]
+  monto numeric(14,2) [not null]
+  medio varchar(30) [not null]
+  referencia varchar(100) [not null]
+  comprobante_id bigint
+  indexes {
+    (factura_id,referencia) [unique]
+  }
+}
+
+Ref: usuarios.persona_id > personas.id
+Ref: usuarios.rol_id > roles.id
+Ref: archivos.subido_por > usuarios.id
+Ref: variedades.fruta_id > frutas.id
+Ref: campanias.responsable_id > usuarios.id
+Ref: proveedores.persona_principal_id > personas.id
+Ref: personas_proveedor.proveedor_id > proveedores.id
+Ref: personas_proveedor.persona_id > personas.id
+Ref: fincas.proveedor_id > proveedores.id
+Ref: acuerdos_compra.campania_id > campanias.id
+Ref: acuerdos_compra.finca_id > fincas.id
+Ref: acuerdos_compra.variedad_id > variedades.id
+Ref: entrevistas.acuerdo_compra_id > acuerdos_compra.id
+Ref: entrevistas.archivo_id > archivos.id
+Ref: examenes.acuerdo_compra_id > acuerdos_compra.id
+Ref: examenes.archivo_id > archivos.id
+Ref: certificaciones.campania_id > campanias.id
+Ref: certificaciones.norma_id > normas.id
+Ref: certificaciones.archivo_id > archivos.id
+Ref: certificacion_proveedor.certificacion_id > certificaciones.id
+Ref: certificacion_proveedor.proveedor_id > proveedores.id
+Ref: destinos_cliente.cliente_id > clientes.id
+Ref: contratos_venta.campania_id > campanias.id
+Ref: contratos_venta.cliente_id > clientes.id
+Ref: contratos_venta.archivo_id > archivos.id
+Ref: precios_venta.contrato_id > contratos_venta.id
+Ref: precios_venta.variedad_id > variedades.id
+Ref: entregas_programadas.contrato_id > contratos_venta.id
+Ref: entregas_programadas.destino_id > destinos_cliente.id
+Ref: vehiculos.empresa_id > empresas_transporte.id
+Ref: choferes.empresa_id > empresas_transporte.id
+Ref: choferes.persona_id > personas.id
+Ref: choferes.usuario_id > usuarios.id
+Ref: acuerdos_transporte.campania_id > campanias.id
+Ref: acuerdos_transporte.empresa_id > empresas_transporte.id
+Ref: acuerdos_transporte.archivo_id > archivos.id
+Ref: cosechas.acuerdo_compra_id > acuerdos_compra.id
+Ref: cosechas.evidencia_id > archivos.id
+Ref: cargas.entrega_id > entregas_programadas.id
+Ref: cargas.acuerdo_transporte_id > acuerdos_transporte.id
+Ref: cargas.vehiculo_id > vehiculos.id
+Ref: cargas.chofer_id > choferes.id
+Ref: cargas.guia_salida_id > archivos.id
+Ref: proveedores_carga.carga_id > cargas.id
+Ref: proveedores_carga.cosecha_id > cosechas.id
+Ref: guias_remision.carga_id > cargas.id
+Ref: guias_remision.finca_partida_id > fincas.id
+Ref: guias_remision.destino_id > destinos_cliente.id
+Ref: guias_remision.archivo_id > archivos.id
+Ref: proveedores_guia.guia_id > guias_remision.id
+Ref: proveedores_guia.proveedor_carga_id > proveedores_carga.id
+Ref: normas_guia.guia_id > guias_remision.id
+Ref: normas_guia.norma_id > normas.id
+Ref: historial_chofer.carga_id > cargas.id
+Ref: historial_chofer.chofer_id > choferes.id
+Ref: recepciones_planta.carga_id > cargas.id
+Ref: recepciones_planta.chofer_id > choferes.id
+Ref: recepciones_planta.evidencia_descarte_id > archivos.id
+Ref: liquidaciones_proveedor.carga_id > cargas.id
+Ref: liquidaciones_proveedor.proveedor_id > proveedores.id
+Ref: liquidaciones_proveedor.registrado_por > usuarios.id
+Ref: pagos_proveedor.liquidacion_id > liquidaciones_proveedor.id
+Ref: pagos_proveedor.comprobante_id > archivos.id
+Ref: liquidaciones_transporte.carga_id > cargas.id
+Ref: liquidaciones_transporte.registrado_por > usuarios.id
+Ref: gastos_transporte.carga_id > cargas.id
+Ref: adelantos_transporte.acuerdo_id > acuerdos_transporte.id
+Ref: adelantos_transporte.comprobante_id > archivos.id
+Ref: aplicaciones_adelanto.adelanto_id > adelantos_transporte.id
+Ref: aplicaciones_adelanto.liquidacion_id > liquidaciones_transporte.id
+Ref: pagos_transporte.liquidacion_id > liquidaciones_transporte.id
+Ref: pagos_transporte.comprobante_id > archivos.id
+Ref: facturas_venta.carga_id > cargas.id
+Ref: facturas_venta.archivo_id > archivos.id
+Ref: cobros_venta.factura_id > facturas_venta.id
+Ref: cobros_venta.comprobante_id > archivos.id
+Ref: liquidaciones_proveedor.(proveedor_id, persona_liquidacion_id) > personas_proveedor.(proveedor_id, persona_id)
+
+TableGroup Identidad {
+  personas
+  roles
+  usuarios
+  archivos
+}
+
+TableGroup Campanias {
+  frutas
+  variedades
+  campanias
+}
+
+TableGroup Proveedores {
+  proveedores
+  personas_proveedor
+  fincas
+  acuerdos_compra
+}
+
+TableGroup Calidad {
+  entrevistas
+  examenes
+  normas
+  certificaciones
+  certificacion_proveedor
+}
+
+TableGroup Comercial {
+  clientes
+  destinos_cliente
+  contratos_venta
+  precios_venta
+  entregas_programadas
+}
+
+TableGroup Transporte {
+  empresas_transporte
+  vehiculos
+  choferes
+  acuerdos_transporte
+}
+
+TableGroup Cargas {
+  cosechas
+  cargas
+  proveedores_carga
+}
+
+TableGroup Guias {
+  guias_remision
+  proveedores_guia
+  normas_guia
+}
+
+TableGroup Despacho {
+  historial_chofer
+  recepciones_planta
+}
+
+TableGroup Finanzas {
+  liquidaciones_proveedor
+  pagos_proveedor
+  liquidaciones_transporte
+  gastos_transporte
+  adelantos_transporte
+  aplicaciones_adelanto
+  pagos_transporte
+  facturas_venta
+  cobros_venta
+}

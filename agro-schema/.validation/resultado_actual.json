@@ -1,0 +1,3761 @@
+{
+  "motor": "PGlite PostgreSQL WASM con btree_gist",
+  "migraciones": [
+    "InitialSchema1789745103871",
+    "AddTransportTables1790352000000",
+    "AddEstadoExamenSanidadAgrariaToProveedor1790792329457",
+    "AddArchivoStorage1791128261336",
+    "MoveAgronomicFieldsToProveedor1791561600000",
+    "CreateFincaAndMoveLocationFields1791561601000",
+    "CleanupLegacyCampaniaProveedorFields1791561602000",
+    "OptionalCampaignProviderFarm1792029000000",
+    "CreateEntrevistaExtencion1792371600000"
+  ],
+  "tables": [
+    "archivo",
+    "campana",
+    "campania_x_proveedores",
+    "certificado_campana",
+    "certificado_proveedor",
+    "chofer_transporte_externo",
+    "chofer_vehiculo_externo",
+    "cliente_negocio",
+    "cliente_negocio_campana",
+    "detalle_trazabilidad",
+    "empresa_transporte_externo",
+    "entrevista_extencion",
+    "examen_proveedor",
+    "finca",
+    "fruta",
+    "fruta_derivada",
+    "proveedor",
+    "proveedor_x_fruta",
+    "trazabilidad_transporte",
+    "vehiculo_externo"
+  ],
+  "columns": [
+    {
+      "table_name": "archivo",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "archivo",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "archivo",
+      "column_name": "archivo_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('archivo_archivo_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "archivo",
+      "column_name": "bucket",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 63
+    },
+    {
+      "table_name": "archivo",
+      "column_name": "object_key",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 1024
+    },
+    {
+      "table_name": "archivo",
+      "column_name": "nombre_original",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "archivo",
+      "column_name": "mime_type",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 100
+    },
+    {
+      "table_name": "archivo",
+      "column_name": "tamano_bytes",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "archivo",
+      "column_name": "checksum_sha256",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "YES",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 64
+    },
+    {
+      "table_name": "archivo",
+      "column_name": "estado",
+      "data_type": "USER-DEFINED",
+      "udt_name": "archivo_estado_enum",
+      "is_nullable": "NO",
+      "column_default": "'PENDIENTE'::archivo_estado_enum",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campana",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campana",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campana",
+      "column_name": "campania_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('campana_campania_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campana",
+      "column_name": "nombre",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campana",
+      "column_name": "fecha_inicio",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campana",
+      "column_name": "fecha_fin",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campana",
+      "column_name": "estado",
+      "data_type": "USER-DEFINED",
+      "udt_name": "campana_estado_enum",
+      "is_nullable": "NO",
+      "column_default": "'planificacion'::campana_estado_enum",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campana",
+      "column_name": "requerimiento_comercial",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campana",
+      "column_name": "fruta_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "column_name": "cxp_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('campania_x_proveedores_cxp_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "column_name": "cantidad_proveedor",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "column_name": "mtd_ceratitis",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "column_name": "fruta_convencional_estimado",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "YES",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "column_name": "tipo_proveedor",
+      "data_type": "USER-DEFINED",
+      "udt_name": "campania_x_proveedores_tipo_proveedor_enum",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "column_name": "campania_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "column_name": "proveedor_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "column_name": "finca_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "YES",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "column_name": "estado",
+      "data_type": "USER-DEFINED",
+      "udt_name": "campania_x_proveedores_estado_enum",
+      "is_nullable": "NO",
+      "column_default": "'sin validar'::campania_x_proveedores_estado_enum",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_campana",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_campana",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_campana",
+      "column_name": "certificado_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('certificado_campana_certificado_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_campana",
+      "column_name": "nombre",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "certificado_campana",
+      "column_name": "document_url",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_campana",
+      "column_name": "costo",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 2,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_campana",
+      "column_name": "recibo_url",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_campana",
+      "column_name": "fecha_vencimiento",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_campana",
+      "column_name": "estado",
+      "data_type": "USER-DEFINED",
+      "udt_name": "certificado_campana_estado_enum",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_campana",
+      "column_name": "campania_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "column_name": "certificado_proveedor_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('certificado_proveedor_certificado_proveedor_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "column_name": "fecha_revision_senasa",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "column_name": "nombre",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "column_name": "proveedor_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "column_name": "documento_archivo_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "YES",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "column_name": "id_chofer_transporte_externo",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('chofer_transporte_externo_id_chofer_transporte_externo_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "column_name": "id_empresa_transporte_externo",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "column_name": "nombre",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "column_name": "telefono",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 20
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "column_name": "correo",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 320
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "column_name": "id_chofer_vehiculo_externo",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('chofer_vehiculo_externo_id_chofer_vehiculo_externo_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "column_name": "id_vehiculo_externo",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "column_name": "id_chofer_transporte_externo",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "column_name": "id_trazabilidad_transporte",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "column_name": "fecha_asignacion_inicio",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "column_name": "fecha_asignacion_final",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio",
+      "column_name": "cliente_negocio_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('cliente_negocio_cliente_negocio_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio",
+      "column_name": "nombre_empresa",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "cliente_negocio",
+      "column_name": "nombre_contacto",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "cliente_negocio",
+      "column_name": "telefono",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 20
+    },
+    {
+      "table_name": "cliente_negocio",
+      "column_name": "ruc",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 11
+    },
+    {
+      "table_name": "cliente_negocio",
+      "column_name": "correo_corporativo",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 320
+    },
+    {
+      "table_name": "cliente_negocio",
+      "column_name": "ubicacion",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio",
+      "column_name": "tipo_cliente",
+      "data_type": "USER-DEFINED",
+      "udt_name": "cliente_negocio_tipo_cliente_enum",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "column_name": "cliente_negocio_campana_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('cliente_negocio_campana_cliente_negocio_campana_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "column_name": "documento_url",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "column_name": "fecha_registro",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "column_name": "ficha_tecnica_url",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "column_name": "cantidad_kg",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": "'0'::numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "column_name": "kilos_acordados",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 14,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "column_name": "cliente_negocio_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "column_name": "campania_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "column_name": "id_detalle_trazabilidad",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('detalle_trazabilidad_id_detalle_trazabilidad_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "column_name": "id_trazabilidad_transporte",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "column_name": "guia_url",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "column_name": "flete",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 2,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "column_name": "sctr",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "column_name": "estibas",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 2,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "column_name": "pasajes",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 2,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "column_name": "comida",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 2,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "column_name": "id_empresa_transporte_externo",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('empresa_transporte_externo_id_empresa_transporte_externo_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "column_name": "nombre_completo",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "column_name": "ruc",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 11
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "column_name": "correo",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 320
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "column_name": "numero",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 20
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "column_name": "entrevista_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('entrevista_extencion_entrevista_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "column_name": "cam_x_prov_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "column_name": "finca_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "column_name": "densidad",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "column_name": "distanciamiento",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "column_name": "frecuencia",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "column_name": "nombre_aplicacion",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "column_name": "anio_aplicacion",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "column_name": "codigo",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "examen_proveedor",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "examen_proveedor",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "examen_proveedor",
+      "column_name": "examen_proveedor_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('examen_proveedor_examen_proveedor_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "examen_proveedor",
+      "column_name": "fecha",
+      "data_type": "date",
+      "udt_name": "date",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "examen_proveedor",
+      "column_name": "tipo_examen",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 150
+    },
+    {
+      "table_name": "examen_proveedor",
+      "column_name": "resultado",
+      "data_type": "USER-DEFINED",
+      "udt_name": "examen_proveedor_resultado_enum",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "examen_proveedor",
+      "column_name": "origen",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "examen_proveedor",
+      "column_name": "observacion",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "examen_proveedor",
+      "column_name": "documento_url",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "examen_proveedor",
+      "column_name": "proveedor_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "finca",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "finca",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "finca",
+      "column_name": "finca_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('finca_finca_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "finca",
+      "column_name": "proveedor_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "finca",
+      "column_name": "nombre_finca",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "finca",
+      "column_name": "departamento",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 100
+    },
+    {
+      "table_name": "finca",
+      "column_name": "provincia",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 100
+    },
+    {
+      "table_name": "finca",
+      "column_name": "distrito",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 100
+    },
+    {
+      "table_name": "finca",
+      "column_name": "latitud",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 10,
+      "numeric_scale": 7,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "finca",
+      "column_name": "longitud",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 10,
+      "numeric_scale": 7,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "finca",
+      "column_name": "ha_total_finca",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "finca",
+      "column_name": "ha_cultivo",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "fruta",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "fruta",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "fruta",
+      "column_name": "fruta_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('fruta_fruta_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "fruta",
+      "column_name": "name",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 150
+    },
+    {
+      "table_name": "fruta_derivada",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "fruta_derivada",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "fruta_derivada",
+      "column_name": "fruta_derivada_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('fruta_derivada_fruta_derivada_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "fruta_derivada",
+      "column_name": "name",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 150
+    },
+    {
+      "table_name": "fruta_derivada",
+      "column_name": "fruta_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "proveedor_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('proveedor_proveedor_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "nombres",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 150
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "apellido",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 150
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "tipo_documento",
+      "data_type": "USER-DEFINED",
+      "udt_name": "proveedor_tipo_documento_enum",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "nmr_documento",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "identidad_doc_url",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "zona",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "telefono",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "email",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 320
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "codigo_lugar_produccion",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "estado_examen_sanidad_agraria",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "YES",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 100
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "nombre_agronomico",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "YES",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "densidad_plantacion",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "YES",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "distanciamiento",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "YES",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "frecuencia_riego",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "YES",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "nombre_aplicacion",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "YES",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 255
+    },
+    {
+      "table_name": "proveedor",
+      "column_name": "aplicaciones_al_ano",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "YES",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor_x_fruta",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor_x_fruta",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor_x_fruta",
+      "column_name": "pxf_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('proveedor_x_fruta_pxf_id_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor_x_fruta",
+      "column_name": "proveedor_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "proveedor_x_fruta",
+      "column_name": "fruta_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "column_name": "id_trazabilidad_transporte",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('trazabilidad_transporte_id_trazabilidad_transporte_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "column_name": "cxp_id",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "column_name": "contrato_url",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "column_name": "kg_comprados",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 14,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "column_name": "kg_planta",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 14,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "column_name": "estado",
+      "data_type": "USER-DEFINED",
+      "udt_name": "trazabilidad_transporte_estado_enum",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": "now()",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "column_name": "id_vehiculo_externo",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "nextval('vehiculo_externo_id_vehiculo_externo_seq'::regclass)",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "column_name": "id_empresa_transporte_externo",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "column_name": "placa",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "character_maximum_length": 15
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "column_name": "volumen",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 12,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "column_name": "ancho",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 10,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "column_name": "altura",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 10,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "column_name": "profundidad",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 10,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "column_name": "peso_neto",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 14,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "column_name": "peso_bruto",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "is_nullable": "NO",
+      "column_default": null,
+      "numeric_precision": 14,
+      "numeric_scale": 3,
+      "character_maximum_length": null
+    }
+  ],
+  "constraints": [
+    {
+      "table_name": "archivo",
+      "conname": "CHK_archivo_tamano_positivo",
+      "contype": "c",
+      "definition": "CHECK ((tamano_bytes > 0))"
+    },
+    {
+      "table_name": "archivo",
+      "conname": "PK_archivo",
+      "contype": "p",
+      "definition": "PRIMARY KEY (archivo_id)"
+    },
+    {
+      "table_name": "archivo",
+      "conname": "archivo_archivo_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL archivo_id"
+    },
+    {
+      "table_name": "archivo",
+      "conname": "archivo_bucket_not_null",
+      "contype": "n",
+      "definition": "NOT NULL bucket"
+    },
+    {
+      "table_name": "archivo",
+      "conname": "archivo_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "archivo",
+      "conname": "archivo_estado_not_null",
+      "contype": "n",
+      "definition": "NOT NULL estado"
+    },
+    {
+      "table_name": "archivo",
+      "conname": "archivo_mime_type_not_null",
+      "contype": "n",
+      "definition": "NOT NULL mime_type"
+    },
+    {
+      "table_name": "archivo",
+      "conname": "archivo_nombre_original_not_null",
+      "contype": "n",
+      "definition": "NOT NULL nombre_original"
+    },
+    {
+      "table_name": "archivo",
+      "conname": "archivo_object_key_not_null",
+      "contype": "n",
+      "definition": "NOT NULL object_key"
+    },
+    {
+      "table_name": "archivo",
+      "conname": "archivo_tamano_bytes_not_null",
+      "contype": "n",
+      "definition": "NOT NULL tamano_bytes"
+    },
+    {
+      "table_name": "archivo",
+      "conname": "archivo_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "campana",
+      "conname": "FK_50c2b822c93d60f0f2ae0de1540",
+      "contype": "f",
+      "definition": "FOREIGN KEY (fruta_id) REFERENCES fruta(fruta_id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "campana",
+      "conname": "PK_e3b63797c6e9a2204d9b3b58f22",
+      "contype": "p",
+      "definition": "PRIMARY KEY (campania_id)"
+    },
+    {
+      "table_name": "campana",
+      "conname": "campana_campania_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL campania_id"
+    },
+    {
+      "table_name": "campana",
+      "conname": "campana_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "campana",
+      "conname": "campana_estado_not_null",
+      "contype": "n",
+      "definition": "NOT NULL estado"
+    },
+    {
+      "table_name": "campana",
+      "conname": "campana_fecha_fin_not_null",
+      "contype": "n",
+      "definition": "NOT NULL fecha_fin"
+    },
+    {
+      "table_name": "campana",
+      "conname": "campana_fecha_inicio_not_null",
+      "contype": "n",
+      "definition": "NOT NULL fecha_inicio"
+    },
+    {
+      "table_name": "campana",
+      "conname": "campana_fruta_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL fruta_id"
+    },
+    {
+      "table_name": "campana",
+      "conname": "campana_nombre_not_null",
+      "contype": "n",
+      "definition": "NOT NULL nombre"
+    },
+    {
+      "table_name": "campana",
+      "conname": "campana_requerimiento_comercial_not_null",
+      "contype": "n",
+      "definition": "NOT NULL requerimiento_comercial"
+    },
+    {
+      "table_name": "campana",
+      "conname": "campana_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "CHK_fruta_convencional_solo_productor",
+      "contype": "c",
+      "definition": "CHECK (((tipo_proveedor = 'productor'::campania_x_proveedores_tipo_proveedor_enum) OR (fruta_convencional_estimado IS NULL)))"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "FK_ac67b849df2b51b77be457547cb",
+      "contype": "f",
+      "definition": "FOREIGN KEY (campania_id) REFERENCES campana(campania_id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "FK_campania_proveedor_finca",
+      "contype": "f",
+      "definition": "FOREIGN KEY (finca_id) REFERENCES finca(finca_id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "FK_ce127d1f9b34a8ff0dfd224c31d",
+      "contype": "f",
+      "definition": "FOREIGN KEY (proveedor_id) REFERENCES proveedor(proveedor_id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "PK_fd78570e9beb123e572cbc5914a",
+      "contype": "p",
+      "definition": "PRIMARY KEY (cxp_id)"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "campania_x_proveedores_campania_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL campania_id"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "campania_x_proveedores_cantidad_proveedor_not_null",
+      "contype": "n",
+      "definition": "NOT NULL cantidad_proveedor"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "campania_x_proveedores_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "campania_x_proveedores_cxp_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL cxp_id"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "campania_x_proveedores_estado_not_null",
+      "contype": "n",
+      "definition": "NOT NULL estado"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "campania_x_proveedores_mtd_ceratitis_not_null",
+      "contype": "n",
+      "definition": "NOT NULL mtd_ceratitis"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "campania_x_proveedores_proveedor_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL proveedor_id"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "campania_x_proveedores_tipo_proveedor_not_null",
+      "contype": "n",
+      "definition": "NOT NULL tipo_proveedor"
+    },
+    {
+      "table_name": "campania_x_proveedores",
+      "conname": "campania_x_proveedores_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "certificado_campana",
+      "conname": "FK_9877363efc7d8431c871eb6f99c",
+      "contype": "f",
+      "definition": "FOREIGN KEY (campania_id) REFERENCES campana(campania_id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "certificado_campana",
+      "conname": "PK_1856de725430dd73744896b9e4f",
+      "contype": "p",
+      "definition": "PRIMARY KEY (certificado_id)"
+    },
+    {
+      "table_name": "certificado_campana",
+      "conname": "certificado_campana_campania_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL campania_id"
+    },
+    {
+      "table_name": "certificado_campana",
+      "conname": "certificado_campana_certificado_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL certificado_id"
+    },
+    {
+      "table_name": "certificado_campana",
+      "conname": "certificado_campana_costo_not_null",
+      "contype": "n",
+      "definition": "NOT NULL costo"
+    },
+    {
+      "table_name": "certificado_campana",
+      "conname": "certificado_campana_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "certificado_campana",
+      "conname": "certificado_campana_document_url_not_null",
+      "contype": "n",
+      "definition": "NOT NULL document_url"
+    },
+    {
+      "table_name": "certificado_campana",
+      "conname": "certificado_campana_estado_not_null",
+      "contype": "n",
+      "definition": "NOT NULL estado"
+    },
+    {
+      "table_name": "certificado_campana",
+      "conname": "certificado_campana_fecha_vencimiento_not_null",
+      "contype": "n",
+      "definition": "NOT NULL fecha_vencimiento"
+    },
+    {
+      "table_name": "certificado_campana",
+      "conname": "certificado_campana_nombre_not_null",
+      "contype": "n",
+      "definition": "NOT NULL nombre"
+    },
+    {
+      "table_name": "certificado_campana",
+      "conname": "certificado_campana_recibo_url_not_null",
+      "contype": "n",
+      "definition": "NOT NULL recibo_url"
+    },
+    {
+      "table_name": "certificado_campana",
+      "conname": "certificado_campana_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "conname": "FK_a6da987f811fd933dd2da1f1567",
+      "contype": "f",
+      "definition": "FOREIGN KEY (proveedor_id) REFERENCES proveedor(proveedor_id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "conname": "FK_certificado_proveedor_documento_archivo",
+      "contype": "f",
+      "definition": "FOREIGN KEY (documento_archivo_id) REFERENCES archivo(archivo_id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "conname": "PK_d76e928004fdb30ebb69febcbc2",
+      "contype": "p",
+      "definition": "PRIMARY KEY (certificado_proveedor_id)"
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "conname": "certificado_proveedor_certificado_proveedor_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL certificado_proveedor_id"
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "conname": "certificado_proveedor_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "conname": "certificado_proveedor_fecha_revision_senasa_not_null",
+      "contype": "n",
+      "definition": "NOT NULL fecha_revision_senasa"
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "conname": "certificado_proveedor_nombre_not_null",
+      "contype": "n",
+      "definition": "NOT NULL nombre"
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "conname": "certificado_proveedor_proveedor_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL proveedor_id"
+    },
+    {
+      "table_name": "certificado_proveedor",
+      "conname": "certificado_proveedor_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "conname": "FK_chofer_empresa_transporte",
+      "contype": "f",
+      "definition": "FOREIGN KEY (id_empresa_transporte_externo) REFERENCES empresa_transporte_externo(id_empresa_transporte_externo) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "conname": "PK_chofer_transporte_externo",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id_chofer_transporte_externo)"
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "conname": "chofer_transporte_externo_correo_not_null",
+      "contype": "n",
+      "definition": "NOT NULL correo"
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "conname": "chofer_transporte_externo_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "conname": "chofer_transporte_externo_id_chofer_transporte_externo_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id_chofer_transporte_externo"
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "conname": "chofer_transporte_externo_id_empresa_transporte_extern_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id_empresa_transporte_externo"
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "conname": "chofer_transporte_externo_nombre_not_null",
+      "contype": "n",
+      "definition": "NOT NULL nombre"
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "conname": "chofer_transporte_externo_telefono_not_null",
+      "contype": "n",
+      "definition": "NOT NULL telefono"
+    },
+    {
+      "table_name": "chofer_transporte_externo",
+      "conname": "chofer_transporte_externo_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "CHK_asignacion_fechas_validas",
+      "contype": "c",
+      "definition": "CHECK ((fecha_asignacion_final >= fecha_asignacion_inicio))"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "EX_chofer_sin_rangos_superpuestos",
+      "contype": "x",
+      "definition": "EXCLUDE USING gist (id_chofer_transporte_externo WITH =, daterange(fecha_asignacion_inicio, fecha_asignacion_final, '[]'::text) WITH &&)"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "FK_asignacion_chofer",
+      "contype": "f",
+      "definition": "FOREIGN KEY (id_chofer_transporte_externo) REFERENCES chofer_transporte_externo(id_chofer_transporte_externo) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "FK_asignacion_trazabilidad",
+      "contype": "f",
+      "definition": "FOREIGN KEY (id_trazabilidad_transporte) REFERENCES trazabilidad_transporte(id_trazabilidad_transporte) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "FK_asignacion_vehiculo",
+      "contype": "f",
+      "definition": "FOREIGN KEY (id_vehiculo_externo) REFERENCES vehiculo_externo(id_vehiculo_externo) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "PK_chofer_vehiculo_externo",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id_chofer_vehiculo_externo)"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "chofer_vehiculo_externo_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "chofer_vehiculo_externo_fecha_asignacion_final_not_null",
+      "contype": "n",
+      "definition": "NOT NULL fecha_asignacion_final"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "chofer_vehiculo_externo_fecha_asignacion_inicio_not_null",
+      "contype": "n",
+      "definition": "NOT NULL fecha_asignacion_inicio"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "chofer_vehiculo_externo_id_chofer_transporte_externo_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id_chofer_transporte_externo"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "chofer_vehiculo_externo_id_chofer_vehiculo_externo_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id_chofer_vehiculo_externo"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "chofer_vehiculo_externo_id_trazabilidad_transporte_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id_trazabilidad_transporte"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "chofer_vehiculo_externo_id_vehiculo_externo_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id_vehiculo_externo"
+    },
+    {
+      "table_name": "chofer_vehiculo_externo",
+      "conname": "chofer_vehiculo_externo_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "cliente_negocio",
+      "conname": "PK_e6a11c46edc2485ab8547967913",
+      "contype": "p",
+      "definition": "PRIMARY KEY (cliente_negocio_id)"
+    },
+    {
+      "table_name": "cliente_negocio",
+      "conname": "UQ_086205a1da353930132c0f40b6d",
+      "contype": "u",
+      "definition": "UNIQUE (correo_corporativo)"
+    },
+    {
+      "table_name": "cliente_negocio",
+      "conname": "UQ_ba980f42b010ee693f6509928b8",
+      "contype": "u",
+      "definition": "UNIQUE (ruc)"
+    },
+    {
+      "table_name": "cliente_negocio",
+      "conname": "cliente_negocio_cliente_negocio_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL cliente_negocio_id"
+    },
+    {
+      "table_name": "cliente_negocio",
+      "conname": "cliente_negocio_correo_corporativo_not_null",
+      "contype": "n",
+      "definition": "NOT NULL correo_corporativo"
+    },
+    {
+      "table_name": "cliente_negocio",
+      "conname": "cliente_negocio_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "cliente_negocio",
+      "conname": "cliente_negocio_nombre_contacto_not_null",
+      "contype": "n",
+      "definition": "NOT NULL nombre_contacto"
+    },
+    {
+      "table_name": "cliente_negocio",
+      "conname": "cliente_negocio_nombre_empresa_not_null",
+      "contype": "n",
+      "definition": "NOT NULL nombre_empresa"
+    },
+    {
+      "table_name": "cliente_negocio",
+      "conname": "cliente_negocio_ruc_not_null",
+      "contype": "n",
+      "definition": "NOT NULL ruc"
+    },
+    {
+      "table_name": "cliente_negocio",
+      "conname": "cliente_negocio_telefono_not_null",
+      "contype": "n",
+      "definition": "NOT NULL telefono"
+    },
+    {
+      "table_name": "cliente_negocio",
+      "conname": "cliente_negocio_tipo_cliente_not_null",
+      "contype": "n",
+      "definition": "NOT NULL tipo_cliente"
+    },
+    {
+      "table_name": "cliente_negocio",
+      "conname": "cliente_negocio_ubicacion_not_null",
+      "contype": "n",
+      "definition": "NOT NULL ubicacion"
+    },
+    {
+      "table_name": "cliente_negocio",
+      "conname": "cliente_negocio_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "conname": "FK_24f10c8e1468fe98f4ca11af600",
+      "contype": "f",
+      "definition": "FOREIGN KEY (campania_id) REFERENCES campana(campania_id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "conname": "FK_f2e31b3e6ce80e06c9e243de0f7",
+      "contype": "f",
+      "definition": "FOREIGN KEY (cliente_negocio_id) REFERENCES cliente_negocio(cliente_negocio_id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "conname": "PK_f4962041b56eb8097da60768397",
+      "contype": "p",
+      "definition": "PRIMARY KEY (cliente_negocio_campana_id)"
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "conname": "cliente_negocio_campana_campania_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL campania_id"
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "conname": "cliente_negocio_campana_cantidad_kg_not_null",
+      "contype": "n",
+      "definition": "NOT NULL cantidad_kg"
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "conname": "cliente_negocio_campana_cliente_negocio_campana_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL cliente_negocio_campana_id"
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "conname": "cliente_negocio_campana_cliente_negocio_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL cliente_negocio_id"
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "conname": "cliente_negocio_campana_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "conname": "cliente_negocio_campana_documento_url_not_null",
+      "contype": "n",
+      "definition": "NOT NULL documento_url"
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "conname": "cliente_negocio_campana_fecha_registro_not_null",
+      "contype": "n",
+      "definition": "NOT NULL fecha_registro"
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "conname": "cliente_negocio_campana_ficha_tecnica_url_not_null",
+      "contype": "n",
+      "definition": "NOT NULL ficha_tecnica_url"
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "conname": "cliente_negocio_campana_kilos_acordados_not_null",
+      "contype": "n",
+      "definition": "NOT NULL kilos_acordados"
+    },
+    {
+      "table_name": "cliente_negocio_campana",
+      "conname": "cliente_negocio_campana_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "conname": "CHK_detalle_costos_no_negativos",
+      "contype": "c",
+      "definition": "CHECK (((flete >= (0)::numeric) AND (estibas >= (0)::numeric) AND (pasajes >= (0)::numeric) AND (comida >= (0)::numeric)))"
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "conname": "FK_detalle_trazabilidad",
+      "contype": "f",
+      "definition": "FOREIGN KEY (id_trazabilidad_transporte) REFERENCES trazabilidad_transporte(id_trazabilidad_transporte) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "conname": "PK_detalle_trazabilidad",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id_detalle_trazabilidad)"
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "conname": "detalle_trazabilidad_comida_not_null",
+      "contype": "n",
+      "definition": "NOT NULL comida"
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "conname": "detalle_trazabilidad_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "conname": "detalle_trazabilidad_estibas_not_null",
+      "contype": "n",
+      "definition": "NOT NULL estibas"
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "conname": "detalle_trazabilidad_flete_not_null",
+      "contype": "n",
+      "definition": "NOT NULL flete"
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "conname": "detalle_trazabilidad_guia_url_not_null",
+      "contype": "n",
+      "definition": "NOT NULL guia_url"
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "conname": "detalle_trazabilidad_id_detalle_trazabilidad_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id_detalle_trazabilidad"
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "conname": "detalle_trazabilidad_id_trazabilidad_transporte_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id_trazabilidad_transporte"
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "conname": "detalle_trazabilidad_pasajes_not_null",
+      "contype": "n",
+      "definition": "NOT NULL pasajes"
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "conname": "detalle_trazabilidad_sctr_not_null",
+      "contype": "n",
+      "definition": "NOT NULL sctr"
+    },
+    {
+      "table_name": "detalle_trazabilidad",
+      "conname": "detalle_trazabilidad_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "conname": "PK_empresa_transporte_externo",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id_empresa_transporte_externo)"
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "conname": "UQ_empresa_transporte_correo",
+      "contype": "u",
+      "definition": "UNIQUE (correo)"
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "conname": "UQ_empresa_transporte_ruc",
+      "contype": "u",
+      "definition": "UNIQUE (ruc)"
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "conname": "empresa_transporte_externo_correo_not_null",
+      "contype": "n",
+      "definition": "NOT NULL correo"
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "conname": "empresa_transporte_externo_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "conname": "empresa_transporte_externo_id_empresa_transporte_exter_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id_empresa_transporte_externo"
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "conname": "empresa_transporte_externo_nombre_completo_not_null",
+      "contype": "n",
+      "definition": "NOT NULL nombre_completo"
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "conname": "empresa_transporte_externo_numero_not_null",
+      "contype": "n",
+      "definition": "NOT NULL numero"
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "conname": "empresa_transporte_externo_ruc_not_null",
+      "contype": "n",
+      "definition": "NOT NULL ruc"
+    },
+    {
+      "table_name": "empresa_transporte_externo",
+      "conname": "empresa_transporte_externo_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "CHK_entrevista_extencion_codigo",
+      "contype": "c",
+      "definition": "CHECK (((codigo)::text ~ '^FVV-[A-Z0-9-]+-[0-9]+$'::text))"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "CHK_entrevista_extencion_valores",
+      "contype": "c",
+      "definition": "CHECK (((densidad >= (0)::numeric) AND (distanciamiento >= (0)::numeric) AND (frecuencia >= (0)::numeric) AND ((anio_aplicacion >= 1900) AND (anio_aplicacion <= 9999))))"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "FK_entrevista_extencion_cxp",
+      "contype": "f",
+      "definition": "FOREIGN KEY (cam_x_prov_id) REFERENCES campania_x_proveedores(cxp_id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "FK_entrevista_extencion_finca",
+      "contype": "f",
+      "definition": "FOREIGN KEY (finca_id) REFERENCES finca(finca_id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "PK_entrevista_extencion",
+      "contype": "p",
+      "definition": "PRIMARY KEY (entrevista_id)"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "entrevista_extencion_anio_aplicacion_not_null",
+      "contype": "n",
+      "definition": "NOT NULL anio_aplicacion"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "entrevista_extencion_cam_x_prov_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL cam_x_prov_id"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "entrevista_extencion_codigo_not_null",
+      "contype": "n",
+      "definition": "NOT NULL codigo"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "entrevista_extencion_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "entrevista_extencion_densidad_not_null",
+      "contype": "n",
+      "definition": "NOT NULL densidad"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "entrevista_extencion_distanciamiento_not_null",
+      "contype": "n",
+      "definition": "NOT NULL distanciamiento"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "entrevista_extencion_entrevista_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL entrevista_id"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "entrevista_extencion_finca_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL finca_id"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "entrevista_extencion_frecuencia_not_null",
+      "contype": "n",
+      "definition": "NOT NULL frecuencia"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "entrevista_extencion_nombre_aplicacion_not_null",
+      "contype": "n",
+      "definition": "NOT NULL nombre_aplicacion"
+    },
+    {
+      "table_name": "entrevista_extencion",
+      "conname": "entrevista_extencion_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "examen_proveedor",
+      "conname": "FK_830ef4ed7b9bc939e534a21c919",
+      "contype": "f",
+      "definition": "FOREIGN KEY (proveedor_id) REFERENCES proveedor(proveedor_id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "examen_proveedor",
+      "conname": "PK_f59bf88a67c9cf036782197944b",
+      "contype": "p",
+      "definition": "PRIMARY KEY (examen_proveedor_id)"
+    },
+    {
+      "table_name": "examen_proveedor",
+      "conname": "examen_proveedor_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "examen_proveedor",
+      "conname": "examen_proveedor_documento_url_not_null",
+      "contype": "n",
+      "definition": "NOT NULL documento_url"
+    },
+    {
+      "table_name": "examen_proveedor",
+      "conname": "examen_proveedor_examen_proveedor_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL examen_proveedor_id"
+    },
+    {
+      "table_name": "examen_proveedor",
+      "conname": "examen_proveedor_fecha_not_null",
+      "contype": "n",
+      "definition": "NOT NULL fecha"
+    },
+    {
+      "table_name": "examen_proveedor",
+      "conname": "examen_proveedor_observacion_not_null",
+      "contype": "n",
+      "definition": "NOT NULL observacion"
+    },
+    {
+      "table_name": "examen_proveedor",
+      "conname": "examen_proveedor_origen_not_null",
+      "contype": "n",
+      "definition": "NOT NULL origen"
+    },
+    {
+      "table_name": "examen_proveedor",
+      "conname": "examen_proveedor_proveedor_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL proveedor_id"
+    },
+    {
+      "table_name": "examen_proveedor",
+      "conname": "examen_proveedor_resultado_not_null",
+      "contype": "n",
+      "definition": "NOT NULL resultado"
+    },
+    {
+      "table_name": "examen_proveedor",
+      "conname": "examen_proveedor_tipo_examen_not_null",
+      "contype": "n",
+      "definition": "NOT NULL tipo_examen"
+    },
+    {
+      "table_name": "examen_proveedor",
+      "conname": "examen_proveedor_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "finca",
+      "conname": "CHK_finca_hectareas",
+      "contype": "c",
+      "definition": "CHECK (((ha_total_finca >= 0) AND (ha_cultivo >= 0) AND (ha_cultivo <= ha_total_finca)))"
+    },
+    {
+      "table_name": "finca",
+      "conname": "FK_finca_proveedor",
+      "contype": "f",
+      "definition": "FOREIGN KEY (proveedor_id) REFERENCES proveedor(proveedor_id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "finca",
+      "conname": "PK_finca",
+      "contype": "p",
+      "definition": "PRIMARY KEY (finca_id)"
+    },
+    {
+      "table_name": "finca",
+      "conname": "finca_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "finca",
+      "conname": "finca_departamento_not_null",
+      "contype": "n",
+      "definition": "NOT NULL departamento"
+    },
+    {
+      "table_name": "finca",
+      "conname": "finca_distrito_not_null",
+      "contype": "n",
+      "definition": "NOT NULL distrito"
+    },
+    {
+      "table_name": "finca",
+      "conname": "finca_finca_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL finca_id"
+    },
+    {
+      "table_name": "finca",
+      "conname": "finca_ha_cultivo_not_null",
+      "contype": "n",
+      "definition": "NOT NULL ha_cultivo"
+    },
+    {
+      "table_name": "finca",
+      "conname": "finca_ha_total_finca_not_null",
+      "contype": "n",
+      "definition": "NOT NULL ha_total_finca"
+    },
+    {
+      "table_name": "finca",
+      "conname": "finca_latitud_not_null",
+      "contype": "n",
+      "definition": "NOT NULL latitud"
+    },
+    {
+      "table_name": "finca",
+      "conname": "finca_longitud_not_null",
+      "contype": "n",
+      "definition": "NOT NULL longitud"
+    },
+    {
+      "table_name": "finca",
+      "conname": "finca_nombre_finca_not_null",
+      "contype": "n",
+      "definition": "NOT NULL nombre_finca"
+    },
+    {
+      "table_name": "finca",
+      "conname": "finca_proveedor_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL proveedor_id"
+    },
+    {
+      "table_name": "finca",
+      "conname": "finca_provincia_not_null",
+      "contype": "n",
+      "definition": "NOT NULL provincia"
+    },
+    {
+      "table_name": "finca",
+      "conname": "finca_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "fruta",
+      "conname": "PK_179f00c93094b7a07e1f9dad0f1",
+      "contype": "p",
+      "definition": "PRIMARY KEY (fruta_id)"
+    },
+    {
+      "table_name": "fruta",
+      "conname": "fruta_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "fruta",
+      "conname": "fruta_fruta_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL fruta_id"
+    },
+    {
+      "table_name": "fruta",
+      "conname": "fruta_name_not_null",
+      "contype": "n",
+      "definition": "NOT NULL name"
+    },
+    {
+      "table_name": "fruta",
+      "conname": "fruta_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "fruta_derivada",
+      "conname": "FK_eb7b4cc85ee0796f06cc8efdba6",
+      "contype": "f",
+      "definition": "FOREIGN KEY (fruta_id) REFERENCES fruta(fruta_id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "fruta_derivada",
+      "conname": "PK_c9143f95b69444a7c62e31abaf2",
+      "contype": "p",
+      "definition": "PRIMARY KEY (fruta_derivada_id)"
+    },
+    {
+      "table_name": "fruta_derivada",
+      "conname": "fruta_derivada_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "fruta_derivada",
+      "conname": "fruta_derivada_fruta_derivada_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL fruta_derivada_id"
+    },
+    {
+      "table_name": "fruta_derivada",
+      "conname": "fruta_derivada_fruta_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL fruta_id"
+    },
+    {
+      "table_name": "fruta_derivada",
+      "conname": "fruta_derivada_name_not_null",
+      "contype": "n",
+      "definition": "NOT NULL name"
+    },
+    {
+      "table_name": "fruta_derivada",
+      "conname": "fruta_derivada_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "proveedor",
+      "conname": "PK_b3bd1980252a2b7058e8aadefee",
+      "contype": "p",
+      "definition": "PRIMARY KEY (proveedor_id)"
+    },
+    {
+      "table_name": "proveedor",
+      "conname": "proveedor_apellido_not_null",
+      "contype": "n",
+      "definition": "NOT NULL apellido"
+    },
+    {
+      "table_name": "proveedor",
+      "conname": "proveedor_codigo_lugar_produccion_not_null",
+      "contype": "n",
+      "definition": "NOT NULL codigo_lugar_produccion"
+    },
+    {
+      "table_name": "proveedor",
+      "conname": "proveedor_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "proveedor",
+      "conname": "proveedor_email_not_null",
+      "contype": "n",
+      "definition": "NOT NULL email"
+    },
+    {
+      "table_name": "proveedor",
+      "conname": "proveedor_identidad_doc_url_not_null",
+      "contype": "n",
+      "definition": "NOT NULL identidad_doc_url"
+    },
+    {
+      "table_name": "proveedor",
+      "conname": "proveedor_nmr_documento_not_null",
+      "contype": "n",
+      "definition": "NOT NULL nmr_documento"
+    },
+    {
+      "table_name": "proveedor",
+      "conname": "proveedor_nombres_not_null",
+      "contype": "n",
+      "definition": "NOT NULL nombres"
+    },
+    {
+      "table_name": "proveedor",
+      "conname": "proveedor_proveedor_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL proveedor_id"
+    },
+    {
+      "table_name": "proveedor",
+      "conname": "proveedor_telefono_not_null",
+      "contype": "n",
+      "definition": "NOT NULL telefono"
+    },
+    {
+      "table_name": "proveedor",
+      "conname": "proveedor_tipo_documento_not_null",
+      "contype": "n",
+      "definition": "NOT NULL tipo_documento"
+    },
+    {
+      "table_name": "proveedor",
+      "conname": "proveedor_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "proveedor",
+      "conname": "proveedor_zona_not_null",
+      "contype": "n",
+      "definition": "NOT NULL zona"
+    },
+    {
+      "table_name": "proveedor_x_fruta",
+      "conname": "FK_22a07009136d9e8d0c1cb3547ae",
+      "contype": "f",
+      "definition": "FOREIGN KEY (fruta_id) REFERENCES fruta(fruta_id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "proveedor_x_fruta",
+      "conname": "FK_47ce26fca664cc2d6fe9e7460c2",
+      "contype": "f",
+      "definition": "FOREIGN KEY (proveedor_id) REFERENCES proveedor(proveedor_id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "proveedor_x_fruta",
+      "conname": "PK_d550d3fc28cd7d0401fdfb1838c",
+      "contype": "p",
+      "definition": "PRIMARY KEY (pxf_id)"
+    },
+    {
+      "table_name": "proveedor_x_fruta",
+      "conname": "proveedor_x_fruta_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "proveedor_x_fruta",
+      "conname": "proveedor_x_fruta_fruta_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL fruta_id"
+    },
+    {
+      "table_name": "proveedor_x_fruta",
+      "conname": "proveedor_x_fruta_proveedor_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL proveedor_id"
+    },
+    {
+      "table_name": "proveedor_x_fruta",
+      "conname": "proveedor_x_fruta_pxf_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL pxf_id"
+    },
+    {
+      "table_name": "proveedor_x_fruta",
+      "conname": "proveedor_x_fruta_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "conname": "CHK_trazabilidad_kilos_no_negativos",
+      "contype": "c",
+      "definition": "CHECK (((kg_comprados >= (0)::numeric) AND (kg_planta >= (0)::numeric)))"
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "conname": "FK_trazabilidad_campania_proveedor",
+      "contype": "f",
+      "definition": "FOREIGN KEY (cxp_id) REFERENCES campania_x_proveedores(cxp_id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "conname": "PK_trazabilidad_transporte",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id_trazabilidad_transporte)"
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "conname": "trazabilidad_transporte_contrato_url_not_null",
+      "contype": "n",
+      "definition": "NOT NULL contrato_url"
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "conname": "trazabilidad_transporte_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "conname": "trazabilidad_transporte_cxp_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL cxp_id"
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "conname": "trazabilidad_transporte_estado_not_null",
+      "contype": "n",
+      "definition": "NOT NULL estado"
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "conname": "trazabilidad_transporte_id_trazabilidad_transporte_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id_trazabilidad_transporte"
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "conname": "trazabilidad_transporte_kg_comprados_not_null",
+      "contype": "n",
+      "definition": "NOT NULL kg_comprados"
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "conname": "trazabilidad_transporte_kg_planta_not_null",
+      "contype": "n",
+      "definition": "NOT NULL kg_planta"
+    },
+    {
+      "table_name": "trazabilidad_transporte",
+      "conname": "trazabilidad_transporte_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "CHK_vehiculo_dimensiones_positivas",
+      "contype": "c",
+      "definition": "CHECK (((volumen > (0)::numeric) AND (ancho > (0)::numeric) AND (altura > (0)::numeric) AND (profundidad > (0)::numeric)))"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "CHK_vehiculo_pesos_validos",
+      "contype": "c",
+      "definition": "CHECK (((peso_neto >= (0)::numeric) AND (peso_bruto >= peso_neto)))"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "FK_vehiculo_empresa_transporte",
+      "contype": "f",
+      "definition": "FOREIGN KEY (id_empresa_transporte_externo) REFERENCES empresa_transporte_externo(id_empresa_transporte_externo) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "PK_vehiculo_externo",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id_vehiculo_externo)"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "UQ_vehiculo_externo_placa",
+      "contype": "u",
+      "definition": "UNIQUE (placa)"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "vehiculo_externo_altura_not_null",
+      "contype": "n",
+      "definition": "NOT NULL altura"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "vehiculo_externo_ancho_not_null",
+      "contype": "n",
+      "definition": "NOT NULL ancho"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "vehiculo_externo_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "vehiculo_externo_id_empresa_transporte_externo_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id_empresa_transporte_externo"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "vehiculo_externo_id_vehiculo_externo_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id_vehiculo_externo"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "vehiculo_externo_peso_bruto_not_null",
+      "contype": "n",
+      "definition": "NOT NULL peso_bruto"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "vehiculo_externo_peso_neto_not_null",
+      "contype": "n",
+      "definition": "NOT NULL peso_neto"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "vehiculo_externo_placa_not_null",
+      "contype": "n",
+      "definition": "NOT NULL placa"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "vehiculo_externo_profundidad_not_null",
+      "contype": "n",
+      "definition": "NOT NULL profundidad"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "vehiculo_externo_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "vehiculo_externo",
+      "conname": "vehiculo_externo_volumen_not_null",
+      "contype": "n",
+      "definition": "NOT NULL volumen"
+    }
+  ],
+  "indexes": [
+    {
+      "tablename": "archivo",
+      "indexname": "PK_archivo",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_archivo\" ON public.archivo USING btree (archivo_id)"
+    },
+    {
+      "tablename": "archivo",
+      "indexname": "UQ_archivo_object_key",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_archivo_object_key\" ON public.archivo USING btree (object_key)"
+    },
+    {
+      "tablename": "campana",
+      "indexname": "PK_e3b63797c6e9a2204d9b3b58f22",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_e3b63797c6e9a2204d9b3b58f22\" ON public.campana USING btree (campania_id)"
+    },
+    {
+      "tablename": "campana",
+      "indexname": "UQ_campana_fruta_activa",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_campana_fruta_activa\" ON public.campana USING btree (fruta_id) WHERE (estado <> 'terminado'::campana_estado_enum)"
+    },
+    {
+      "tablename": "campania_x_proveedores",
+      "indexname": "IDX_campania_proveedor_finca",
+      "indexdef": "CREATE INDEX \"IDX_campania_proveedor_finca\" ON public.campania_x_proveedores USING btree (finca_id)"
+    },
+    {
+      "tablename": "campania_x_proveedores",
+      "indexname": "PK_fd78570e9beb123e572cbc5914a",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_fd78570e9beb123e572cbc5914a\" ON public.campania_x_proveedores USING btree (cxp_id)"
+    },
+    {
+      "tablename": "campania_x_proveedores",
+      "indexname": "UQ_campania_finca",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_campania_finca\" ON public.campania_x_proveedores USING btree (campania_id, finca_id) WHERE (finca_id IS NOT NULL)"
+    },
+    {
+      "tablename": "campania_x_proveedores",
+      "indexname": "UQ_campania_proveedor_sin_finca",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_campania_proveedor_sin_finca\" ON public.campania_x_proveedores USING btree (campania_id, proveedor_id) WHERE (finca_id IS NULL)"
+    },
+    {
+      "tablename": "certificado_campana",
+      "indexname": "PK_1856de725430dd73744896b9e4f",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_1856de725430dd73744896b9e4f\" ON public.certificado_campana USING btree (certificado_id)"
+    },
+    {
+      "tablename": "certificado_proveedor",
+      "indexname": "IDX_certificado_proveedor_documento_archivo",
+      "indexdef": "CREATE INDEX \"IDX_certificado_proveedor_documento_archivo\" ON public.certificado_proveedor USING btree (documento_archivo_id)"
+    },
+    {
+      "tablename": "certificado_proveedor",
+      "indexname": "PK_d76e928004fdb30ebb69febcbc2",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_d76e928004fdb30ebb69febcbc2\" ON public.certificado_proveedor USING btree (certificado_proveedor_id)"
+    },
+    {
+      "tablename": "chofer_transporte_externo",
+      "indexname": "IDX_chofer_empresa_transporte",
+      "indexdef": "CREATE INDEX \"IDX_chofer_empresa_transporte\" ON public.chofer_transporte_externo USING btree (id_empresa_transporte_externo)"
+    },
+    {
+      "tablename": "chofer_transporte_externo",
+      "indexname": "PK_chofer_transporte_externo",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_chofer_transporte_externo\" ON public.chofer_transporte_externo USING btree (id_chofer_transporte_externo)"
+    },
+    {
+      "tablename": "chofer_vehiculo_externo",
+      "indexname": "EX_chofer_sin_rangos_superpuestos",
+      "indexdef": "CREATE INDEX \"EX_chofer_sin_rangos_superpuestos\" ON public.chofer_vehiculo_externo USING gist (id_chofer_transporte_externo, daterange(fecha_asignacion_inicio, fecha_asignacion_final, '[]'::text))"
+    },
+    {
+      "tablename": "chofer_vehiculo_externo",
+      "indexname": "IDX_asignacion_chofer",
+      "indexdef": "CREATE INDEX \"IDX_asignacion_chofer\" ON public.chofer_vehiculo_externo USING btree (id_chofer_transporte_externo)"
+    },
+    {
+      "tablename": "chofer_vehiculo_externo",
+      "indexname": "IDX_asignacion_trazabilidad",
+      "indexdef": "CREATE INDEX \"IDX_asignacion_trazabilidad\" ON public.chofer_vehiculo_externo USING btree (id_trazabilidad_transporte)"
+    },
+    {
+      "tablename": "chofer_vehiculo_externo",
+      "indexname": "IDX_asignacion_vehiculo",
+      "indexdef": "CREATE INDEX \"IDX_asignacion_vehiculo\" ON public.chofer_vehiculo_externo USING btree (id_vehiculo_externo)"
+    },
+    {
+      "tablename": "chofer_vehiculo_externo",
+      "indexname": "PK_chofer_vehiculo_externo",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_chofer_vehiculo_externo\" ON public.chofer_vehiculo_externo USING btree (id_chofer_vehiculo_externo)"
+    },
+    {
+      "tablename": "cliente_negocio",
+      "indexname": "PK_e6a11c46edc2485ab8547967913",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_e6a11c46edc2485ab8547967913\" ON public.cliente_negocio USING btree (cliente_negocio_id)"
+    },
+    {
+      "tablename": "cliente_negocio",
+      "indexname": "UQ_086205a1da353930132c0f40b6d",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_086205a1da353930132c0f40b6d\" ON public.cliente_negocio USING btree (correo_corporativo)"
+    },
+    {
+      "tablename": "cliente_negocio",
+      "indexname": "UQ_ba980f42b010ee693f6509928b8",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_ba980f42b010ee693f6509928b8\" ON public.cliente_negocio USING btree (ruc)"
+    },
+    {
+      "tablename": "cliente_negocio_campana",
+      "indexname": "PK_f4962041b56eb8097da60768397",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_f4962041b56eb8097da60768397\" ON public.cliente_negocio_campana USING btree (cliente_negocio_campana_id)"
+    },
+    {
+      "tablename": "cliente_negocio_campana",
+      "indexname": "UQ_cliente_negocio_campania",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_cliente_negocio_campania\" ON public.cliente_negocio_campana USING btree (cliente_negocio_id, campania_id)"
+    },
+    {
+      "tablename": "detalle_trazabilidad",
+      "indexname": "IDX_detalle_trazabilidad",
+      "indexdef": "CREATE INDEX \"IDX_detalle_trazabilidad\" ON public.detalle_trazabilidad USING btree (id_trazabilidad_transporte)"
+    },
+    {
+      "tablename": "detalle_trazabilidad",
+      "indexname": "PK_detalle_trazabilidad",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_detalle_trazabilidad\" ON public.detalle_trazabilidad USING btree (id_detalle_trazabilidad)"
+    },
+    {
+      "tablename": "empresa_transporte_externo",
+      "indexname": "PK_empresa_transporte_externo",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_empresa_transporte_externo\" ON public.empresa_transporte_externo USING btree (id_empresa_transporte_externo)"
+    },
+    {
+      "tablename": "empresa_transporte_externo",
+      "indexname": "UQ_empresa_transporte_correo",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_empresa_transporte_correo\" ON public.empresa_transporte_externo USING btree (correo)"
+    },
+    {
+      "tablename": "empresa_transporte_externo",
+      "indexname": "UQ_empresa_transporte_ruc",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_empresa_transporte_ruc\" ON public.empresa_transporte_externo USING btree (ruc)"
+    },
+    {
+      "tablename": "entrevista_extencion",
+      "indexname": "IDX_entrevista_extencion_cxp",
+      "indexdef": "CREATE INDEX \"IDX_entrevista_extencion_cxp\" ON public.entrevista_extencion USING btree (cam_x_prov_id)"
+    },
+    {
+      "tablename": "entrevista_extencion",
+      "indexname": "IDX_entrevista_extencion_finca",
+      "indexdef": "CREATE INDEX \"IDX_entrevista_extencion_finca\" ON public.entrevista_extencion USING btree (finca_id)"
+    },
+    {
+      "tablename": "entrevista_extencion",
+      "indexname": "PK_entrevista_extencion",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_entrevista_extencion\" ON public.entrevista_extencion USING btree (entrevista_id)"
+    },
+    {
+      "tablename": "entrevista_extencion",
+      "indexname": "UQ_entrevista_extencion_codigo",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_entrevista_extencion_codigo\" ON public.entrevista_extencion USING btree (codigo)"
+    },
+    {
+      "tablename": "examen_proveedor",
+      "indexname": "PK_f59bf88a67c9cf036782197944b",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_f59bf88a67c9cf036782197944b\" ON public.examen_proveedor USING btree (examen_proveedor_id)"
+    },
+    {
+      "tablename": "finca",
+      "indexname": "IDX_finca_proveedor",
+      "indexdef": "CREATE INDEX \"IDX_finca_proveedor\" ON public.finca USING btree (proveedor_id)"
+    },
+    {
+      "tablename": "finca",
+      "indexname": "PK_finca",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_finca\" ON public.finca USING btree (finca_id)"
+    },
+    {
+      "tablename": "fruta",
+      "indexname": "PK_179f00c93094b7a07e1f9dad0f1",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_179f00c93094b7a07e1f9dad0f1\" ON public.fruta USING btree (fruta_id)"
+    },
+    {
+      "tablename": "fruta_derivada",
+      "indexname": "PK_c9143f95b69444a7c62e31abaf2",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_c9143f95b69444a7c62e31abaf2\" ON public.fruta_derivada USING btree (fruta_derivada_id)"
+    },
+    {
+      "tablename": "proveedor",
+      "indexname": "PK_b3bd1980252a2b7058e8aadefee",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_b3bd1980252a2b7058e8aadefee\" ON public.proveedor USING btree (proveedor_id)"
+    },
+    {
+      "tablename": "proveedor_x_fruta",
+      "indexname": "PK_d550d3fc28cd7d0401fdfb1838c",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_d550d3fc28cd7d0401fdfb1838c\" ON public.proveedor_x_fruta USING btree (pxf_id)"
+    },
+    {
+      "tablename": "proveedor_x_fruta",
+      "indexname": "UQ_proveedor_fruta",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_proveedor_fruta\" ON public.proveedor_x_fruta USING btree (proveedor_id, fruta_id)"
+    },
+    {
+      "tablename": "trazabilidad_transporte",
+      "indexname": "IDX_trazabilidad_cxp",
+      "indexdef": "CREATE INDEX \"IDX_trazabilidad_cxp\" ON public.trazabilidad_transporte USING btree (cxp_id)"
+    },
+    {
+      "tablename": "trazabilidad_transporte",
+      "indexname": "PK_trazabilidad_transporte",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_trazabilidad_transporte\" ON public.trazabilidad_transporte USING btree (id_trazabilidad_transporte)"
+    },
+    {
+      "tablename": "vehiculo_externo",
+      "indexname": "IDX_vehiculo_empresa_transporte",
+      "indexdef": "CREATE INDEX \"IDX_vehiculo_empresa_transporte\" ON public.vehiculo_externo USING btree (id_empresa_transporte_externo)"
+    },
+    {
+      "tablename": "vehiculo_externo",
+      "indexname": "PK_vehiculo_externo",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_vehiculo_externo\" ON public.vehiculo_externo USING btree (id_vehiculo_externo)"
+    },
+    {
+      "tablename": "vehiculo_externo",
+      "indexname": "UQ_vehiculo_externo_placa",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_vehiculo_externo_placa\" ON public.vehiculo_externo USING btree (placa)"
+    }
+  ],
+  "mismatches": [],
+  "tests": [
+    {
+      "prueba": "Varias fincas y vínculo sin finca del mismo proveedor/campaña",
+      "resultado": "aceptado"
+    },
+    {
+      "prueba": "Documento y email repetidos en proveedores por SQL directo",
+      "resultado": "aceptado; sin unicidad en BD"
+    },
+    {
+      "prueba": "Segunda campaña activa de la misma fruta",
+      "resultado": "rechazado",
+      "mensaje": "duplicate key value violates unique constraint \"UQ_campana_fruta_activa\""
+    },
+    {
+      "prueba": "Segunda vinculación del cliente a la misma campaña",
+      "resultado": "rechazado",
+      "mensaje": "duplicate key value violates unique constraint \"UQ_cliente_negocio_campania\""
+    },
+    {
+      "prueba": "Finca repetida en campaña",
+      "resultado": "rechazado",
+      "mensaje": "duplicate key value violates unique constraint \"UQ_campania_finca\""
+    },
+    {
+      "prueba": "Segundo vínculo sin finca",
+      "resultado": "rechazado",
+      "mensaje": "duplicate key value violates unique constraint \"UQ_campania_proveedor_sin_finca\""
+    },
+    {
+      "prueba": "Solapamiento de chofer en fecha inclusiva",
+      "resultado": "rechazado",
+      "mensaje": "conflicting key value violates exclusion constraint \"EX_chofer_sin_rangos_superpuestos\""
+    },
+    {
+      "prueba": "Examen con resultado pendiente",
+      "resultado": "rechazado",
+      "mensaje": "invalid input value for enum examen_proveedor_resultado_enum: \"pendiente\""
+    },
+    {
+      "prueba": "Finca de otro proveedor por SQL directo",
+      "resultado": "aceptado por BD; el servicio sí lo rechaza"
+    },
+    {
+      "prueba": "Eliminar campaña sin otros bloqueos elimina certificado por CASCADE",
+      "resultado": "confirmado en base temporal"
+    },
+    {
+      "prueba": "Entrevista de productor en su finca con código FVV",
+      "resultado": "aceptado"
+    },
+    {
+      "prueba": "Entrevista de acopiador",
+      "resultado": "rechazado",
+      "mensaje": "Solo los productores pueden registrar entrevistas de extensión"
+    },
+    {
+      "prueba": "Entrevista con finca de otro proveedor",
+      "resultado": "rechazado",
+      "mensaje": "La finca no pertenece al proveedor de la asignación"
+    },
+    {
+      "prueba": "Entrevista con finca distinta de la asignada",
+      "resultado": "rechazado",
+      "mensaje": "La finca no coincide con la finca de la asignación"
+    },
+    {
+      "prueba": "Código FVV duplicado",
+      "resultado": "rechazado",
+      "mensaje": "duplicate key value violates unique constraint \"UQ_entrevista_extencion_codigo\""
+    },
+    {
+      "prueba": "Cambiar a acopio una asignación con entrevistas",
+      "resultado": "rechazado",
+      "mensaje": "Una asignación con entrevistas debe permanecer como productor"
+    }
+  ]
+}

@@ -1,0 +1,149 @@
+{
+  "motor": "PGlite PostgreSQL WASM",
+  "tablas": 64,
+  "pruebas": [
+    {
+      "prueba": "Instalación y flujo inicial con relaciones completas",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Variedad de otra fruta",
+      "resultado": "rechazado",
+      "mensaje": "Variedad ajena a la fruta de campaña"
+    },
+    {
+      "prueba": "Programación excede contrato",
+      "resultado": "rechazado",
+      "mensaje": "Kilos programados exceden contrato"
+    },
+    {
+      "prueba": "Kilos de reparto exceden entrega",
+      "resultado": "rechazado",
+      "mensaje": "Documento u origen protegido por movimientos o documentación registrada"
+    },
+    {
+      "prueba": "Pago negativo",
+      "resultado": "rechazado",
+      "mensaje": "new row for relation \"pago_proveedor\" violates check constraint \"pago_proveedor_monto_check\""
+    },
+    {
+      "prueba": "Sobrepago proveedor",
+      "resultado": "rechazado",
+      "mensaje": "Movimiento excede saldo disponible"
+    },
+    {
+      "prueba": "Cobro de preparación sin emitir",
+      "resultado": "rechazado",
+      "mensaje": "No cobrar una preparación sin factura emitida"
+    },
+    {
+      "prueba": "Modificar contrato utilizado",
+      "resultado": "rechazado",
+      "mensaje": "Documento u origen protegido por movimientos o documentación registrada"
+    },
+    {
+      "prueba": "Modificar carga liquidada",
+      "resultado": "rechazado",
+      "mensaje": "Documento u origen protegido por movimientos o documentación registrada"
+    },
+    {
+      "prueba": "Modificar detalle liquidado",
+      "resultado": "rechazado",
+      "mensaje": "Documento u origen protegido por movimientos o documentación registrada"
+    },
+    {
+      "prueba": "Cambiar peso recibido facturado",
+      "resultado": "rechazado",
+      "mensaje": "Documento u origen protegido por movimientos o documentación registrada"
+    },
+    {
+      "prueba": "Saltar estados de chofer",
+      "resultado": "rechazado",
+      "mensaje": "Secuencia de despacho inválida"
+    },
+    {
+      "prueba": "Cierre campaña con pendientes",
+      "resultado": "rechazado",
+      "mensaje": "Campaña con entregas o cierres pendientes"
+    },
+    {
+      "prueba": "Sobrepago transporte tras aplicar adelanto",
+      "resultado": "rechazado",
+      "mensaje": "Movimiento excede saldo disponible"
+    },
+    {
+      "prueba": "Sobrecobro factura",
+      "resultado": "rechazado",
+      "mensaje": "Movimiento excede saldo disponible"
+    },
+    {
+      "prueba": "Reutilizar adelanto agotado",
+      "resultado": "rechazado",
+      "mensaje": "Adelanto agotado"
+    },
+    {
+      "prueba": "Editar pago histórico",
+      "resultado": "rechazado",
+      "mensaje": "Historial protegido: no editar ni eliminar; implementar reverso explícito"
+    },
+    {
+      "prueba": "Borrar cobro histórico",
+      "resultado": "rechazado",
+      "mensaje": "Historial protegido: no editar ni eliminar; implementar reverso explícito"
+    },
+    {
+      "prueba": "Eliminar proveedor utilizado",
+      "resultado": "rechazado",
+      "mensaje": "update or delete on table \"proveedor\" violates RESTRICT setting of foreign key constraint \"fk_personas_proveedor_17\" on table \"proveedor_x_persona\""
+    },
+    {
+      "prueba": "Añadir gasto después de liquidar transporte",
+      "resultado": "rechazado",
+      "mensaje": "No agregar gastos a transporte ya liquidado"
+    },
+    {
+      "prueba": "Vincular otra persona a la cuenta de chofer",
+      "resultado": "rechazado",
+      "mensaje": "Cuenta y chofer deben identificar a la misma persona"
+    },
+    {
+      "prueba": "Descarte mayor que origen",
+      "resultado": "rechazado",
+      "mensaje": "Documento u origen protegido por movimientos o documentación registrada"
+    },
+    {
+      "prueba": "Cuenta duplicada para la misma persona",
+      "resultado": "rechazado",
+      "mensaje": "duplicate key value violates unique constraint \"usuario_persona_id_key\""
+    },
+    {
+      "prueba": "Documento personal duplicado",
+      "resultado": "rechazado",
+      "mensaje": "duplicate key value violates unique constraint \"persona_tipo_documento_numero_documento_key\""
+    },
+    {
+      "prueba": "Duplicar kg entre guías",
+      "resultado": "rechazado",
+      "mensaje": "Kilos de proveedor duplicados entre guías"
+    },
+    {
+      "prueba": "Cambiar guía registrada",
+      "resultado": "rechazado",
+      "mensaje": "Documento u origen protegido por movimientos o documentación registrada"
+    },
+    {
+      "prueba": "Sobrepago de certificación",
+      "resultado": "rechazado",
+      "mensaje": "Movimiento excede saldo disponible"
+    },
+    {
+      "prueba": "Modificar certificación pagada",
+      "resultado": "rechazado",
+      "mensaje": "Documento u origen protegido por movimientos o documentación registrada"
+    },
+    {
+      "prueba": "Pagos parciales, aplicación de adelanto, emisión, cobro, guías repartidas, certificación, secuencia y cierre válidos",
+      "resultado": "correcto"
+    }
+  ]
+}

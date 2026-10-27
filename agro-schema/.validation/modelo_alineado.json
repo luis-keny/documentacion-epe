@@ -1,0 +1,1997 @@
+{
+  "tables": {
+    "persona": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "tipo_documento varchar(20) NOT NULL",
+      "numero_documento varchar(30) NOT NULL",
+      "nombres varchar(120) NOT NULL",
+      "apellidos varchar(120) NOT NULL",
+      "telefono varchar(30)",
+      "correo varchar(180)",
+      "documento_archivo_id bigint"
+    ],
+    "rol": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "nombre varchar(40) NOT NULL"
+    ],
+    "usuario": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "persona_id bigint NOT NULL",
+      "rol_id bigint NOT NULL",
+      "usuario varchar(80) NOT NULL",
+      "password_hash text NOT NULL",
+      "activo boolean NOT NULL DEFAULT true"
+    ],
+    "archivo": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "nombre varchar(255) NOT NULL",
+      "ruta_storage text NOT NULL",
+      "tipo_mime varchar(100) NOT NULL",
+      "bytes bigint NOT NULL",
+      "sha256 varchar(64)",
+      "subido_por bigint",
+      "fecha_subida timestamptz NOT NULL DEFAULT now()"
+    ],
+    "sesion_usuario": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "usuario_id bigint NOT NULL",
+      "token_hash text NOT NULL",
+      "creada_at timestamptz NOT NULL DEFAULT now()",
+      "expira_at timestamptz NOT NULL",
+      "revocada_at timestamptz"
+    ],
+    "parametro_uit": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "anio integer NOT NULL",
+      "valor numeric(14,2) NOT NULL",
+      "limite_uit numeric(10,2) NOT NULL",
+      "umbral_alerta numeric(5,4) NOT NULL DEFAULT 0.90"
+    ],
+    "fruta": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "nombre varchar(80) NOT NULL"
+    ],
+    "fruta_derivada": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "fruta_id bigint NOT NULL",
+      "nombre varchar(100) NOT NULL"
+    ],
+    "campana": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "nombre varchar(120) NOT NULL",
+      "fruta_id bigint NOT NULL",
+      "temporada varchar(30) NOT NULL",
+      "fecha_inicio date NOT NULL",
+      "fecha_fin date NOT NULL",
+      "estado varchar(25) NOT NULL DEFAULT 'PLANIFICADO'",
+      "responsable_id bigint",
+      "lineamientos_id bigint",
+      "observaciones text",
+      "cerrada_at timestamptz",
+      "cerrada_por bigint",
+      "motivo_cierre text"
+    ],
+    "campana_x_fruta_derivada": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "campania_id bigint NOT NULL",
+      "variedad_id bigint NOT NULL"
+    ],
+    "proveedor": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "persona_principal_id bigint NOT NULL",
+      "codigo varchar(40) NOT NULL",
+      "zona varchar(120)",
+      "codigo_produccion varchar(60)",
+      "estado_sanidad varchar(30)",
+      "activo boolean NOT NULL DEFAULT true"
+    ],
+    "proveedor_x_persona": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "proveedor_id bigint NOT NULL",
+      "persona_id bigint NOT NULL",
+      "vinculo varchar(60) NOT NULL",
+      "activo boolean NOT NULL DEFAULT true"
+    ],
+    "proveedor_x_fruta": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "proveedor_id bigint NOT NULL",
+      "fruta_id bigint NOT NULL"
+    ],
+    "proveedor_x_fruta_derivada": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "proveedor_id bigint NOT NULL",
+      "variedad_id bigint NOT NULL"
+    ],
+    "finca": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "proveedor_id bigint NOT NULL",
+      "nombre varchar(150) NOT NULL",
+      "codigo_produccion varchar(60)",
+      "codigo_catastral varchar(60)",
+      "departamento varchar(80) NOT NULL",
+      "provincia varchar(80) NOT NULL",
+      "distrito varchar(80) NOT NULL",
+      "ubigeo varchar(6)",
+      "direccion text",
+      "codigo_establecimiento varchar(4)",
+      "latitud numeric(10,7)",
+      "longitud numeric(10,7)",
+      "hectareas numeric(12,4) NOT NULL",
+      "hectareas_cultivo numeric(12,4) NOT NULL",
+      "variedad_id bigint",
+      "edad_cultivo_anios numeric(6,2)"
+    ],
+    "certificado_proveedor": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "proveedor_id bigint NOT NULL",
+      "nombre varchar(180) NOT NULL",
+      "fecha_revision date",
+      "archivo_id bigint NOT NULL"
+    ],
+    "participacion_proveedor_campana": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "campania_id bigint NOT NULL",
+      "proveedor_id bigint NOT NULL",
+      "rol_comercial varchar(20) NOT NULL",
+      "tipo_fruta varchar(20) NOT NULL",
+      "kilos_estimados numeric(14,3) NOT NULL",
+      "estado varchar(30) NOT NULL DEFAULT 'EXAMEN_PENDIENTE'",
+      "entrevista_aplica boolean NOT NULL DEFAULT true",
+      "fecha_registro timestamptz NOT NULL DEFAULT now()",
+      "observaciones text"
+    ],
+    "participacion_proveedor_x_fruta_derivada": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "participacion_id bigint NOT NULL",
+      "variedad_id bigint NOT NULL"
+    ],
+    "campania_x_proveedores": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "participacion_id bigint NOT NULL",
+      "campania_id bigint NOT NULL",
+      "proveedor_id bigint NOT NULL",
+      "finca_id bigint NOT NULL"
+    ],
+    "entrevista_extencion": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "finca_campania_id bigint NOT NULL",
+      "codigo_fyv varchar(60) NOT NULL",
+      "registrada_at timestamptz NOT NULL DEFAULT now()",
+      "registrada_por bigint",
+      "densidad_plantacion numeric(12,3)",
+      "distanciamiento_m varchar(60)",
+      "frecuencia_riego varchar(120)",
+      "nombre_aplicacion varchar(180)",
+      "aplicaciones_anio integer",
+      "resultado text",
+      "archivo_id bigint"
+    ],
+    "examen_proveedor": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "participacion_id bigint NOT NULL",
+      "finca_campania_id bigint",
+      "tipo varchar(100) NOT NULL",
+      "codigo_muestra varchar(80)",
+      "origen varchar(180)",
+      "fecha_muestra date NOT NULL",
+      "fecha_envio date",
+      "estado varchar(30) NOT NULL DEFAULT 'PENDIENTE'",
+      "resultado varchar(180)",
+      "archivo_id bigint",
+      "observaciones text"
+    ],
+    "acuerdo_compra": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "finca_campania_id bigint NOT NULL",
+      "variedad_id bigint NOT NULL",
+      "precio_kg numeric(14,4) NOT NULL",
+      "kilos_acordados numeric(14,3)",
+      "fecha_inicio date NOT NULL",
+      "fecha_fin date NOT NULL",
+      "estado varchar(25) NOT NULL DEFAULT 'VIGENTE'"
+    ],
+    "norma": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "codigo varchar(40) NOT NULL",
+      "nombre varchar(180) NOT NULL"
+    ],
+    "certificado_campana": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "campania_id bigint NOT NULL",
+      "norma_id bigint NOT NULL",
+      "nombre varchar(180) NOT NULL",
+      "codigo varchar(80)",
+      "organismo varchar(180) NOT NULL",
+      "fecha_emision date NOT NULL",
+      "fecha_vencimiento date NOT NULL",
+      "costo numeric(14,2) NOT NULL",
+      "moneda varchar(3) NOT NULL",
+      "archivo_id bigint NOT NULL"
+    ],
+    "certificado_campana_x_proveedor": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "certificacion_id bigint NOT NULL",
+      "campania_id bigint NOT NULL",
+      "participacion_id bigint NOT NULL",
+      "proveedor_id bigint NOT NULL",
+      "kilos_autorizados numeric(14,3) NOT NULL"
+    ],
+    "ampliacion_certificado_campana": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "certificacion_id bigint NOT NULL",
+      "fecha date NOT NULL",
+      "kilos_adicionales numeric(14,3) NOT NULL",
+      "referencia varchar(180) NOT NULL",
+      "registrado_por bigint"
+    ],
+    "pago_certificado_campana": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "certificacion_id bigint NOT NULL",
+      "fecha date NOT NULL",
+      "monto numeric(14,2) NOT NULL",
+      "referencia varchar(100) NOT NULL",
+      "comprobante_id bigint NOT NULL",
+      "registrado_por bigint"
+    ],
+    "cliente_negocio": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "razon_social varchar(180) NOT NULL",
+      "ruc varchar(11) NOT NULL",
+      "contacto varchar(180) NOT NULL",
+      "tipo varchar(20) NOT NULL",
+      "telefono varchar(30)",
+      "correo varchar(180)",
+      "ubicacion varchar(180)",
+      "fecha_registro date NOT NULL DEFAULT CURRENT_DATE"
+    ],
+    "destino_cliente_negocio": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "cliente_id bigint NOT NULL",
+      "nombre varchar(150) NOT NULL",
+      "ubigeo varchar(6)",
+      "direccion text",
+      "codigo_establecimiento varchar(4)",
+      "latitud numeric(10,7)",
+      "longitud numeric(10,7)"
+    ],
+    "cliente_negocio_campana": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "campania_id bigint NOT NULL",
+      "cliente_id bigint NOT NULL",
+      "cantidad_kg numeric(14,3) NOT NULL",
+      "fecha_registro date NOT NULL",
+      "ficha_tecnica_id bigint",
+      "destino_solicitado varchar(180)",
+      "entrega_desde date",
+      "entrega_hasta date",
+      "observaciones text"
+    ],
+    "cliente_negocio_campana_x_fruta_derivada": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "requerimiento_id bigint NOT NULL",
+      "variedad_id bigint NOT NULL"
+    ],
+    "contrato_venta": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "requerimiento_id bigint NOT NULL",
+      "numero varchar(60) NOT NULL",
+      "canal varchar(20) NOT NULL",
+      "fecha date NOT NULL",
+      "kilos_acordados numeric(14,3) NOT NULL",
+      "precio_kg numeric(14,4) NOT NULL",
+      "moneda varchar(3) NOT NULL",
+      "estado varchar(25) NOT NULL DEFAULT 'VIGENTE'",
+      "condiciones_pago text",
+      "archivo_id bigint"
+    ],
+    "entrega_programada": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "contrato_id bigint NOT NULL",
+      "destino_id bigint NOT NULL",
+      "fecha date NOT NULL",
+      "kilos_programados numeric(14,3) NOT NULL",
+      "observaciones text"
+    ],
+    "entrega_x_fruta_derivada": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "entrega_id bigint NOT NULL",
+      "variedad_id bigint NOT NULL",
+      "kilos_programados numeric(14,3) NOT NULL"
+    ],
+    "empresa_transporte_externo": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "tipo varchar(20) NOT NULL",
+      "razon_social varchar(180) NOT NULL",
+      "tipo_documento varchar(20) NOT NULL",
+      "numero_documento varchar(30) NOT NULL",
+      "persona_id bigint",
+      "registro_mtc varchar(80)",
+      "telefono varchar(30)",
+      "correo varchar(180)",
+      "departamento varchar(80)",
+      "provincia varchar(80)",
+      "ciudad varchar(80)",
+      "activo boolean NOT NULL DEFAULT true"
+    ],
+    "vehiculo_externo": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "empresa_id bigint NOT NULL",
+      "placa varchar(15) NOT NULL",
+      "volumen_m3 numeric(12,3)",
+      "capacidad_kg numeric(14,3) NOT NULL",
+      "peso_bruto_kg numeric(14,3)",
+      "activo boolean NOT NULL DEFAULT true"
+    ],
+    "chofer_transporte_externo": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "empresa_id bigint NOT NULL",
+      "persona_id bigint NOT NULL",
+      "usuario_id bigint",
+      "licencia varchar(40) NOT NULL",
+      "activo boolean NOT NULL DEFAULT true"
+    ],
+    "solicitud_transporte": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "campania_id bigint NOT NULL",
+      "referencia varchar(100) NOT NULL",
+      "fecha timestamptz NOT NULL DEFAULT now()",
+      "origen text NOT NULL",
+      "destino text NOT NULL",
+      "ventana_servicio varchar(180)",
+      "cantidad_estimada varchar(100)",
+      "caracteristicas_vehiculo text",
+      "condiciones text",
+      "limite_respuesta timestamptz",
+      "mensaje text",
+      "archivo_id bigint",
+      "estado varchar(25) NOT NULL DEFAULT 'BORRADOR'"
+    ],
+    "invitacion_transporte": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "solicitud_id bigint NOT NULL",
+      "empresa_id bigint NOT NULL",
+      "correo_snapshot varchar(180)",
+      "estado varchar(25) NOT NULL DEFAULT 'INVITADA'"
+    ],
+    "cotizacion_transporte": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "invitacion_id bigint NOT NULL",
+      "fecha date NOT NULL",
+      "monto numeric(14,2) NOT NULL",
+      "moneda varchar(3) NOT NULL",
+      "condiciones text",
+      "archivo_id bigint",
+      "estado varchar(25) NOT NULL DEFAULT 'RECIBIDA'"
+    ],
+    "acuerdo_transporte": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "campania_id bigint NOT NULL",
+      "empresa_id bigint NOT NULL",
+      "cotizacion_id bigint",
+      "tipo_pago varchar(20) NOT NULL",
+      "monto_acordado numeric(14,2) NOT NULL",
+      "fecha_acuerdo date NOT NULL",
+      "fecha_pago_final date",
+      "archivo_id bigint"
+    ],
+    "coordinacion_entrega": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "entrega_id bigint NOT NULL",
+      "acuerdo_transporte_id bigint NOT NULL",
+      "empresa_id bigint NOT NULL",
+      "vehiculo_id bigint NOT NULL",
+      "chofer_id bigint NOT NULL",
+      "inicio_programado timestamptz NOT NULL",
+      "fin_programado timestamptz NOT NULL",
+      "origen_descripcion text NOT NULL",
+      "condiciones_carga text",
+      "observaciones text"
+    ],
+    "origen_entrega": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "coordinacion_id bigint NOT NULL",
+      "finca_campania_id bigint NOT NULL"
+    ],
+    "cosecha": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "entrega_id bigint NOT NULL",
+      "codigo_lote varchar(60) NOT NULL",
+      "fecha_prevista date NOT NULL",
+      "kilos_estimados numeric(14,3) NOT NULL",
+      "kilos_cosechados numeric(14,3)",
+      "kilos_aceptados numeric(14,3)",
+      "estado varchar(30) NOT NULL DEFAULT 'PENDIENTE'",
+      "cierre_cosecha_at timestamptz",
+      "evidencia_id bigint"
+    ],
+    "analisis_calidad": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "cosecha_id bigint NOT NULL",
+      "finca_campania_id bigint NOT NULL",
+      "tipo varchar(100) NOT NULL",
+      "fecha_muestreo date NOT NULL",
+      "estado varchar(30) NOT NULL DEFAULT 'PENDIENTE'",
+      "resultado_texto varchar(180)",
+      "resultado_numerico numeric(14,4)",
+      "unidad varchar(30)",
+      "archivo_id bigint",
+      "observaciones text"
+    ],
+    "medicion_mtd": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "finca_campania_id bigint NOT NULL",
+      "medido_at timestamptz NOT NULL",
+      "valor numeric(12,4) NOT NULL",
+      "limite_aplicado numeric(12,4) NOT NULL",
+      "archivo_id bigint NOT NULL",
+      "registrado_por bigint"
+    ],
+    "carga": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "coordinacion_id bigint NOT NULL",
+      "codigo varchar(80) NOT NULL",
+      "fecha_carga date NOT NULL",
+      "anotador_nombre varchar(180) NOT NULL",
+      "estado_calidad varchar(30) NOT NULL DEFAULT 'PENDIENTE'",
+      "viaticos_movilidad numeric(14,2) NOT NULL DEFAULT 0",
+      "viaticos_insumos numeric(14,2) NOT NULL DEFAULT 0",
+      "guia_salida_id bigint",
+      "guia_salida_registrada_at timestamptz",
+      "observaciones text"
+    ],
+    "proveedor_carga": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "carga_id bigint NOT NULL",
+      "participacion_id bigint NOT NULL",
+      "variedad_id bigint NOT NULL",
+      "kilos_cargados numeric(14,3) NOT NULL",
+      "precio_compra_kg_aplicado numeric(14,4)",
+      "jabas_cargadas integer NOT NULL DEFAULT 0",
+      "jabas_vacias integer NOT NULL DEFAULT 0",
+      "bines_cargados integer NOT NULL DEFAULT 0",
+      "bines_vacios integer NOT NULL DEFAULT 0",
+      "mallas_cargadas integer NOT NULL DEFAULT 0",
+      "mallas_vacias integer NOT NULL DEFAULT 0"
+    ],
+    "origen_carga": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "proveedor_carga_id bigint NOT NULL",
+      "finca_campania_id bigint NOT NULL",
+      "kilos_origen numeric(14,3)"
+    ],
+    "gasto_carga": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "carga_id bigint NOT NULL",
+      "concepto varchar(150) NOT NULL",
+      "monto numeric(14,2) NOT NULL"
+    ],
+    "guia_remision": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "carga_id bigint NOT NULL",
+      "numero varchar(30) NOT NULL",
+      "fecha_inicio_traslado date NOT NULL",
+      "fecha_entrega_transportista date",
+      "peso_bruto_kg numeric(14,3) NOT NULL",
+      "unidad_peso varchar(3) NOT NULL DEFAULT 'KGM'",
+      "numero_bultos integer NOT NULL",
+      "finca_partida_id bigint NOT NULL",
+      "destino_id bigint NOT NULL",
+      "ubigeo_partida_snapshot varchar(6) NOT NULL",
+      "direccion_partida_snapshot text NOT NULL",
+      "establecimiento_partida_snapshot varchar(4) NOT NULL",
+      "ubigeo_llegada_snapshot varchar(6) NOT NULL",
+      "direccion_llegada_snapshot text NOT NULL",
+      "establecimiento_llegada_snapshot varchar(4) NOT NULL",
+      "transportista_documento_snapshot varchar(30) NOT NULL",
+      "mtc_snapshot varchar(80)",
+      "placa_snapshot varchar(15) NOT NULL",
+      "conductor_documento_snapshot varchar(30) NOT NULL",
+      "conductor_nombre_snapshot varchar(180) NOT NULL",
+      "conductor_licencia_snapshot varchar(40) NOT NULL",
+      "archivo_id bigint",
+      "observaciones text"
+    ],
+    "proveedor_guia": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "guia_id bigint NOT NULL",
+      "carga_id bigint NOT NULL",
+      "proveedor_carga_id bigint NOT NULL",
+      "kilos_asignados numeric(14,3) NOT NULL"
+    ],
+    "guia_x_norma": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "guia_id bigint NOT NULL",
+      "norma_id bigint NOT NULL"
+    ],
+    "historial_chofer": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "coordinacion_id bigint NOT NULL",
+      "carga_id bigint",
+      "chofer_id bigint NOT NULL",
+      "estado varchar(25) NOT NULL",
+      "fecha_hora timestamptz NOT NULL DEFAULT now()",
+      "observacion text"
+    ],
+    "recepcion_planta": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "carga_id bigint NOT NULL",
+      "chofer_id bigint NOT NULL",
+      "fecha_recepcion timestamptz",
+      "peso_planta_kg numeric(14,3)",
+      "hubo_descarte boolean",
+      "descarte_kg numeric(14,3)",
+      "evidencia_descarte_id bigint",
+      "reporte_recepcion_id bigint",
+      "resultado varchar(80)",
+      "recepcion_confirmada_at timestamptz",
+      "descarte_confirmado_at timestamptz",
+      "jabas_devueltas integer",
+      "jabas_devolucion_at timestamptz",
+      "descarga_at timestamptz",
+      "cierre_fisico_at timestamptz",
+      "cierre_administrativo_at timestamptz",
+      "observaciones text"
+    ],
+    "liquidacion_proveedor": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "carga_id bigint NOT NULL",
+      "proveedor_id bigint NOT NULL",
+      "persona_liquidacion_id bigint NOT NULL",
+      "numero varchar(40) NOT NULL",
+      "fecha date NOT NULL",
+      "importe_compra numeric(14,2) NOT NULL",
+      "valor_uit_aplicado numeric(14,2) NOT NULL",
+      "registrado_por bigint NOT NULL",
+      "archivo_id bigint",
+      "observaciones text"
+    ],
+    "liquidacion_transporte": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "carga_id bigint NOT NULL",
+      "numero varchar(40) NOT NULL",
+      "fecha date NOT NULL",
+      "flete numeric(14,2) NOT NULL",
+      "registrado_por bigint NOT NULL",
+      "archivo_id bigint"
+    ],
+    "gasto_transporte": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "carga_id bigint NOT NULL",
+      "concepto varchar(150) NOT NULL",
+      "monto numeric(14,2) NOT NULL",
+      "origen varchar(20) NOT NULL",
+      "incluido_en_liquidacion boolean NOT NULL DEFAULT false"
+    ],
+    "adelanto_transporte": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "acuerdo_id bigint NOT NULL",
+      "fecha date NOT NULL",
+      "monto numeric(14,2) NOT NULL",
+      "referencia varchar(100) NOT NULL",
+      "comprobante_id bigint NOT NULL"
+    ],
+    "aplicacion_adelanto": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "adelanto_id bigint NOT NULL",
+      "liquidacion_id bigint NOT NULL",
+      "fecha date NOT NULL",
+      "monto numeric(14,2) NOT NULL"
+    ],
+    "factura_venta": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "carga_id bigint NOT NULL",
+      "referencia_preparacion varchar(40) NOT NULL",
+      "fecha_preparacion date NOT NULL",
+      "estado varchar(25) NOT NULL DEFAULT 'PREPARADA'",
+      "numero_factura varchar(80)",
+      "fecha_emision date",
+      "fecha_vencimiento date",
+      "kilos_facturados numeric(14,3) NOT NULL",
+      "precio_kg_aplicado numeric(14,4) NOT NULL",
+      "moneda varchar(3) NOT NULL",
+      "importe_venta numeric(14,2) NOT NULL",
+      "archivo_id bigint"
+    ],
+    "pago_proveedor": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "liquidacion_id bigint NOT NULL",
+      "fecha date NOT NULL",
+      "monto numeric(14,2) NOT NULL",
+      "medio varchar(30) NOT NULL",
+      "referencia varchar(100) NOT NULL",
+      "comprobante_id bigint NOT NULL",
+      "registrado_por bigint"
+    ],
+    "pago_transporte": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "liquidacion_id bigint NOT NULL",
+      "fecha date NOT NULL",
+      "monto numeric(14,2) NOT NULL",
+      "medio varchar(30) NOT NULL",
+      "referencia varchar(100) NOT NULL",
+      "comprobante_id bigint NOT NULL",
+      "registrado_por bigint"
+    ],
+    "cobro_venta": [
+      "id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
+      "factura_id bigint NOT NULL",
+      "fecha date NOT NULL",
+      "monto numeric(14,2) NOT NULL",
+      "medio varchar(30) NOT NULL",
+      "referencia varchar(100) NOT NULL",
+      "comprobante_id bigint NOT NULL",
+      "registrado_por bigint"
+    ]
+  },
+  "descriptions": {
+    "persona": "Identidad única de productores, familiares y conductores.",
+    "rol": "Perfiles de acceso; los permisos efectivos se aplican en el servidor.",
+    "usuario": "Cuenta asociada a una persona; no se crea una cuenta por cada participación comercial.",
+    "archivo": "Metadatos del objeto almacenado; la base no almacena URLs firmadas ni el binario.",
+    "sesion_usuario": "Propuesta técnica para persistir sesiones; solo se conserva el hash del token.",
+    "parametro_uit": "Parámetros anuales configurables del prototipo, sin afirmar vigencia tributaria.",
+    "fruta": "Catálogo de frutas.",
+    "fruta_derivada": "Variedades pertenecientes a una fruta.",
+    "campana": "Campaña con sus fechas, responsable y cierre manual.",
+    "campana_x_fruta_derivada": "Variedades elegidas para una campaña.",
+    "proveedor": "Identidad comercial del proveedor principal.",
+    "proveedor_x_persona": "Personas vinculadas; la relación no transfiere compras históricas.",
+    "proveedor_x_fruta": "Frutas asociadas al padrón general.",
+    "proveedor_x_fruta_derivada": "Variedades asociadas al padrón general.",
+    "finca": "Datos físicos de cada finca, independientes de la campaña.",
+    "certificado_proveedor": "Certificados generales del proveedor; distintos del certificado de campaña.",
+    "participacion_proveedor_campana": "Vinculación proveedor–campaña; aquí pertenecen rol, oferta y evaluación.",
+    "participacion_proveedor_x_fruta_derivada": "Variedades de la participación, sin deducirlas solo de contratos de compra.",
+    "campania_x_proveedores": "Fincas vinculadas a una participación; permite conservar historial por campaña.",
+    "entrevista_extencion": "Registro agronómico de cada finca entrevistada en una campaña.",
+    "examen_proveedor": "Exámenes sanitarios de la participación, con muestra y fechas de laboratorio.",
+    "acuerdo_compra": "Condiciones versionadas por finca, variedad y vigencia; no sustituye la participación.",
+    "norma": "Catálogo de normas de certificación y traslado.",
+    "certificado_campana": "Certificado de campaña, costo y organismo; un certificado por campaña según la UI.",
+    "certificado_campana_x_proveedor": "Productores cubiertos y kilos iniciales capturados al certificar.",
+    "ampliacion_certificado_campana": "Incrementos de cobertura, sin sobrescribir los kilos iniciales.",
+    "pago_certificado_campana": "Desembolsos de la certificación en su misma moneda.",
+    "cliente_negocio": "Padrón general del cliente y contacto.",
+    "destino_cliente_negocio": "Puntos de llegada de cada cliente; no asumir que todos comparten una planta.",
+    "cliente_negocio_campana": "Participación cliente–campaña y necesidad original, previa a sus contratos.",
+    "cliente_negocio_campana_x_fruta_derivada": "Selección múltiple de variedades requeridas.",
+    "contrato_venta": "Varios contratos por requerimiento, con precio y moneda propios.",
+    "entrega_programada": "Programación comercial; puede existir antes de asignar transporte.",
+    "entrega_x_fruta_derivada": "Distribución programada por variedad para el programa semanal.",
+    "empresa_transporte_externo": "Nombre heredado del DBML; admite empresas e independientes.",
+    "vehiculo_externo": "Unidad de transporte con capacidad y pesos explícitos.",
+    "chofer_transporte_externo": "Identidad del conductor y vínculo opcional a cuenta de acceso.",
+    "solicitud_transporte": "Solicitud persistida; enviar correos está simulado en el prototipo.",
+    "invitacion_transporte": "Destinatarios por solicitud, con contacto capturado al invitar.",
+    "cotizacion_transporte": "Propuesta de respuesta; atributos no observables por lista vacía se proponen.",
+    "acuerdo_transporte": "Transportista vinculado a campaña y acuerdo de flete autorizado.",
+    "coordinacion_entrega": "Asignación previa a la carga real; un registro por entrega.",
+    "origen_entrega": "Selección de varias fincas de varios proveedores antes de cargar.",
+    "cosecha": "Operación de cosecha de una entrega; estado separado del despacho.",
+    "analisis_calidad": "Muestreo por operación y finca; no mezclar con exámenes de admisión.",
+    "medicion_mtd": "Historial de MTD por finca y campaña, con captura de respaldo.",
+    "carga": "Carga física real de la coordinación; no crea otra asignación de camión o chofer.",
+    "proveedor_carga": "Kilos reales por proveedor y variedad; la UI no reparte automáticamente por finca.",
+    "origen_carga": "Trazabilidad a fincas seleccionadas; asignación de kg opcional hasta medirla.",
+    "gasto_carga": "Cuadrilla, anotadores y otros costos de carga; no son automáticamente gasto de transporte.",
+    "guia_remision": "Documento de traslado y captura histórica de origen, destino y transportista.",
+    "proveedor_guia": "Distribución de kilos de una carga entre sus guías, sin duplicarlos.",
+    "guia_x_norma": "Selección múltiple de normas en la guía.",
+    "historial_chofer": "Eventos ordenados del despacho; el estado vigente se deriva del último evento.",
+    "recepcion_planta": "Recepción única con checklist, peso, descarte y cierre físico/administrativo.",
+    "liquidacion_proveedor": "Documento por carga y proveedor, con persona receptora e importe histórico.",
+    "liquidacion_transporte": "Documento por carga; flete ingresado al liquidar y gastos separados.",
+    "gasto_transporte": "Gastos reales o viáticos aplicados una sola vez a la liquidación.",
+    "adelanto_transporte": "Dinero entregado a la empresa antes de aplicarse a una carga.",
+    "aplicacion_adelanto": "Aplicación de un adelanto existente; no representa otro desembolso.",
+    "factura_venta": "Preparación y factura externa en una fila; preserva peso, precio y moneda facturados.",
+    "pago_proveedor": "Pagos parciales de compras en PEN.",
+    "pago_transporte": "Desembolsos de transporte, distintos de aplicar adelantos.",
+    "cobro_venta": "Cobros parciales en la moneda de la factura."
+  },
+  "refs": [
+    [
+      "pago_proveedor",
+      "liquidacion_id",
+      "liquidacion_proveedor",
+      "id"
+    ],
+    [
+      "pago_transporte",
+      "liquidacion_id",
+      "liquidacion_transporte",
+      "id"
+    ],
+    [
+      "cobro_venta",
+      "factura_id",
+      "factura_venta",
+      "id"
+    ],
+    [
+      "persona",
+      "documento_archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "usuario",
+      "persona_id",
+      "persona",
+      "id"
+    ],
+    [
+      "usuario",
+      "rol_id",
+      "rol",
+      "id"
+    ],
+    [
+      "archivo",
+      "subido_por",
+      "usuario",
+      "id"
+    ],
+    [
+      "sesion_usuario",
+      "usuario_id",
+      "usuario",
+      "id"
+    ],
+    [
+      "fruta_derivada",
+      "fruta_id",
+      "fruta",
+      "id"
+    ],
+    [
+      "campana",
+      "fruta_id",
+      "fruta",
+      "id"
+    ],
+    [
+      "campana",
+      "responsable_id",
+      "usuario",
+      "id"
+    ],
+    [
+      "campana",
+      "lineamientos_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "campana",
+      "cerrada_por",
+      "usuario",
+      "id"
+    ],
+    [
+      "campana_x_fruta_derivada",
+      "campania_id",
+      "campana",
+      "id"
+    ],
+    [
+      "campana_x_fruta_derivada",
+      "variedad_id",
+      "fruta_derivada",
+      "id"
+    ],
+    [
+      "proveedor",
+      "persona_principal_id",
+      "persona",
+      "id"
+    ],
+    [
+      "proveedor_x_persona",
+      "proveedor_id",
+      "proveedor",
+      "id"
+    ],
+    [
+      "proveedor_x_persona",
+      "persona_id",
+      "persona",
+      "id"
+    ],
+    [
+      "proveedor_x_fruta",
+      "proveedor_id",
+      "proveedor",
+      "id"
+    ],
+    [
+      "proveedor_x_fruta",
+      "fruta_id",
+      "fruta",
+      "id"
+    ],
+    [
+      "proveedor_x_fruta_derivada",
+      "proveedor_id",
+      "proveedor",
+      "id"
+    ],
+    [
+      "proveedor_x_fruta_derivada",
+      "variedad_id",
+      "fruta_derivada",
+      "id"
+    ],
+    [
+      "finca",
+      "proveedor_id",
+      "proveedor",
+      "id"
+    ],
+    [
+      "finca",
+      "variedad_id",
+      "fruta_derivada",
+      "id"
+    ],
+    [
+      "certificado_proveedor",
+      "proveedor_id",
+      "proveedor",
+      "id"
+    ],
+    [
+      "certificado_proveedor",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "participacion_proveedor_campana",
+      "campania_id",
+      "campana",
+      "id"
+    ],
+    [
+      "participacion_proveedor_campana",
+      "proveedor_id",
+      "proveedor",
+      "id"
+    ],
+    [
+      "participacion_proveedor_x_fruta_derivada",
+      "participacion_id",
+      "participacion_proveedor_campana",
+      "id"
+    ],
+    [
+      "participacion_proveedor_x_fruta_derivada",
+      "variedad_id",
+      "fruta_derivada",
+      "id"
+    ],
+    [
+      "campania_x_proveedores",
+      "participacion_id",
+      "participacion_proveedor_campana",
+      "id"
+    ],
+    [
+      "campania_x_proveedores",
+      "campania_id",
+      "campana",
+      "id"
+    ],
+    [
+      "campania_x_proveedores",
+      "proveedor_id",
+      "proveedor",
+      "id"
+    ],
+    [
+      "campania_x_proveedores",
+      "finca_id",
+      "finca",
+      "id"
+    ],
+    [
+      "entrevista_extencion",
+      "finca_campania_id",
+      "campania_x_proveedores",
+      "id"
+    ],
+    [
+      "entrevista_extencion",
+      "registrada_por",
+      "usuario",
+      "id"
+    ],
+    [
+      "entrevista_extencion",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "examen_proveedor",
+      "participacion_id",
+      "participacion_proveedor_campana",
+      "id"
+    ],
+    [
+      "examen_proveedor",
+      "finca_campania_id",
+      "campania_x_proveedores",
+      "id"
+    ],
+    [
+      "examen_proveedor",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "acuerdo_compra",
+      "finca_campania_id",
+      "campania_x_proveedores",
+      "id"
+    ],
+    [
+      "acuerdo_compra",
+      "variedad_id",
+      "fruta_derivada",
+      "id"
+    ],
+    [
+      "certificado_campana",
+      "campania_id",
+      "campana",
+      "id"
+    ],
+    [
+      "certificado_campana",
+      "norma_id",
+      "norma",
+      "id"
+    ],
+    [
+      "certificado_campana",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "certificado_campana_x_proveedor",
+      "certificacion_id",
+      "certificado_campana",
+      "id"
+    ],
+    [
+      "certificado_campana_x_proveedor",
+      "campania_id",
+      "campana",
+      "id"
+    ],
+    [
+      "certificado_campana_x_proveedor",
+      "participacion_id",
+      "participacion_proveedor_campana",
+      "id"
+    ],
+    [
+      "certificado_campana_x_proveedor",
+      "proveedor_id",
+      "proveedor",
+      "id"
+    ],
+    [
+      "ampliacion_certificado_campana",
+      "certificacion_id",
+      "certificado_campana",
+      "id"
+    ],
+    [
+      "ampliacion_certificado_campana",
+      "registrado_por",
+      "usuario",
+      "id"
+    ],
+    [
+      "pago_certificado_campana",
+      "certificacion_id",
+      "certificado_campana",
+      "id"
+    ],
+    [
+      "pago_certificado_campana",
+      "comprobante_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "pago_certificado_campana",
+      "registrado_por",
+      "usuario",
+      "id"
+    ],
+    [
+      "destino_cliente_negocio",
+      "cliente_id",
+      "cliente_negocio",
+      "id"
+    ],
+    [
+      "cliente_negocio_campana",
+      "campania_id",
+      "campana",
+      "id"
+    ],
+    [
+      "cliente_negocio_campana",
+      "cliente_id",
+      "cliente_negocio",
+      "id"
+    ],
+    [
+      "cliente_negocio_campana",
+      "ficha_tecnica_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "cliente_negocio_campana_x_fruta_derivada",
+      "requerimiento_id",
+      "cliente_negocio_campana",
+      "id"
+    ],
+    [
+      "cliente_negocio_campana_x_fruta_derivada",
+      "variedad_id",
+      "fruta_derivada",
+      "id"
+    ],
+    [
+      "contrato_venta",
+      "requerimiento_id",
+      "cliente_negocio_campana",
+      "id"
+    ],
+    [
+      "contrato_venta",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "entrega_programada",
+      "contrato_id",
+      "contrato_venta",
+      "id"
+    ],
+    [
+      "entrega_programada",
+      "destino_id",
+      "destino_cliente_negocio",
+      "id"
+    ],
+    [
+      "entrega_x_fruta_derivada",
+      "entrega_id",
+      "entrega_programada",
+      "id"
+    ],
+    [
+      "entrega_x_fruta_derivada",
+      "variedad_id",
+      "fruta_derivada",
+      "id"
+    ],
+    [
+      "empresa_transporte_externo",
+      "persona_id",
+      "persona",
+      "id"
+    ],
+    [
+      "vehiculo_externo",
+      "empresa_id",
+      "empresa_transporte_externo",
+      "id"
+    ],
+    [
+      "chofer_transporte_externo",
+      "empresa_id",
+      "empresa_transporte_externo",
+      "id"
+    ],
+    [
+      "chofer_transporte_externo",
+      "persona_id",
+      "persona",
+      "id"
+    ],
+    [
+      "chofer_transporte_externo",
+      "usuario_id",
+      "usuario",
+      "id"
+    ],
+    [
+      "solicitud_transporte",
+      "campania_id",
+      "campana",
+      "id"
+    ],
+    [
+      "solicitud_transporte",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "invitacion_transporte",
+      "solicitud_id",
+      "solicitud_transporte",
+      "id"
+    ],
+    [
+      "invitacion_transporte",
+      "empresa_id",
+      "empresa_transporte_externo",
+      "id"
+    ],
+    [
+      "cotizacion_transporte",
+      "invitacion_id",
+      "invitacion_transporte",
+      "id"
+    ],
+    [
+      "cotizacion_transporte",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "acuerdo_transporte",
+      "campania_id",
+      "campana",
+      "id"
+    ],
+    [
+      "acuerdo_transporte",
+      "empresa_id",
+      "empresa_transporte_externo",
+      "id"
+    ],
+    [
+      "acuerdo_transporte",
+      "cotizacion_id",
+      "cotizacion_transporte",
+      "id"
+    ],
+    [
+      "acuerdo_transporte",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "coordinacion_entrega",
+      "entrega_id",
+      "entrega_programada",
+      "id"
+    ],
+    [
+      "coordinacion_entrega",
+      "acuerdo_transporte_id",
+      "acuerdo_transporte",
+      "id"
+    ],
+    [
+      "coordinacion_entrega",
+      "empresa_id",
+      "empresa_transporte_externo",
+      "id"
+    ],
+    [
+      "coordinacion_entrega",
+      "chofer_id",
+      "chofer_transporte_externo",
+      "id"
+    ],
+    [
+      "origen_entrega",
+      "coordinacion_id",
+      "coordinacion_entrega",
+      "id"
+    ],
+    [
+      "origen_entrega",
+      "finca_campania_id",
+      "campania_x_proveedores",
+      "id"
+    ],
+    [
+      "cosecha",
+      "entrega_id",
+      "entrega_programada",
+      "id"
+    ],
+    [
+      "cosecha",
+      "evidencia_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "analisis_calidad",
+      "cosecha_id",
+      "cosecha",
+      "id"
+    ],
+    [
+      "analisis_calidad",
+      "finca_campania_id",
+      "campania_x_proveedores",
+      "id"
+    ],
+    [
+      "analisis_calidad",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "medicion_mtd",
+      "finca_campania_id",
+      "campania_x_proveedores",
+      "id"
+    ],
+    [
+      "medicion_mtd",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "medicion_mtd",
+      "registrado_por",
+      "usuario",
+      "id"
+    ],
+    [
+      "carga",
+      "coordinacion_id",
+      "coordinacion_entrega",
+      "id"
+    ],
+    [
+      "carga",
+      "guia_salida_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "proveedor_carga",
+      "carga_id",
+      "carga",
+      "id"
+    ],
+    [
+      "proveedor_carga",
+      "participacion_id",
+      "participacion_proveedor_campana",
+      "id"
+    ],
+    [
+      "proveedor_carga",
+      "variedad_id",
+      "fruta_derivada",
+      "id"
+    ],
+    [
+      "origen_carga",
+      "proveedor_carga_id",
+      "proveedor_carga",
+      "id"
+    ],
+    [
+      "origen_carga",
+      "finca_campania_id",
+      "campania_x_proveedores",
+      "id"
+    ],
+    [
+      "gasto_carga",
+      "carga_id",
+      "carga",
+      "id"
+    ],
+    [
+      "guia_remision",
+      "carga_id",
+      "carga",
+      "id"
+    ],
+    [
+      "guia_remision",
+      "finca_partida_id",
+      "finca",
+      "id"
+    ],
+    [
+      "guia_remision",
+      "destino_id",
+      "destino_cliente_negocio",
+      "id"
+    ],
+    [
+      "guia_remision",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "proveedor_guia",
+      "guia_id",
+      "guia_remision",
+      "id"
+    ],
+    [
+      "proveedor_guia",
+      "carga_id",
+      "carga",
+      "id"
+    ],
+    [
+      "proveedor_guia",
+      "proveedor_carga_id",
+      "proveedor_carga",
+      "id"
+    ],
+    [
+      "guia_x_norma",
+      "guia_id",
+      "guia_remision",
+      "id"
+    ],
+    [
+      "guia_x_norma",
+      "norma_id",
+      "norma",
+      "id"
+    ],
+    [
+      "historial_chofer",
+      "coordinacion_id",
+      "coordinacion_entrega",
+      "id"
+    ],
+    [
+      "historial_chofer",
+      "carga_id",
+      "carga",
+      "id"
+    ],
+    [
+      "historial_chofer",
+      "chofer_id",
+      "chofer_transporte_externo",
+      "id"
+    ],
+    [
+      "recepcion_planta",
+      "carga_id",
+      "carga",
+      "id"
+    ],
+    [
+      "recepcion_planta",
+      "chofer_id",
+      "chofer_transporte_externo",
+      "id"
+    ],
+    [
+      "recepcion_planta",
+      "evidencia_descarte_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "recepcion_planta",
+      "reporte_recepcion_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "liquidacion_proveedor",
+      "carga_id",
+      "carga",
+      "id"
+    ],
+    [
+      "liquidacion_proveedor",
+      "proveedor_id",
+      "proveedor",
+      "id"
+    ],
+    [
+      "liquidacion_proveedor",
+      "registrado_por",
+      "usuario",
+      "id"
+    ],
+    [
+      "liquidacion_proveedor",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "liquidacion_transporte",
+      "carga_id",
+      "carga",
+      "id"
+    ],
+    [
+      "liquidacion_transporte",
+      "registrado_por",
+      "usuario",
+      "id"
+    ],
+    [
+      "liquidacion_transporte",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "gasto_transporte",
+      "carga_id",
+      "carga",
+      "id"
+    ],
+    [
+      "adelanto_transporte",
+      "acuerdo_id",
+      "acuerdo_transporte",
+      "id"
+    ],
+    [
+      "adelanto_transporte",
+      "comprobante_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "aplicacion_adelanto",
+      "adelanto_id",
+      "adelanto_transporte",
+      "id"
+    ],
+    [
+      "factura_venta",
+      "carga_id",
+      "carga",
+      "id"
+    ],
+    [
+      "factura_venta",
+      "archivo_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "pago_proveedor",
+      "comprobante_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "pago_proveedor",
+      "registrado_por",
+      "usuario",
+      "id"
+    ],
+    [
+      "pago_transporte",
+      "comprobante_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "pago_transporte",
+      "registrado_por",
+      "usuario",
+      "id"
+    ],
+    [
+      "cobro_venta",
+      "comprobante_id",
+      "archivo",
+      "id"
+    ],
+    [
+      "cobro_venta",
+      "registrado_por",
+      "usuario",
+      "id"
+    ],
+    [
+      "campania_x_proveedores",
+      "participacion_id, campania_id, proveedor_id",
+      "participacion_proveedor_campana",
+      "id, campania_id, proveedor_id"
+    ],
+    [
+      "campania_x_proveedores",
+      "finca_id, proveedor_id",
+      "finca",
+      "id, proveedor_id"
+    ],
+    [
+      "examen_proveedor",
+      "finca_campania_id, participacion_id",
+      "campania_x_proveedores",
+      "id, participacion_id"
+    ],
+    [
+      "certificado_campana_x_proveedor",
+      "certificacion_id, campania_id",
+      "certificado_campana",
+      "id, campania_id"
+    ],
+    [
+      "certificado_campana_x_proveedor",
+      "participacion_id, campania_id, proveedor_id",
+      "participacion_proveedor_campana",
+      "id, campania_id, proveedor_id"
+    ],
+    [
+      "coordinacion_entrega",
+      "acuerdo_transporte_id, empresa_id",
+      "acuerdo_transporte",
+      "id, empresa_id"
+    ],
+    [
+      "coordinacion_entrega",
+      "vehiculo_id, empresa_id",
+      "vehiculo_externo",
+      "id, empresa_id"
+    ],
+    [
+      "coordinacion_entrega",
+      "chofer_id, empresa_id",
+      "chofer_transporte_externo",
+      "id, empresa_id"
+    ],
+    [
+      "historial_chofer",
+      "carga_id, coordinacion_id",
+      "carga",
+      "id, coordinacion_id"
+    ],
+    [
+      "proveedor_guia",
+      "guia_id, carga_id",
+      "guia_remision",
+      "id, carga_id"
+    ],
+    [
+      "proveedor_guia",
+      "proveedor_carga_id, carga_id",
+      "proveedor_carga",
+      "id, carga_id"
+    ],
+    [
+      "liquidacion_proveedor",
+      "proveedor_id, persona_liquidacion_id",
+      "proveedor_x_persona",
+      "proveedor_id, persona_id"
+    ],
+    [
+      "aplicacion_adelanto",
+      "liquidacion_id",
+      "liquidacion_transporte",
+      "id"
+    ]
+  ],
+  "checks": {
+    "persona": [],
+    "rol": [],
+    "usuario": [],
+    "archivo": [
+      "bytes > 0"
+    ],
+    "sesion_usuario": [
+      "expira_at > creada_at"
+    ],
+    "parametro_uit": [
+      "valor > 0",
+      "limite_uit > 0",
+      "umbral_alerta > 0 AND umbral_alerta <= 1"
+    ],
+    "fruta": [],
+    "fruta_derivada": [],
+    "campana": [
+      "estado IN ('PLANIFICADO','EN_PROCESO','FINALIZADO')",
+      "fecha_fin >= fecha_inicio",
+      "(estado = 'FINALIZADO') = (cerrada_at IS NOT NULL AND cerrada_por IS NOT NULL AND motivo_cierre IS NOT NULL)"
+    ],
+    "campana_x_fruta_derivada": [],
+    "proveedor": [],
+    "proveedor_x_persona": [],
+    "proveedor_x_fruta": [],
+    "proveedor_x_fruta_derivada": [],
+    "finca": [
+      "hectareas > 0",
+      "hectareas_cultivo >= 0 AND hectareas_cultivo <= hectareas",
+      "ubigeo IS NULL OR ubigeo ~ '^[0-9]{6}$'",
+      "latitud BETWEEN -90 AND 90",
+      "longitud BETWEEN -180 AND 180",
+      "(latitud IS NULL) = (longitud IS NULL)"
+    ],
+    "certificado_proveedor": [],
+    "participacion_proveedor_campana": [
+      "rol_comercial IN ('PRODUCTOR','ACOPIADOR')",
+      "tipo_fruta IN ('ORGANICA','CONVENCIONAL')",
+      "kilos_estimados >= 0",
+      "estado IN ('EXAMEN_PENDIENTE','ENTREVISTA_PENDIENTE','APROBADO','RECHAZADO')"
+    ],
+    "participacion_proveedor_x_fruta_derivada": [],
+    "campania_x_proveedores": [],
+    "entrevista_extencion": [
+      "densidad_plantacion > 0",
+      "aplicaciones_anio >= 0"
+    ],
+    "examen_proveedor": [
+      "fecha_envio IS NULL OR fecha_envio >= fecha_muestra"
+    ],
+    "acuerdo_compra": [
+      "precio_kg > 0",
+      "kilos_acordados >= 0",
+      "fecha_fin >= fecha_inicio"
+    ],
+    "norma": [],
+    "certificado_campana": [
+      "fecha_vencimiento >= fecha_emision",
+      "costo >= 0",
+      "moneda IN ('PEN','USD','EUR')"
+    ],
+    "certificado_campana_x_proveedor": [
+      "kilos_autorizados > 0"
+    ],
+    "ampliacion_certificado_campana": [
+      "kilos_adicionales > 0"
+    ],
+    "pago_certificado_campana": [
+      "monto > 0"
+    ],
+    "cliente_negocio": [
+      "tipo IN ('EXPORTADOR','INDUSTRIA')",
+      "ruc ~ '^[0-9]{11}$'"
+    ],
+    "destino_cliente_negocio": [
+      "latitud BETWEEN -90 AND 90",
+      "longitud BETWEEN -180 AND 180",
+      "(latitud IS NULL) = (longitud IS NULL)"
+    ],
+    "cliente_negocio_campana": [
+      "cantidad_kg > 0",
+      "entrega_hasta >= entrega_desde"
+    ],
+    "cliente_negocio_campana_x_fruta_derivada": [],
+    "contrato_venta": [
+      "kilos_acordados > 0",
+      "precio_kg > 0",
+      "canal IN ('EXPORTACION','INDUSTRIA')",
+      "moneda IN ('PEN','USD','EUR')"
+    ],
+    "entrega_programada": [
+      "kilos_programados > 0"
+    ],
+    "entrega_x_fruta_derivada": [
+      "kilos_programados > 0"
+    ],
+    "empresa_transporte_externo": [
+      "tipo IN ('EMPRESA','INDEPENDIENTE')",
+      "tipo <> 'INDEPENDIENTE' OR persona_id IS NOT NULL"
+    ],
+    "vehiculo_externo": [
+      "capacidad_kg > 0",
+      "volumen_m3 > 0",
+      "peso_bruto_kg >= capacidad_kg"
+    ],
+    "chofer_transporte_externo": [],
+    "solicitud_transporte": [],
+    "invitacion_transporte": [],
+    "cotizacion_transporte": [
+      "monto > 0",
+      "moneda IN ('PEN','USD','EUR')"
+    ],
+    "acuerdo_transporte": [
+      "monto_acordado > 0",
+      "tipo_pago IN ('INMEDIATO','CON_ADELANTO','AL_FINAL')"
+    ],
+    "coordinacion_entrega": [
+      "fin_programado >= inicio_programado"
+    ],
+    "origen_entrega": [],
+    "cosecha": [
+      "kilos_estimados >= 0",
+      "kilos_cosechados >= 0",
+      "kilos_aceptados >= 0"
+    ],
+    "analisis_calidad": [],
+    "medicion_mtd": [
+      "valor >= 0",
+      "limite_aplicado >= 0"
+    ],
+    "carga": [
+      "viaticos_movilidad >= 0",
+      "viaticos_insumos >= 0",
+      "(guia_salida_id IS NULL) = (guia_salida_registrada_at IS NULL)"
+    ],
+    "proveedor_carga": [
+      "kilos_cargados > 0",
+      "precio_compra_kg_aplicado > 0",
+      "jabas_cargadas >= 0",
+      "jabas_vacias >= 0",
+      "bines_cargados >= 0",
+      "bines_vacios >= 0",
+      "mallas_cargadas >= 0",
+      "mallas_vacias >= 0"
+    ],
+    "origen_carga": [
+      "kilos_origen > 0"
+    ],
+    "gasto_carga": [
+      "monto >= 0"
+    ],
+    "guia_remision": [
+      "peso_bruto_kg > 0",
+      "numero_bultos > 0",
+      "unidad_peso = 'KGM'"
+    ],
+    "proveedor_guia": [
+      "kilos_asignados > 0"
+    ],
+    "guia_x_norma": [],
+    "historial_chofer": [
+      "estado IN ('EN_CARGA','SALIDA','EN_CAMINO','LLEGADA','CIERRE')"
+    ],
+    "recepcion_planta": [
+      "peso_planta_kg > 0",
+      "descarte_kg >= 0",
+      "jabas_devueltas >= 0",
+      "hubo_descarte IS DISTINCT FROM false OR descarte_kg = 0",
+      "hubo_descarte IS DISTINCT FROM true OR (descarte_kg > 0 AND evidencia_descarte_id IS NOT NULL)"
+    ],
+    "liquidacion_proveedor": [
+      "importe_compra > 0",
+      "valor_uit_aplicado > 0"
+    ],
+    "liquidacion_transporte": [
+      "flete >= 0"
+    ],
+    "gasto_transporte": [
+      "monto >= 0",
+      "origen IN ('VIATICO','REAL')"
+    ],
+    "adelanto_transporte": [
+      "monto > 0"
+    ],
+    "aplicacion_adelanto": [
+      "monto > 0"
+    ],
+    "factura_venta": [
+      "kilos_facturados > 0",
+      "precio_kg_aplicado > 0",
+      "importe_venta = round(kilos_facturados * precio_kg_aplicado, 2)",
+      "estado IN ('PREPARADA','EMITIDA')",
+      "moneda IN ('PEN','USD','EUR')",
+      "estado <> 'EMITIDA' OR (numero_factura IS NOT NULL AND fecha_emision IS NOT NULL AND archivo_id IS NOT NULL)",
+      "fecha_vencimiento >= fecha_emision"
+    ],
+    "pago_proveedor": [
+      "monto > 0"
+    ],
+    "pago_transporte": [
+      "monto > 0"
+    ],
+    "cobro_venta": [
+      "monto > 0"
+    ]
+  },
+  "uniques": {
+    "persona": [
+      "tipo_documento, numero_documento"
+    ],
+    "rol": [
+      "nombre"
+    ],
+    "usuario": [
+      "persona_id",
+      "usuario"
+    ],
+    "archivo": [
+      "ruta_storage"
+    ],
+    "sesion_usuario": [
+      "token_hash"
+    ],
+    "parametro_uit": [
+      "anio"
+    ],
+    "fruta": [
+      "nombre"
+    ],
+    "fruta_derivada": [
+      "fruta_id, nombre"
+    ],
+    "campana": [],
+    "campana_x_fruta_derivada": [
+      "campania_id, variedad_id"
+    ],
+    "proveedor": [
+      "persona_principal_id",
+      "codigo"
+    ],
+    "proveedor_x_persona": [
+      "proveedor_id, persona_id"
+    ],
+    "proveedor_x_fruta": [
+      "proveedor_id, fruta_id"
+    ],
+    "proveedor_x_fruta_derivada": [
+      "proveedor_id, variedad_id"
+    ],
+    "finca": [
+      "id, proveedor_id"
+    ],
+    "certificado_proveedor": [],
+    "participacion_proveedor_campana": [
+      "campania_id, proveedor_id",
+      "id, campania_id, proveedor_id"
+    ],
+    "participacion_proveedor_x_fruta_derivada": [
+      "participacion_id, variedad_id"
+    ],
+    "campania_x_proveedores": [
+      "campania_id, finca_id",
+      "id, participacion_id"
+    ],
+    "entrevista_extencion": [],
+    "examen_proveedor": [],
+    "acuerdo_compra": [],
+    "norma": [
+      "codigo"
+    ],
+    "certificado_campana": [
+      "campania_id",
+      "id, campania_id"
+    ],
+    "certificado_campana_x_proveedor": [
+      "certificacion_id, participacion_id"
+    ],
+    "ampliacion_certificado_campana": [],
+    "pago_certificado_campana": [
+      "certificacion_id, referencia"
+    ],
+    "cliente_negocio": [
+      "ruc"
+    ],
+    "destino_cliente_negocio": [
+      "id, cliente_id"
+    ],
+    "cliente_negocio_campana": [],
+    "cliente_negocio_campana_x_fruta_derivada": [
+      "requerimiento_id, variedad_id"
+    ],
+    "contrato_venta": [
+      "numero"
+    ],
+    "entrega_programada": [],
+    "entrega_x_fruta_derivada": [
+      "entrega_id, variedad_id"
+    ],
+    "empresa_transporte_externo": [
+      "tipo_documento, numero_documento"
+    ],
+    "vehiculo_externo": [
+      "placa",
+      "id, empresa_id"
+    ],
+    "chofer_transporte_externo": [
+      "persona_id",
+      "usuario_id",
+      "id, empresa_id"
+    ],
+    "solicitud_transporte": [
+      "referencia"
+    ],
+    "invitacion_transporte": [
+      "solicitud_id, empresa_id"
+    ],
+    "cotizacion_transporte": [],
+    "acuerdo_transporte": [
+      "campania_id, empresa_id",
+      "id, empresa_id"
+    ],
+    "coordinacion_entrega": [
+      "entrega_id",
+      "id, entrega_id"
+    ],
+    "origen_entrega": [
+      "coordinacion_id, finca_campania_id"
+    ],
+    "cosecha": [
+      "codigo_lote"
+    ],
+    "analisis_calidad": [],
+    "medicion_mtd": [],
+    "carga": [
+      "coordinacion_id",
+      "codigo",
+      "id, coordinacion_id"
+    ],
+    "proveedor_carga": [
+      "carga_id, participacion_id, variedad_id",
+      "id, carga_id"
+    ],
+    "origen_carga": [
+      "proveedor_carga_id, finca_campania_id"
+    ],
+    "gasto_carga": [
+      "carga_id, concepto"
+    ],
+    "guia_remision": [
+      "numero",
+      "id, carga_id"
+    ],
+    "proveedor_guia": [
+      "guia_id, proveedor_carga_id"
+    ],
+    "guia_x_norma": [
+      "guia_id, norma_id"
+    ],
+    "historial_chofer": [
+      "coordinacion_id, estado"
+    ],
+    "recepcion_planta": [
+      "carga_id"
+    ],
+    "liquidacion_proveedor": [
+      "carga_id, proveedor_id",
+      "numero"
+    ],
+    "liquidacion_transporte": [
+      "carga_id",
+      "numero"
+    ],
+    "gasto_transporte": [
+      "carga_id, concepto"
+    ],
+    "adelanto_transporte": [
+      "acuerdo_id, referencia"
+    ],
+    "aplicacion_adelanto": [
+      "adelanto_id, liquidacion_id"
+    ],
+    "factura_venta": [
+      "carga_id",
+      "referencia_preparacion",
+      "numero_factura"
+    ],
+    "pago_proveedor": [
+      "liquidacion_id, referencia"
+    ],
+    "pago_transporte": [
+      "liquidacion_id, referencia"
+    ],
+    "cobro_venta": [
+      "factura_id, referencia"
+    ]
+  }
+}

@@ -1,0 +1,606 @@
+[
+  {
+    "file": "epe-backend/src/app.controller.spec.ts",
+    "sha256": "ac49be78331b7fe8fba1264e905f3fa571458c8e059b2367f5833b3b185e84fd"
+  },
+  {
+    "file": "epe-backend/src/app.controller.ts",
+    "sha256": "17e02169878191e6b19a5218213b3d6ba1d8ea380f8ade2403e264a5a1f23cf1"
+  },
+  {
+    "file": "epe-backend/src/app.module.ts",
+    "sha256": "85cf708c2f1a3a42f1d2ba6a69f7695138ec8be91da90da0352a5e5e7228aaf5"
+  },
+  {
+    "file": "epe-backend/src/app.service.ts",
+    "sha256": "5d4242d50092a353e5ab1f06663a89dbc714c7d9d70072ea03c83c5b14750f05"
+  },
+  {
+    "file": "epe-backend/src/archivo/archivo.module.ts",
+    "sha256": "8b374a125dbfcb74d5bcdc34deebd0a2a15ab03543248a5401a79f6d15290500"
+  },
+  {
+    "file": "epe-backend/src/archivo/entities/archivo.ts",
+    "sha256": "ebcfbead190cd21a5ffda92525f0da936119c53694d77e866759c31c2deb1560"
+  },
+  {
+    "file": "epe-backend/src/archivo/interfaces/archivo-storage.interfaces.ts",
+    "sha256": "1ed44088f208d67be867e6c4cc6396b61ea3f29891048aecdaed1183430d144b"
+  },
+  {
+    "file": "epe-backend/src/archivo/s3.constants.ts",
+    "sha256": "408443c39ec0c6ad7bf66906e15642f2347c611ec2f6419f4e9378fee4f92e79"
+  },
+  {
+    "file": "epe-backend/src/archivo/services/archivo.service.spec.ts",
+    "sha256": "8804e62bbd3165fe9371dee06a6dc29a119ba70a59fdb1e9527ceb728333ef71"
+  },
+  {
+    "file": "epe-backend/src/archivo/services/archivo.service.ts",
+    "sha256": "a8521606356a45ffa7362ec4a07f496bc4df89ab211c4b04834da18a4663acd7"
+  },
+  {
+    "file": "epe-backend/src/archivo/services/s3-storage.service.spec.ts",
+    "sha256": "91997abb3effd20198348006954d102c3eef7b271eb9f9412090ab40ef15393f"
+  },
+  {
+    "file": "epe-backend/src/archivo/services/s3-storage.service.ts",
+    "sha256": "31eaeb5d0d9adda08d25f512ebab16fe20af3f484fb709febd35feaafa9b5585"
+  },
+  {
+    "file": "epe-backend/src/campana/campana.module.ts",
+    "sha256": "f069d935e8288aff2f26c61b284b45cfbfe56ca7f0eaa71f2f59b88b710bdcdd"
+  },
+  {
+    "file": "epe-backend/src/campana/controllers/campana.controller.ts",
+    "sha256": "9f278cd207fa87b41abc86274c81033478aa74920de07c0adcf19c6b29924c7f"
+  },
+  {
+    "file": "epe-backend/src/campana/dto/create-campana.dto.ts",
+    "sha256": "9915d9f7cf9cb132da3242ae854115100a131a68fed87c7c55f264cb47c742f0"
+  },
+  {
+    "file": "epe-backend/src/campana/dto/update-campana.dto.ts",
+    "sha256": "3c06eec4a24d3ff58de3bfb1d773344ca90e1262540bc2a7c10683dd0eb95766"
+  },
+  {
+    "file": "epe-backend/src/campana/entities/campana.ts",
+    "sha256": "a1c692966592fdbfd23dfa99cf5051e287da964cd7358726eb5cc60688b598b3"
+  },
+  {
+    "file": "epe-backend/src/campana/services/campana.service.ts",
+    "sha256": "b73098ef2eede60f1fdf8616f9fb177d61fe8e5bda2c07e4b544d2e679195487"
+  },
+  {
+    "file": "epe-backend/src/campana-proveedor/campania-proveedor.module.ts",
+    "sha256": "fcd64836fb33d507607b86244ac759b0f77efcee010621fb00bc4d390ddb7697"
+  },
+  {
+    "file": "epe-backend/src/campana-proveedor/controllers/campania-proveedor.controller.ts",
+    "sha256": "41c05412703c27c757be13b40a8f7e2e56b1ad3c9a25881e1fedca79ee9aeef5"
+  },
+  {
+    "file": "epe-backend/src/campana-proveedor/dto/campania-proveedor-finca.dto.spec.ts",
+    "sha256": "6956fb69bece0dc7607df4eec1f1ab6f490f6d505bf82129267d7e12e0ca8060"
+  },
+  {
+    "file": "epe-backend/src/campana-proveedor/dto/create-campania-proveedor.dto.ts",
+    "sha256": "d8ae6263e097b760b230deba45bcdd58527c4456e94159ea300a3ba5eea13e35"
+  },
+  {
+    "file": "epe-backend/src/campana-proveedor/dto/update-campania-proveedor.dto.ts",
+    "sha256": "ed7ec8aca58ae8c5a35c3a6a45586d6549469cfaead8fe5f7394224c45e6e69d"
+  },
+  {
+    "file": "epe-backend/src/campana-proveedor/entities/campania-proveedor.ts",
+    "sha256": "214277c47bc223f94f71646b4bf5fbb0e67e5c5f6d73048d42b4e747b9d776ba"
+  },
+  {
+    "file": "epe-backend/src/campana-proveedor/services/campania-proveedor.service.spec.ts",
+    "sha256": "efa1f60ae421d564422d4a8a59118933f2efbbe15630b934cfbe57cb23555a91"
+  },
+  {
+    "file": "epe-backend/src/campana-proveedor/services/campania-proveedor.service.ts",
+    "sha256": "4c24eea103d5d706557f6035d0bfc5736e7c117bea843a22a5287fa79f9f60d0"
+  },
+  {
+    "file": "epe-backend/src/certificado-campana/certificado-campana.module.ts",
+    "sha256": "b26a2bb609c417bd6e855b6e317f8cf7880c9b894741355020af9fa5cd6bce3d"
+  },
+  {
+    "file": "epe-backend/src/certificado-campana/controllers/certificado-campana.controller.ts",
+    "sha256": "8a450edea310d77658763eb51bdac3f80fc95f720eebe35bc027ba26dc52aa87"
+  },
+  {
+    "file": "epe-backend/src/certificado-campana/dto/create-certificado-campana.dto.ts",
+    "sha256": "e02d0e986d57fcc3f52838b69e51d5b3d37bbf611b5a148b0e906f0ed7030bfa"
+  },
+  {
+    "file": "epe-backend/src/certificado-campana/dto/update-certificado-campana.dto.ts",
+    "sha256": "53a334323db22fa01f6daebdb21813d6049871818ecacee72423bc26e13a3345"
+  },
+  {
+    "file": "epe-backend/src/certificado-campana/entities/certificado-campana.ts",
+    "sha256": "864ea30cba6ed71fcdf31f8cad8f69b09d89373943f9b2effffd375d35ac2c91"
+  },
+  {
+    "file": "epe-backend/src/certificado-campana/services/certificado-campana.service.ts",
+    "sha256": "6cea228648e4bea0ad18c8a84b58f1f04c7a195fafc0f703553820443ce6afd1"
+  },
+  {
+    "file": "epe-backend/src/certificado-proveedor/certificado-proveedor.module.ts",
+    "sha256": "1896882cd9259a74b4e05711490125185c9ed045b2b911eff25e93fadde80673"
+  },
+  {
+    "file": "epe-backend/src/certificado-proveedor/controllers/certificado-proveedor.controller.ts",
+    "sha256": "e4ad3d9a3f6bde2f09dbb34e83b44db5403166c81ed50213d6baaf95674569ab"
+  },
+  {
+    "file": "epe-backend/src/certificado-proveedor/dto/certificado-documento-response.dto.ts",
+    "sha256": "500075b9d84d6ae7267415ce095d76c4b68e793b98797fa575e8ee494b5f5f15"
+  },
+  {
+    "file": "epe-backend/src/certificado-proveedor/dto/create-certificado-proveedor.dto.ts",
+    "sha256": "30b0371ea7c8dc68f6ff25a8bec54cae55738088bf765a2e5d5ab9d6eb55eb1a"
+  },
+  {
+    "file": "epe-backend/src/certificado-proveedor/dto/request-certificado-documento-upload.dto.ts",
+    "sha256": "dc5d18104732af383a4013ebf1c9ade14ab97477458983e5d62e517c67ab2d5a"
+  },
+  {
+    "file": "epe-backend/src/certificado-proveedor/dto/update-certificado-proveedor.dto.ts",
+    "sha256": "12e2e002f6e5f4e7f28732ba5310c49983d413a93ea92514360ca9a4e3482f45"
+  },
+  {
+    "file": "epe-backend/src/certificado-proveedor/entities/certificado-proveedor.ts",
+    "sha256": "c09b0119b3f6e2f553665dbf1503ad8655fabb6d416e6e779f61b6da3b5c27ef"
+  },
+  {
+    "file": "epe-backend/src/certificado-proveedor/services/certificado-proveedor.service.spec.ts",
+    "sha256": "5c3e0af725d212684a2ccf35b381154a0b8cb2aef79acb9329f1099307796f93"
+  },
+  {
+    "file": "epe-backend/src/certificado-proveedor/services/certificado-proveedor.service.ts",
+    "sha256": "840fffbadb986ad44b22e538b03c1f31db2b1fc31f5a9ad22fd297455b9661a5"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio/cliente-negocio.module.ts",
+    "sha256": "c91f0afe1c95829a2c48a5f4818f45f52e8c098079838f0a5d708a6373270722"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio/controllers/cliente-negocio.controller.ts",
+    "sha256": "9fbc53b0affc71e388a966e21d7ffdd218681effd4e4fafb991bde6cadef28c2"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio/dto/create-cliente-negocio.dto.ts",
+    "sha256": "5567eb8119aa47bb27ba14c5e04bdcb4a3f430415a822d6d15c18dfb04e95a35"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio/dto/update-cliente-negocio.dto.ts",
+    "sha256": "c81148e8d8a0eac3f35e944b3af4a99b12abcb27dd47248c1452dbe3d89d4c21"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio/entities/cliente-negocio.ts",
+    "sha256": "1ce2728e883c83de5b1711d078d508b41b0b24ac91e70831f304f490bca59c31"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio/services/cliente-negocio.service.ts",
+    "sha256": "7209bb59dc224a83cacb33d4568af33c6ca0717e0ce37c6ac2655984bb1f15f3"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio-campana/cliente-negocio-campana.module.ts",
+    "sha256": "0b18fc8079c8922e0d142dcad5d108a31992d625331dda325d410d2b54cc2c70"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio-campana/controllers/cliente-negocio-campana.controller.ts",
+    "sha256": "f479a69e2ac9718a2c72900f711b172e4100dbbf70e23d387ee261b90bd0d92e"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio-campana/controllers/contrato-cliente-negocio.controller.ts",
+    "sha256": "fe26cb533ddcab8b74b42e9fe29ab680ff6de3308d029904dbaaffae8ba73b7f"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio-campana/dto/contratos-cliente-negocio-response.dto.ts",
+    "sha256": "8113c9f0042999d8c0bfc9698d295768dd5afb79dc12082fe27bd097649e1394"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio-campana/dto/create-cliente-negocio-campana.dto.ts",
+    "sha256": "39aad526dc06bfa177095e2c966c6000c33881630a9457fa5035133cb566ae32"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio-campana/dto/update-cliente-negocio-campana.dto.ts",
+    "sha256": "fa458186055f930811ac1271e5abaaaccf0d442ce5fd1341f5d16765e4f85dd5"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio-campana/entities/cliente-negocio-campana.ts",
+    "sha256": "f95be423eba525cc475ab0580f0f6213a6c533f0585709155763e47d9b06bde2"
+  },
+  {
+    "file": "epe-backend/src/cliente-negocio-campana/services/cliente-negocio-campana.service.ts",
+    "sha256": "ded06efbd07d7080d55d33267f1abbd407d5c292661abce28afd37fb45cf72dc"
+  },
+  {
+    "file": "epe-backend/src/common/entities/auditable.entity.ts",
+    "sha256": "008d2e5d7c4993ea887e4d67a783e156d26a5220b7d8bcd310884f420771a65c"
+  },
+  {
+    "file": "epe-backend/src/common/transformers/column.transformers.ts",
+    "sha256": "e915e3ee442cf95244293e9b7d7ad10dbb6cc09ffb94cda78ff7376fe77a7239"
+  },
+  {
+    "file": "epe-backend/src/config/cors.config.spec.ts",
+    "sha256": "43ca934675fc159e2bacf30a0607e333c1449bcd60fb23c481c99bb09da723ef"
+  },
+  {
+    "file": "epe-backend/src/config/cors.config.ts",
+    "sha256": "66485a80a704bbceeac74c3f51a00846dbfa4c3b92218f6aefcd67857f6347cf"
+  },
+  {
+    "file": "epe-backend/src/config/database.config.ts",
+    "sha256": "8c1e8bfb8063ffe8ffbada1b81543cb9a5d34e84524ef7f9f9fe32a66df3e76e"
+  },
+  {
+    "file": "epe-backend/src/config/s3.config.spec.ts",
+    "sha256": "07bbcab4f052c072819b3b8ee2a512eec7a7592319a04fa2ce20908b8e8bbaee"
+  },
+  {
+    "file": "epe-backend/src/config/s3.config.ts",
+    "sha256": "2b42c26d61db0fbbd53ba36baec7b34dfcb19a32f178477c2679753c09da6596"
+  },
+  {
+    "file": "epe-backend/src/config/swagger.config.ts",
+    "sha256": "07820eeb26b738c580a782f7b2242eb67f57d56de8d138960c0983da24e09ec8"
+  },
+  {
+    "file": "epe-backend/src/config/typeorm.datasource.ts",
+    "sha256": "5e7cda0495a6a0e87079bdee5040fe6196aca32338dac6169f9afa422197f812"
+  },
+  {
+    "file": "epe-backend/src/database/migrations/1789745103871-InitialSchema.ts",
+    "sha256": "9494f930ec107fa3536a44142d117e73cefaaacb8184d69a61376019aa9e3c24"
+  },
+  {
+    "file": "epe-backend/src/database/migrations/1790352000000-AddTransportTables.ts",
+    "sha256": "5e50c2de0bb80bc03b13ff3ab259bb57299651a064d228db603338fe66d0c42b"
+  },
+  {
+    "file": "epe-backend/src/database/migrations/1790792329457-AddEstadoExamenSanidadAgrariaToProveedor.ts",
+    "sha256": "f8b842e0a70f20c777acf29e77fcd531795b2917e5748d3be672ab74bfd1116d"
+  },
+  {
+    "file": "epe-backend/src/database/migrations/1791128261336-AddArchivoStorage.ts",
+    "sha256": "6e3e16437769422ff0fda0fc56f3742264023e17dc33874dc81a5e066dc44c15"
+  },
+  {
+    "file": "epe-backend/src/database/migrations/1791561600000-MoveAgronomicFieldsToProveedor.ts",
+    "sha256": "044c8d766b3420edf210cf715ee9aefcba3062ac4259226eb39958983da0112e"
+  },
+  {
+    "file": "epe-backend/src/database/migrations/1791561601000-CreateFincaAndMoveLocationFields.ts",
+    "sha256": "131165d221713c53484422e14915de3d8b0077ca7e940bf5f25edd4b7adb64e7"
+  },
+  {
+    "file": "epe-backend/src/database/migrations/1791561602000-CleanupLegacyCampaniaProveedorFields.ts",
+    "sha256": "ad59757a8d72fbb1f4e1a7548c80dbb1af1fa8fb21ee8155dc76199e6de4d3cb"
+  },
+  {
+    "file": "epe-backend/src/database/migrations/1792029000000-OptionalCampaignProviderFarm.spec.ts",
+    "sha256": "e25409398190a13443752cb96361caf0548a964eb0b1d1f7108a1b7f07c76812"
+  },
+  {
+    "file": "epe-backend/src/database/migrations/1792029000000-OptionalCampaignProviderFarm.ts",
+    "sha256": "20d4d06f544b167f9e98200d1d8b442b4bbfa1e292f38152c94225e20e17e59e"
+  },
+  {
+    "file": "epe-backend/src/database/migrations/1792371600000-CreateEntrevistaExtencion.spec.ts",
+    "sha256": "72ef713607836730556e2175163af4423089e126a4b147a8d9dac911ad1d2c36"
+  },
+  {
+    "file": "epe-backend/src/database/migrations/1792371600000-CreateEntrevistaExtencion.ts",
+    "sha256": "fd4521937fd9747128270d150506ea08719a85a319d46016c16776bf4987905a"
+  },
+  {
+    "file": "epe-backend/src/entrevista-extencion/controllers/entrevista-extencion.controller.ts",
+    "sha256": "7efcdd79a991f26333977a35d65b0a79124b6be932666abadc1c2f32a48cd13a"
+  },
+  {
+    "file": "epe-backend/src/entrevista-extencion/dto/create-entrevista-extencion.dto.ts",
+    "sha256": "b2182fca4b98519f1421fa79be8f27e5ed3b37a175dc928efe04b690dc910cc2"
+  },
+  {
+    "file": "epe-backend/src/entrevista-extencion/dto/update-entrevista-extencion.dto.ts",
+    "sha256": "b34852b13d8c88a2b1a288763b8f920a622a27bb4c63f2d14bf8fe73e377e370"
+  },
+  {
+    "file": "epe-backend/src/entrevista-extencion/entities/entrevista-extencion.ts",
+    "sha256": "c208611b33ab003fbb4d76e3c3d003f884c883fc99de20800fb168c8f0869818"
+  },
+  {
+    "file": "epe-backend/src/entrevista-extencion/entrevista-extencion.module.ts",
+    "sha256": "5d0ed0410077da6b8c9972e4a5b9fef1fc9c71de225d9d813e350d1cfd7e8dc2"
+  },
+  {
+    "file": "epe-backend/src/entrevista-extencion/services/entrevista-extencion.service.spec.ts",
+    "sha256": "8a68f583d69fae0758ea61e7888edae7c6001b69ec91a4ebefe1631bf90bec84"
+  },
+  {
+    "file": "epe-backend/src/entrevista-extencion/services/entrevista-extencion.service.ts",
+    "sha256": "56eda8a3bb9fcfd9443a037ce65b27cccd53c78dda13cf0187d73670f760e0c4"
+  },
+  {
+    "file": "epe-backend/src/finca/controllers/finca.controller.ts",
+    "sha256": "aa70c3e680800bebd7d2453d61fa33530dde8cd52260f1b72475dbefd817388f"
+  },
+  {
+    "file": "epe-backend/src/finca/dto/create-finca.dto.ts",
+    "sha256": "bf05e26aeb4327c94db3c9cb5ec22689ad03797f9787f1ef53a866065182a776"
+  },
+  {
+    "file": "epe-backend/src/finca/dto/update-finca.dto.ts",
+    "sha256": "5f67e6418ae5dcde533cdfdaf4bf155a5ac457b3377efce5101e45aff0c59a74"
+  },
+  {
+    "file": "epe-backend/src/finca/entities/finca.ts",
+    "sha256": "1fa24f713513f1db95b57eceab27be960ef9146e4a547349d1fef6d4b7c56b18"
+  },
+  {
+    "file": "epe-backend/src/finca/finca.module.ts",
+    "sha256": "39fadbf845345fd5a878fdbebdc5de8de7a1846e59120cacc2746349b86817f3"
+  },
+  {
+    "file": "epe-backend/src/finca/services/finca.service.ts",
+    "sha256": "bb5cdfa1bd38028e9d1c634ff1dca6488623569b2b4d55d3b0957ece0cdd2ffb"
+  },
+  {
+    "file": "epe-backend/src/fruta/controllers/fruta.controller.ts",
+    "sha256": "5aefcf0c7333c2fb68e81cac2d1aea245971a267ddefda79e8780b409635c1e6"
+  },
+  {
+    "file": "epe-backend/src/fruta/dto/create-fruta-derivada.dto.ts",
+    "sha256": "4679267eacfa67239b13ae19646bd1789569fc867c42870d649c18257c82f625"
+  },
+  {
+    "file": "epe-backend/src/fruta/dto/create-fruta.dto.ts",
+    "sha256": "a0f6d8041456ecf3edb597de47e24a5000e61fd2cfa78ba898939fa86ecb2e10"
+  },
+  {
+    "file": "epe-backend/src/fruta/dto/update-fruta.dto.ts",
+    "sha256": "43b89bb513e8ee7cc0eaf33c1666e055f6d82756bf7b83ee97f6c3d98b11f73e"
+  },
+  {
+    "file": "epe-backend/src/fruta/entities/fruta-derivada.ts",
+    "sha256": "edd0e69d671e166e0a1a7fcebb628d67320868b607333cb93aac97c02425f1dd"
+  },
+  {
+    "file": "epe-backend/src/fruta/entities/fruta.ts",
+    "sha256": "7463f30b5f8a6f4082c58123c12000e9248ed0ff0eddc78388900911356015b5"
+  },
+  {
+    "file": "epe-backend/src/fruta/fruta.module.ts",
+    "sha256": "71fb25a0d3c870d99ecfc187d610fbab22755c8aab8c5cc591414db7bbe25770"
+  },
+  {
+    "file": "epe-backend/src/fruta/services/fruta.service.ts",
+    "sha256": "e2f4d14a133615710c3d1a84bc20d5170761190053d87d26989935098182726e"
+  },
+  {
+    "file": "epe-backend/src/health/health-response.dto.ts",
+    "sha256": "213fdd0bd26e268dab39172070328bbcbbe4ca976fbf3cba637951a15da505a6"
+  },
+  {
+    "file": "epe-backend/src/health/health.controller.ts",
+    "sha256": "c5b8a50a4b5de38ea9d02f0c89cc53ce10ed40a51b70e80a34538ff6e3638f96"
+  },
+  {
+    "file": "epe-backend/src/health/health.module.ts",
+    "sha256": "71e5e0d736ccd987609ff505934ee1f172943d00c3b27e98c8a1c431bf95c605"
+  },
+  {
+    "file": "epe-backend/src/health/health.service.spec.ts",
+    "sha256": "0f9b4432900922515000ee53394271c634fba0cc59f611cebf85aa4401ed31db"
+  },
+  {
+    "file": "epe-backend/src/health/health.service.ts",
+    "sha256": "76092d1a7cac334bb9d607bc4e155e0243c38acacd0242b3daefb6508ea3ffc9"
+  },
+  {
+    "file": "epe-backend/src/main.ts",
+    "sha256": "64c27cc7ce7a5abcedc06ea137db171221ef9cf4f774977b09514a119b7a29ba"
+  },
+  {
+    "file": "epe-backend/src/proveedor/controllers/examen-proveedor.controller.ts",
+    "sha256": "3eb680a5d350cb4c753e5e57c7f04106c4afa4eabf59c132f8d6b2e26be0bfc8"
+  },
+  {
+    "file": "epe-backend/src/proveedor/controllers/proveedor.controller.ts",
+    "sha256": "37bd87892d6272e151cc23ff04db1e284c12dfc6385ad41ad312c52e981b616e"
+  },
+  {
+    "file": "epe-backend/src/proveedor/dto/create-examen-proveedor.dto.ts",
+    "sha256": "78e53583bbaa24745f886672b327c2de976a2ab5925cb23c8cc6fff54dfd3a69"
+  },
+  {
+    "file": "epe-backend/src/proveedor/dto/create-proveedor.dto.ts",
+    "sha256": "5103e8bf65720e1316025c26d4a8a7c1e88419101cea4b05381cce2c2af13e21"
+  },
+  {
+    "file": "epe-backend/src/proveedor/dto/update-examen-proveedor.dto.ts",
+    "sha256": "d259449622b53ae86a72e5a980c04e492cdae84d49636849c74cf5b807e8a6f2"
+  },
+  {
+    "file": "epe-backend/src/proveedor/dto/update-proveedor.dto.ts",
+    "sha256": "ccd75740f0170bf57b7f62dca0e6df7e7ab92d00daabe3c5aa8cbbbfb590425e"
+  },
+  {
+    "file": "epe-backend/src/proveedor/entities/examen-proveedor.ts",
+    "sha256": "1366d46bb55471517e8c3cbaa3f553d332a8294b0a4be3bc70338d4ff5a7778c"
+  },
+  {
+    "file": "epe-backend/src/proveedor/entities/proveedor.ts",
+    "sha256": "d9eac81f4e8979f64c4927dbb4b932c59bee607f8db7df23fae9ebd4f25acef7"
+  },
+  {
+    "file": "epe-backend/src/proveedor/proveedor.module.ts",
+    "sha256": "06d848815c14001ae8e3243b598788c724cc1775c09bfb9548c3bbdc2320502b"
+  },
+  {
+    "file": "epe-backend/src/proveedor/services/examen-proveedor.service.ts",
+    "sha256": "01c7791c78c08afce897cf99ba09e20d940f34bae148040bd4cc9fc8d36526a0"
+  },
+  {
+    "file": "epe-backend/src/proveedor/services/proveedor.service.spec.ts",
+    "sha256": "34c3ce254a1c97254e2ee792624595a2e61742b0ab7ba084ac5e3cfa9290052d"
+  },
+  {
+    "file": "epe-backend/src/proveedor/services/proveedor.service.ts",
+    "sha256": "d47531ac87e29f8de57ffda4c7f60e9ed397d238abee40a10a85ac1169a5100d"
+  },
+  {
+    "file": "epe-backend/src/proveedor-fruta/controllers/proveedor-fruta.controller.ts",
+    "sha256": "f1daa1fc32a8f87d887e868d59ad323374db8256e0086cba3ec35781a2953b24"
+  },
+  {
+    "file": "epe-backend/src/proveedor-fruta/entities/proveedor-fruta.ts",
+    "sha256": "1358d97845cbfab75479d784c76fcbb6bfe6ab4efe789d04fee0a393eb2a2880"
+  },
+  {
+    "file": "epe-backend/src/proveedor-fruta/proveedor-fruta.module.ts",
+    "sha256": "246c864454749a9e8349ca11186521ed8378277d588dd88b180fd0e6170adc75"
+  },
+  {
+    "file": "epe-backend/src/proveedor-fruta/services/proveedor-fruta.service.ts",
+    "sha256": "435e32f125f89b76badcd93e0a24aad26cd40f276e0d18bedca6d3e27b3324c1"
+  },
+  {
+    "file": "epe-backend/src/transporte/controllers/chofer-transporte-externo.controller.ts",
+    "sha256": "adec1dc0ea6212f9f2ced861dded7caa2a5532db120e839eb18711e63af7de55"
+  },
+  {
+    "file": "epe-backend/src/transporte/controllers/chofer-vehiculo-externo.controller.ts",
+    "sha256": "bf332ae2918d648ed4fbcea82966dd0fa49fdae77a9d1c66720f5d15463af095"
+  },
+  {
+    "file": "epe-backend/src/transporte/controllers/detalle-trazabilidad.controller.ts",
+    "sha256": "a2cb105d82f42467dac838dab2b4e4c19fe8c6048d7de72b583253317d74d621"
+  },
+  {
+    "file": "epe-backend/src/transporte/controllers/empresa-transporte-externo.controller.ts",
+    "sha256": "003a8efb9ad74fd3bcbcc125bb77ef019ce6fbc920e6b484decc212c96bb9948"
+  },
+  {
+    "file": "epe-backend/src/transporte/controllers/trazabilidad-transporte.controller.ts",
+    "sha256": "5d43fc11892292457435f85da4ab2c9010c24bdd3301a391feb0b753d85b7860"
+  },
+  {
+    "file": "epe-backend/src/transporte/controllers/vehiculo-externo.controller.ts",
+    "sha256": "c877edf2d6978665e1dcfbb3fc3c59c229fa38f65b31fb7d48460a171ab5df3d"
+  },
+  {
+    "file": "epe-backend/src/transporte/dto/create-chofer-transporte-externo.dto.ts",
+    "sha256": "5ec1f32e4ffeef1c997c82d48e47455b6378c97dcdfcf2a880f75ead89e68642"
+  },
+  {
+    "file": "epe-backend/src/transporte/dto/create-chofer-vehiculo-externo.dto.ts",
+    "sha256": "bdb5a8ddf012953410b500702a4a4a4ec72abe04e3ce2d69084829a61fe47f60"
+  },
+  {
+    "file": "epe-backend/src/transporte/dto/create-detalle-trazabilidad.dto.ts",
+    "sha256": "ebf49d4f75fb02e90dc28f892d5529a57150437fe4ec4e6b2381cf129bff4a86"
+  },
+  {
+    "file": "epe-backend/src/transporte/dto/create-empresa-transporte-externo.dto.ts",
+    "sha256": "f1c4ab8ba4d5fa0c20da39f3c3c036ada440c391d8085816f2b8ee6ddbaac59b"
+  },
+  {
+    "file": "epe-backend/src/transporte/dto/create-trazabilidad-transporte.dto.ts",
+    "sha256": "c6444125ca4cd3be8bff77b0c2dd21311f79bc4505ea2e161dbe58a5eefb6c4f"
+  },
+  {
+    "file": "epe-backend/src/transporte/dto/create-vehiculo-externo.dto.ts",
+    "sha256": "7448d7e019f0d48db02287da0bfdd853f13a3aa6b05c623d7945f949e5ecd7a7"
+  },
+  {
+    "file": "epe-backend/src/transporte/dto/update-chofer-transporte-externo.dto.ts",
+    "sha256": "6a381a663fb257aa22f81e3f1fbc72148c99ef7e6f038aef7cd24c07cc050e65"
+  },
+  {
+    "file": "epe-backend/src/transporte/dto/update-chofer-vehiculo-externo.dto.ts",
+    "sha256": "d9085bccb907f3b45c913efdf7927441f769838ebcc1766d6df6b82e0a97f2be"
+  },
+  {
+    "file": "epe-backend/src/transporte/dto/update-detalle-trazabilidad.dto.ts",
+    "sha256": "97409f777efbf69244efea7dd519c1d2a3af408054604251c363d185a9150cac"
+  },
+  {
+    "file": "epe-backend/src/transporte/dto/update-empresa-transporte-externo.dto.ts",
+    "sha256": "b19d9e73e0090c667ba21c9642033610575d1c5475770c546aba391ead874a26"
+  },
+  {
+    "file": "epe-backend/src/transporte/dto/update-trazabilidad-transporte.dto.ts",
+    "sha256": "ffd169e7622501b494b490d0e5764eb3aac5e376abf21a2d6adce00e63f274c8"
+  },
+  {
+    "file": "epe-backend/src/transporte/dto/update-vehiculo-externo.dto.ts",
+    "sha256": "ced00b33a4076388c939516d5b01b9735b6bd86e54798d1e0cd359b38b5f4d85"
+  },
+  {
+    "file": "epe-backend/src/transporte/entities/chofer-transporte-externo.ts",
+    "sha256": "38be11ef764494dc9cdad5ca3dfe78edbd2798a30da87040a79e198b123429ec"
+  },
+  {
+    "file": "epe-backend/src/transporte/entities/chofer-vehiculo-externo.ts",
+    "sha256": "23ea4e299be2b97bf503adbb9ae53b67fbe8426d657dd2e2128c324a6c5e0228"
+  },
+  {
+    "file": "epe-backend/src/transporte/entities/detalle-trazabilidad.ts",
+    "sha256": "b19dc46217d8beabc784c3d3f50491fab9c663850e42fc59b89b283d526ba728"
+  },
+  {
+    "file": "epe-backend/src/transporte/entities/empresa-transporte-externo.ts",
+    "sha256": "179e09621878b44971cfb88daa834a54f395f4c2d0d2581c3558dbb06fa3743b"
+  },
+  {
+    "file": "epe-backend/src/transporte/entities/trazabilidad-transporte.ts",
+    "sha256": "78cdf7fe860cae079457817a4f75bc0551f5b80b449823f698353a2b0cdf5a5c"
+  },
+  {
+    "file": "epe-backend/src/transporte/entities/vehiculo-externo.ts",
+    "sha256": "a1256379f87ddbecc1305ce12f91773b1a1aa4bc9135177580a3aafd1177ad3c"
+  },
+  {
+    "file": "epe-backend/src/transporte/rules/chofer-assignment.rules.spec.ts",
+    "sha256": "8bcc67a5b13527fc64cfd5552d474d4df1c8affc6b83fd596d9c7cdf108ce9ca"
+  },
+  {
+    "file": "epe-backend/src/transporte/rules/chofer-assignment.rules.ts",
+    "sha256": "33d6bceed7b5e52c2f461351e1900450e655ea328b3bb4313f0222f0795de5ca"
+  },
+  {
+    "file": "epe-backend/src/transporte/services/chofer-transporte-externo.service.ts",
+    "sha256": "05fa22906ec1b9a6db52d4c8261a1a4df3a02e0a88597eb1dafd504f6f5d4b79"
+  },
+  {
+    "file": "epe-backend/src/transporte/services/chofer-vehiculo-externo.service.ts",
+    "sha256": "0b4bd8108a66e5102082cf9dbe9a7da0be5f9c7b27f51778e6f6c87968e63246"
+  },
+  {
+    "file": "epe-backend/src/transporte/services/detalle-trazabilidad.service.ts",
+    "sha256": "6e9699b9370ea63b845a46a89973fee44381dc46e905a4e580f003b61d052568"
+  },
+  {
+    "file": "epe-backend/src/transporte/services/empresa-transporte-externo.service.ts",
+    "sha256": "536774a5dda81a7be3298d7770f66e65c447c95ab80acaea44aa4e362165e340"
+  },
+  {
+    "file": "epe-backend/src/transporte/services/trazabilidad-transporte.service.ts",
+    "sha256": "6efa46e74120bdedcb75f5e59e75eeeaf32aa2a7077fbe23181bca180df547a9"
+  },
+  {
+    "file": "epe-backend/src/transporte/services/vehiculo-externo.service.ts",
+    "sha256": "a85d1b237532c0401789ff272c19646cff6d987970396131354a126f033442f0"
+  },
+  {
+    "file": "epe-backend/src/transporte/transporte.module.ts",
+    "sha256": "1f973b0b01d89f07f3b02b5d1e4e995b3e3a424a20f979bf573458f5a8b1974f"
+  }
+]

@@ -1,0 +1,2498 @@
+[
+  {
+    "table": "archivo",
+    "source": "epe-backend/src/archivo/entities/archivo.ts",
+    "entity": "Archivo",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "archivo_id",
+        "property": "archivoId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "bucket",
+        "property": "bucket",
+        "type": "varchar",
+        "length": "63",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "object_key",
+        "property": "objectKey",
+        "type": "varchar",
+        "length": "1024",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "nombre_original",
+        "property": "nombreOriginal",
+        "type": "varchar",
+        "length": "255",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "mime_type",
+        "property": "mimeType",
+        "type": "varchar",
+        "length": "100",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "tamano_bytes",
+        "property": "tamanoBytes",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "checksum_sha256",
+        "property": "checksumSha256",
+        "type": "varchar",
+        "length": "64",
+        "nullable": true,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "estado",
+        "property": "estado",
+        "type": "enum",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false,
+        "default": "PENDIENTE",
+        "enum": [
+          "PENDIENTE",
+          "DISPONIBLE",
+          "ELIMINACION_PENDIENTE",
+          "ELIMINADO",
+          "ERROR"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": [
+      {
+        "name": "UQ_archivo_object_key",
+        "columns": [
+          "object_key"
+        ],
+        "unique": true
+      }
+    ],
+    "uniques": [],
+    "checks": [
+      {
+        "name": "CHK_archivo_tamano_positivo",
+        "expression": "\"tamano_bytes\" > 0"
+      }
+    ],
+    "exclusions": []
+  },
+  {
+    "table": "campana",
+    "source": "epe-backend/src/campana/entities/campana.ts",
+    "entity": "Campana",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "campania_id",
+        "property": "campaniaId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "nombre",
+        "property": "nombre",
+        "type": "varchar",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "fecha_inicio",
+        "property": "fechaInicio",
+        "type": "date",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "fecha_fin",
+        "property": "fechaFin",
+        "type": "date",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "estado",
+        "property": "estado",
+        "type": "enum",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false,
+        "default": "planificacion",
+        "enum": [
+          "planificacion",
+          "en proceso",
+          "terminado"
+        ]
+      },
+      {
+        "name": "requerimiento_comercial",
+        "property": "requerimientoComercial",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "fruta_id",
+        "property": "fruta",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_50c2b822c93d60f0f2ae0de1540",
+        "columns": [
+          "fruta_id"
+        ],
+        "parent": "fruta",
+        "target": [
+          "fruta_id"
+        ],
+        "onDelete": "RESTRICT"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "UQ_campana_fruta_activa",
+        "columns": [
+          "fruta_id"
+        ],
+        "unique": true,
+        "where": "\"estado\" <> 'terminado'"
+      }
+    ],
+    "uniques": [],
+    "checks": [],
+    "exclusions": []
+  },
+  {
+    "table": "campania_x_proveedores",
+    "source": "epe-backend/src/campana-proveedor/entities/campania-proveedor.ts",
+    "entity": "CampaniaProveedor",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "cxp_id",
+        "property": "cxpId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "cantidad_proveedor",
+        "property": "cantidadProveedor",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "mtd_ceratitis",
+        "property": "mtdCeratitis",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "fruta_convencional_estimado",
+        "property": "frutaConvencionalEstimado",
+        "type": "int",
+        "length": "",
+        "nullable": true,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "tipo_proveedor",
+        "property": "tipoProveedor",
+        "type": "enum",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false,
+        "enum": [
+          "acopio",
+          "productor"
+        ]
+      },
+      {
+        "name": "estado",
+        "property": "estado",
+        "type": "enum",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false,
+        "default": "sin validar",
+        "enum": [
+          "sin validar",
+          "validado"
+        ]
+      },
+      {
+        "name": "campania_id",
+        "property": "campania",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "proveedor_id",
+        "property": "proveedor",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "finca_id",
+        "property": "finca",
+        "type": "int",
+        "length": "",
+        "nullable": true,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_ac67b849df2b51b77be457547cb",
+        "columns": [
+          "campania_id"
+        ],
+        "parent": "campana",
+        "target": [
+          "campania_id"
+        ],
+        "onDelete": "RESTRICT"
+      },
+      {
+        "name": "FK_ce127d1f9b34a8ff0dfd224c31d",
+        "columns": [
+          "proveedor_id"
+        ],
+        "parent": "proveedor",
+        "target": [
+          "proveedor_id"
+        ],
+        "onDelete": "RESTRICT"
+      },
+      {
+        "name": "FK_42f6a4022f8354c5550320601b6",
+        "columns": [
+          "finca_id"
+        ],
+        "parent": "finca",
+        "target": [
+          "finca_id"
+        ],
+        "onDelete": "RESTRICT"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "UQ_campania_proveedor_sin_finca",
+        "columns": [
+          "campania_id",
+          "proveedor_id"
+        ],
+        "unique": true,
+        "where": "\"finca_id\" IS NULL"
+      },
+      {
+        "name": "UQ_campania_finca",
+        "columns": [
+          "campania_id",
+          "finca_id"
+        ],
+        "unique": true,
+        "where": "\"finca_id\" IS NOT NULL"
+      }
+    ],
+    "uniques": [],
+    "checks": [
+      {
+        "name": "CHK_fruta_convencional_solo_productor",
+        "expression": "\"tipo_proveedor\" = 'productor' OR \"fruta_convencional_estimado\" IS NULL"
+      }
+    ],
+    "exclusions": []
+  },
+  {
+    "table": "certificado_campana",
+    "source": "epe-backend/src/certificado-campana/entities/certificado-campana.ts",
+    "entity": "CertificadoCampana",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "certificado_id",
+        "property": "certificadoId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "nombre",
+        "property": "nombre",
+        "type": "varchar",
+        "length": "255",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "document_url",
+        "property": "documentUrl",
+        "type": "text",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "costo",
+        "property": "costo",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 2,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "recibo_url",
+        "property": "reciboUrl",
+        "type": "text",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "fecha_vencimiento",
+        "property": "fechaVencimiento",
+        "type": "date",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "estado",
+        "property": "estado",
+        "type": "enum",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false,
+        "enum": [
+          "vigente",
+          "por vencer",
+          "vencida"
+        ]
+      },
+      {
+        "name": "campania_id",
+        "property": "campania",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_9877363efc7d8431c871eb6f99c",
+        "columns": [
+          "campania_id"
+        ],
+        "parent": "campana",
+        "target": [
+          "campania_id"
+        ],
+        "onDelete": "CASCADE"
+      }
+    ],
+    "indexes": [],
+    "uniques": [],
+    "checks": [],
+    "exclusions": []
+  },
+  {
+    "table": "certificado_proveedor",
+    "source": "epe-backend/src/certificado-proveedor/entities/certificado-proveedor.ts",
+    "entity": "CertificadoProveedor",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "certificado_proveedor_id",
+        "property": "certificadoProveedorId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "fecha_revision_senasa",
+        "property": "fechaRevisionSenasa",
+        "type": "date",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "nombre",
+        "property": "nombre",
+        "type": "varchar",
+        "length": "255",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "proveedor_id",
+        "property": "proveedor",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "documento_archivo_id",
+        "property": "documentoArchivo",
+        "type": "int",
+        "length": "",
+        "nullable": true,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_a6da987f811fd933dd2da1f1567",
+        "columns": [
+          "proveedor_id"
+        ],
+        "parent": "proveedor",
+        "target": [
+          "proveedor_id"
+        ],
+        "onDelete": "CASCADE"
+      },
+      {
+        "name": "FK_certificado_proveedor_documento_archivo",
+        "columns": [
+          "documento_archivo_id"
+        ],
+        "parent": "archivo",
+        "target": [
+          "archivo_id"
+        ],
+        "onDelete": "RESTRICT"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "IDX_certificado_proveedor_documento_archivo",
+        "columns": [
+          "documento_archivo_id"
+        ],
+        "unique": false
+      }
+    ],
+    "uniques": [],
+    "checks": [],
+    "exclusions": []
+  },
+  {
+    "table": "chofer_transporte_externo",
+    "source": "epe-backend/src/transporte/entities/chofer-transporte-externo.ts",
+    "entity": "ChoferTransporteExterno",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "id_chofer_transporte_externo",
+        "property": "idChoferTransporteExterno",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "nombre",
+        "property": "nombre",
+        "type": "varchar",
+        "length": "255",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "telefono",
+        "property": "telefono",
+        "type": "varchar",
+        "length": "20",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "correo",
+        "property": "correo",
+        "type": "varchar",
+        "length": "320",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "id_empresa_transporte_externo",
+        "property": "empresaTransporte",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_8e7c882559232607b0a862ed915",
+        "columns": [
+          "id_empresa_transporte_externo"
+        ],
+        "parent": "empresa_transporte_externo",
+        "target": [
+          "id_empresa_transporte_externo"
+        ],
+        "onDelete": "RESTRICT"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "IDX_chofer_empresa_transporte",
+        "columns": [
+          "id_empresa_transporte_externo"
+        ],
+        "unique": false
+      }
+    ],
+    "uniques": [],
+    "checks": [],
+    "exclusions": []
+  },
+  {
+    "table": "chofer_vehiculo_externo",
+    "source": "epe-backend/src/transporte/entities/chofer-vehiculo-externo.ts",
+    "entity": "ChoferVehiculoExterno",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "id_chofer_vehiculo_externo",
+        "property": "idChoferVehiculoExterno",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "fecha_asignacion_inicio",
+        "property": "fechaAsignacionInicio",
+        "type": "date",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "fecha_asignacion_final",
+        "property": "fechaAsignacionFinal",
+        "type": "date",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "id_vehiculo_externo",
+        "property": "vehiculo",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "id_chofer_transporte_externo",
+        "property": "chofer",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "id_trazabilidad_transporte",
+        "property": "trazabilidad",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_b9d55680d916136d5ffb1aaf9ee",
+        "columns": [
+          "id_vehiculo_externo"
+        ],
+        "parent": "vehiculo_externo",
+        "target": [
+          "id_vehiculo_externo"
+        ],
+        "onDelete": "RESTRICT"
+      },
+      {
+        "name": "FK_4b31737d1762ae532090c3b2591",
+        "columns": [
+          "id_chofer_transporte_externo"
+        ],
+        "parent": "chofer_transporte_externo",
+        "target": [
+          "id_chofer_transporte_externo"
+        ],
+        "onDelete": "RESTRICT"
+      },
+      {
+        "name": "FK_cf6fe8aa9a11da89aa4e9d4974f",
+        "columns": [
+          "id_trazabilidad_transporte"
+        ],
+        "parent": "trazabilidad_transporte",
+        "target": [
+          "id_trazabilidad_transporte"
+        ],
+        "onDelete": "CASCADE"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "IDX_asignacion_trazabilidad",
+        "columns": [
+          "id_trazabilidad_transporte"
+        ],
+        "unique": false
+      },
+      {
+        "name": "IDX_asignacion_vehiculo",
+        "columns": [
+          "id_vehiculo_externo"
+        ],
+        "unique": false
+      },
+      {
+        "name": "IDX_asignacion_chofer",
+        "columns": [
+          "id_chofer_transporte_externo"
+        ],
+        "unique": false
+      }
+    ],
+    "uniques": [],
+    "checks": [
+      {
+        "name": "CHK_asignacion_fechas_validas",
+        "expression": "\"fecha_asignacion_final\" >= \"fecha_asignacion_inicio\""
+      }
+    ],
+    "exclusions": [
+      {
+        "name": "EX_chofer_sin_rangos_superpuestos",
+        "expression": "\"id_chofer_transporte_externo\" WITH =, daterange(\"fecha_asignacion_inicio\", \"fecha_asignacion_final\", '[]') WITH &&"
+      }
+    ]
+  },
+  {
+    "table": "cliente_negocio",
+    "source": "epe-backend/src/cliente-negocio/entities/cliente-negocio.ts",
+    "entity": "ClienteNegocio",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "cliente_negocio_id",
+        "property": "clienteNegocioId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "nombre_empresa",
+        "property": "nombreEmpresa",
+        "type": "varchar",
+        "length": "255",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "nombre_contacto",
+        "property": "nombreContacto",
+        "type": "varchar",
+        "length": "255",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "telefono",
+        "property": "telefono",
+        "type": "varchar",
+        "length": "20",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "ruc",
+        "property": "ruc",
+        "type": "varchar",
+        "length": "11",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "correo_corporativo",
+        "property": "correoCorporativo",
+        "type": "varchar",
+        "length": "320",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "ubicacion",
+        "property": "ubicacion",
+        "type": "text",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "tipo_cliente",
+        "property": "tipoCliente",
+        "type": "enum",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false,
+        "enum": [
+          "exportador",
+          "industria"
+        ]
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": [],
+    "uniques": [
+      {
+        "name": "UQ_ba980f42b010ee693f6509928b8",
+        "columns": [
+          "ruc"
+        ]
+      },
+      {
+        "name": "UQ_086205a1da353930132c0f40b6d",
+        "columns": [
+          "correo_corporativo"
+        ]
+      }
+    ],
+    "checks": [],
+    "exclusions": []
+  },
+  {
+    "table": "cliente_negocio_campana",
+    "source": "epe-backend/src/cliente-negocio-campana/entities/cliente-negocio-campana.ts",
+    "entity": "ClienteNegocioCampana",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "cliente_negocio_campana_id",
+        "property": "clienteNegocioCampanaId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "documento_url",
+        "property": "documentoUrl",
+        "type": "text",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "fecha_registro",
+        "property": "fechaRegistro",
+        "type": "date",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "ficha_tecnica_url",
+        "property": "fichaTecnicaUrl",
+        "type": "text",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "cantidad_kg",
+        "property": "cantidadKg",
+        "type": "decimal",
+        "length": "",
+        "precision": 14,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false,
+        "default": 0
+      },
+      {
+        "name": "kilos_acordados",
+        "property": "kilosAcordados",
+        "type": "decimal",
+        "length": "",
+        "precision": 14,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "cliente_negocio_id",
+        "property": "clienteNegocio",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "campania_id",
+        "property": "campania",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_f2e31b3e6ce80e06c9e243de0f7",
+        "columns": [
+          "cliente_negocio_id"
+        ],
+        "parent": "cliente_negocio",
+        "target": [
+          "cliente_negocio_id"
+        ],
+        "onDelete": "CASCADE"
+      },
+      {
+        "name": "FK_24f10c8e1468fe98f4ca11af600",
+        "columns": [
+          "campania_id"
+        ],
+        "parent": "campana",
+        "target": [
+          "campania_id"
+        ],
+        "onDelete": "CASCADE"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "UQ_cliente_negocio_campania",
+        "columns": [
+          "cliente_negocio_id",
+          "campania_id"
+        ],
+        "unique": true
+      }
+    ],
+    "uniques": [],
+    "checks": [],
+    "exclusions": []
+  },
+  {
+    "table": "detalle_trazabilidad",
+    "source": "epe-backend/src/transporte/entities/detalle-trazabilidad.ts",
+    "entity": "DetalleTrazabilidad",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "id_detalle_trazabilidad",
+        "property": "idDetalleTrazabilidad",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "guia_url",
+        "property": "guiaUrl",
+        "type": "text",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "flete",
+        "property": "flete",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 2,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "sctr",
+        "property": "sctr",
+        "type": "varchar",
+        "length": "255",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "estibas",
+        "property": "estibas",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 2,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "pasajes",
+        "property": "pasajes",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 2,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "comida",
+        "property": "comida",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 2,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "id_trazabilidad_transporte",
+        "property": "trazabilidad",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_3c33d86b3b954e6cdeed0baea45",
+        "columns": [
+          "id_trazabilidad_transporte"
+        ],
+        "parent": "trazabilidad_transporte",
+        "target": [
+          "id_trazabilidad_transporte"
+        ],
+        "onDelete": "CASCADE"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "IDX_detalle_trazabilidad",
+        "columns": [
+          "id_trazabilidad_transporte"
+        ],
+        "unique": false
+      }
+    ],
+    "uniques": [],
+    "checks": [
+      {
+        "name": "CHK_detalle_costos_no_negativos",
+        "expression": "\"flete\" >= 0 AND \"estibas\" >= 0 AND \"pasajes\" >= 0 AND \"comida\" >= 0"
+      }
+    ],
+    "exclusions": []
+  },
+  {
+    "table": "empresa_transporte_externo",
+    "source": "epe-backend/src/transporte/entities/empresa-transporte-externo.ts",
+    "entity": "EmpresaTransporteExterno",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "id_empresa_transporte_externo",
+        "property": "idEmpresaTransporteExterno",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "nombre_completo",
+        "property": "nombreCompleto",
+        "type": "varchar",
+        "length": "255",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "ruc",
+        "property": "ruc",
+        "type": "varchar",
+        "length": "11",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "correo",
+        "property": "correo",
+        "type": "varchar",
+        "length": "320",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "numero",
+        "property": "numero",
+        "type": "varchar",
+        "length": "20",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": [
+      {
+        "name": "UQ_empresa_transporte_correo",
+        "columns": [
+          "correo"
+        ],
+        "unique": true
+      },
+      {
+        "name": "UQ_empresa_transporte_ruc",
+        "columns": [
+          "ruc"
+        ],
+        "unique": true
+      }
+    ],
+    "uniques": [],
+    "checks": [],
+    "exclusions": []
+  },
+  {
+    "table": "entrevista_extencion",
+    "source": "epe-backend/src/entrevista-extencion/entities/entrevista-extencion.ts",
+    "entity": "EntrevistaExtencion",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "entrevista_id",
+        "property": "entrevistaId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "densidad",
+        "property": "densidad",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "distanciamiento",
+        "property": "distanciamiento",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "frecuencia",
+        "property": "frecuencia",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "nombre_aplicacion",
+        "property": "nombreAplicacion",
+        "type": "varchar",
+        "length": "255",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "anio_aplicacion",
+        "property": "anioAplicacion",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "codigo",
+        "property": "codigo",
+        "type": "varchar",
+        "length": "255",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "cam_x_prov_id",
+        "property": "campaniaProveedor",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "finca_id",
+        "property": "finca",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_c808b4dda27e5b60915acc4d99b",
+        "columns": [
+          "cam_x_prov_id"
+        ],
+        "parent": "campania_x_proveedores",
+        "target": [
+          "cxp_id"
+        ],
+        "onDelete": "RESTRICT"
+      },
+      {
+        "name": "FK_f6963c5035a6ea17ac31ca510d6",
+        "columns": [
+          "finca_id"
+        ],
+        "parent": "finca",
+        "target": [
+          "finca_id"
+        ],
+        "onDelete": "RESTRICT"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "IDX_entrevista_extencion_finca",
+        "columns": [
+          "finca_id"
+        ],
+        "unique": false
+      },
+      {
+        "name": "IDX_entrevista_extencion_cxp",
+        "columns": [
+          "cam_x_prov_id"
+        ],
+        "unique": false
+      },
+      {
+        "name": "UQ_entrevista_extencion_codigo",
+        "columns": [
+          "codigo"
+        ],
+        "unique": true
+      }
+    ],
+    "uniques": [],
+    "checks": [
+      {
+        "name": "CHK_entrevista_extencion_valores",
+        "expression": "\"densidad\" >= 0 AND \"distanciamiento\" >= 0 AND \"frecuencia\" >= 0 AND \"anio_aplicacion\" BETWEEN 1900 AND 9999"
+      },
+      {
+        "name": "CHK_entrevista_extencion_codigo",
+        "expression": "\"codigo\" ~ '^FVV-[A-Z0-9-]+-[0-9]+$'"
+      }
+    ],
+    "exclusions": []
+  },
+  {
+    "table": "examen_proveedor",
+    "source": "epe-backend/src/proveedor/entities/examen-proveedor.ts",
+    "entity": "ExamenProveedor",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "examen_proveedor_id",
+        "property": "examenProveedorId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "fecha",
+        "property": "fecha",
+        "type": "date",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "tipo_examen",
+        "property": "tipoExamen",
+        "type": "varchar",
+        "length": "150",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "resultado",
+        "property": "resultado",
+        "type": "enum",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false,
+        "enum": [
+          "positivo",
+          "negativo"
+        ]
+      },
+      {
+        "name": "origen",
+        "property": "origen",
+        "type": "varchar",
+        "length": "255",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "observacion",
+        "property": "observacion",
+        "type": "text",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "documento_url",
+        "property": "documentoUrl",
+        "type": "text",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "proveedor_id",
+        "property": "proveedor",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_830ef4ed7b9bc939e534a21c919",
+        "columns": [
+          "proveedor_id"
+        ],
+        "parent": "proveedor",
+        "target": [
+          "proveedor_id"
+        ],
+        "onDelete": "CASCADE"
+      }
+    ],
+    "indexes": [],
+    "uniques": [],
+    "checks": [],
+    "exclusions": []
+  },
+  {
+    "table": "finca",
+    "source": "epe-backend/src/finca/entities/finca.ts",
+    "entity": "Finca",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "finca_id",
+        "property": "fincaId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "nombre_finca",
+        "property": "nombreFinca",
+        "type": "varchar",
+        "length": "255",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "departamento",
+        "property": "departamento",
+        "type": "varchar",
+        "length": "100",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "provincia",
+        "property": "provincia",
+        "type": "varchar",
+        "length": "100",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "distrito",
+        "property": "distrito",
+        "type": "varchar",
+        "length": "100",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "latitud",
+        "property": "latitud",
+        "type": "decimal",
+        "length": "",
+        "precision": 10,
+        "scale": 7,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "longitud",
+        "property": "longitud",
+        "type": "decimal",
+        "length": "",
+        "precision": 10,
+        "scale": 7,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "ha_total_finca",
+        "property": "haTotalFinca",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "ha_cultivo",
+        "property": "haCultivo",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "proveedor_id",
+        "property": "proveedor",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_5a442fb7b199d9927ed51d42cca",
+        "columns": [
+          "proveedor_id"
+        ],
+        "parent": "proveedor",
+        "target": [
+          "proveedor_id"
+        ],
+        "onDelete": "RESTRICT"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "IDX_finca_proveedor",
+        "columns": [
+          "proveedor_id"
+        ],
+        "unique": false
+      }
+    ],
+    "uniques": [],
+    "checks": [
+      {
+        "name": "CHK_finca_hectareas",
+        "expression": "\"ha_total_finca\" >= 0 AND \"ha_cultivo\" >= 0 AND \"ha_cultivo\" <= \"ha_total_finca\""
+      }
+    ],
+    "exclusions": []
+  },
+  {
+    "table": "fruta",
+    "source": "epe-backend/src/fruta/entities/fruta.ts",
+    "entity": "Fruta",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "fruta_id",
+        "property": "frutaId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "name",
+        "property": "name",
+        "type": "varchar",
+        "length": "150",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": [],
+    "uniques": [],
+    "checks": [],
+    "exclusions": []
+  },
+  {
+    "table": "fruta_derivada",
+    "source": "epe-backend/src/fruta/entities/fruta-derivada.ts",
+    "entity": "FrutaDerivada",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "fruta_derivada_id",
+        "property": "frutaDerivadaId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "name",
+        "property": "name",
+        "type": "varchar",
+        "length": "150",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "fruta_id",
+        "property": "fruta",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_eb7b4cc85ee0796f06cc8efdba6",
+        "columns": [
+          "fruta_id"
+        ],
+        "parent": "fruta",
+        "target": [
+          "fruta_id"
+        ],
+        "onDelete": "RESTRICT"
+      }
+    ],
+    "indexes": [],
+    "uniques": [],
+    "checks": [],
+    "exclusions": []
+  },
+  {
+    "table": "proveedor",
+    "source": "epe-backend/src/proveedor/entities/proveedor.ts",
+    "entity": "Proveedor",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "proveedor_id",
+        "property": "proveedorId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "nombres",
+        "property": "nombres",
+        "type": "varchar",
+        "length": "150",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "apellido",
+        "property": "apellido",
+        "type": "varchar",
+        "length": "150",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "tipo_documento",
+        "property": "tipoDocumento",
+        "type": "enum",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false,
+        "enum": [
+          "DNI",
+          "Pasaporte",
+          "Carnet de extranjeria"
+        ]
+      },
+      {
+        "name": "nmr_documento",
+        "property": "nmrDocumento",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "identidad_doc_url",
+        "property": "identidadDocUrl",
+        "type": "text",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "zona",
+        "property": "zona",
+        "type": "text",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "telefono",
+        "property": "telefono",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "email",
+        "property": "email",
+        "type": "varchar",
+        "length": "320",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "codigo_lugar_produccion",
+        "property": "codigoLugarProduccion",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "nombre_agronomico",
+        "property": "nombreAgronomico",
+        "type": "varchar",
+        "length": "255",
+        "nullable": true,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "densidad_plantacion",
+        "property": "densidadPlantacion",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 3,
+        "nullable": true,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "distanciamiento",
+        "property": "distanciamiento",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 3,
+        "nullable": true,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "frecuencia_riego",
+        "property": "frecuenciaRiego",
+        "type": "int",
+        "length": "",
+        "nullable": true,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "nombre_aplicacion",
+        "property": "nombreAplicacion",
+        "type": "varchar",
+        "length": "255",
+        "nullable": true,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "aplicaciones_al_ano",
+        "property": "aplicacionesAlAno",
+        "type": "int",
+        "length": "",
+        "nullable": true,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "estado_examen_sanidad_agraria",
+        "property": "estadoExamenSanidadAgraria",
+        "type": "varchar",
+        "length": "100",
+        "nullable": true,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [],
+    "indexes": [],
+    "uniques": [],
+    "checks": [],
+    "exclusions": []
+  },
+  {
+    "table": "proveedor_x_fruta",
+    "source": "epe-backend/src/proveedor-fruta/entities/proveedor-fruta.ts",
+    "entity": "ProveedorFruta",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "pxf_id",
+        "property": "pxfId",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "proveedor_id",
+        "property": "proveedor",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "fruta_id",
+        "property": "fruta",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_47ce26fca664cc2d6fe9e7460c2",
+        "columns": [
+          "proveedor_id"
+        ],
+        "parent": "proveedor",
+        "target": [
+          "proveedor_id"
+        ],
+        "onDelete": "CASCADE"
+      },
+      {
+        "name": "FK_22a07009136d9e8d0c1cb3547ae",
+        "columns": [
+          "fruta_id"
+        ],
+        "parent": "fruta",
+        "target": [
+          "fruta_id"
+        ],
+        "onDelete": "CASCADE"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "UQ_proveedor_fruta",
+        "columns": [
+          "proveedor_id",
+          "fruta_id"
+        ],
+        "unique": true
+      }
+    ],
+    "uniques": [],
+    "checks": [],
+    "exclusions": []
+  },
+  {
+    "table": "trazabilidad_transporte",
+    "source": "epe-backend/src/transporte/entities/trazabilidad-transporte.ts",
+    "entity": "TrazabilidadTransporte",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "id_trazabilidad_transporte",
+        "property": "idTrazabilidadTransporte",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "contrato_url",
+        "property": "contratoUrl",
+        "type": "text",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "kg_comprados",
+        "property": "kgComprados",
+        "type": "decimal",
+        "length": "",
+        "precision": 14,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "kg_planta",
+        "property": "kgPlanta",
+        "type": "decimal",
+        "length": "",
+        "precision": 14,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "estado",
+        "property": "estado",
+        "type": "enum",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false,
+        "enum": [
+          "planificado",
+          "en recojo",
+          "despachado",
+          "llegada"
+        ]
+      },
+      {
+        "name": "cxp_id",
+        "property": "campaniaProveedor",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_92f5fb016aaabf24c99b3ce1b90",
+        "columns": [
+          "cxp_id"
+        ],
+        "parent": "campania_x_proveedores",
+        "target": [
+          "cxp_id"
+        ],
+        "onDelete": "RESTRICT"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "IDX_trazabilidad_cxp",
+        "columns": [
+          "cxp_id"
+        ],
+        "unique": false
+      }
+    ],
+    "uniques": [],
+    "checks": [
+      {
+        "name": "CHK_trazabilidad_kilos_no_negativos",
+        "expression": "\"kg_comprados\" >= 0 AND \"kg_planta\" >= 0"
+      }
+    ],
+    "exclusions": []
+  },
+  {
+    "table": "vehiculo_externo",
+    "source": "epe-backend/src/transporte/entities/vehiculo-externo.ts",
+    "entity": "VehiculoExterno",
+    "columns": [
+      {
+        "name": "created_at",
+        "property": "createdAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "updated_at",
+        "property": "updatedAt",
+        "type": "timestamptz",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "id_vehiculo_externo",
+        "property": "idVehiculoExterno",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": true,
+        "generated": true
+      },
+      {
+        "name": "placa",
+        "property": "placa",
+        "type": "varchar",
+        "length": "15",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "volumen",
+        "property": "volumen",
+        "type": "decimal",
+        "length": "",
+        "precision": 12,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "ancho",
+        "property": "ancho",
+        "type": "decimal",
+        "length": "",
+        "precision": 10,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "altura",
+        "property": "altura",
+        "type": "decimal",
+        "length": "",
+        "precision": 10,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "profundidad",
+        "property": "profundidad",
+        "type": "decimal",
+        "length": "",
+        "precision": 10,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "peso_neto",
+        "property": "pesoNeto",
+        "type": "decimal",
+        "length": "",
+        "precision": 14,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "peso_bruto",
+        "property": "pesoBruto",
+        "type": "decimal",
+        "length": "",
+        "precision": 14,
+        "scale": 3,
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      },
+      {
+        "name": "id_empresa_transporte_externo",
+        "property": "empresaTransporte",
+        "type": "int",
+        "length": "",
+        "nullable": false,
+        "primary": false,
+        "generated": false
+      }
+    ],
+    "foreignKeys": [
+      {
+        "name": "FK_e3856a7c0b8bde95de5fd32dd22",
+        "columns": [
+          "id_empresa_transporte_externo"
+        ],
+        "parent": "empresa_transporte_externo",
+        "target": [
+          "id_empresa_transporte_externo"
+        ],
+        "onDelete": "RESTRICT"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "UQ_vehiculo_externo_placa",
+        "columns": [
+          "placa"
+        ],
+        "unique": true
+      },
+      {
+        "name": "IDX_vehiculo_empresa_transporte",
+        "columns": [
+          "id_empresa_transporte_externo"
+        ],
+        "unique": false
+      }
+    ],
+    "uniques": [],
+    "checks": [
+      {
+        "name": "CHK_vehiculo_pesos_validos",
+        "expression": "\"peso_neto\" >= 0 AND \"peso_bruto\" >= \"peso_neto\""
+      },
+      {
+        "name": "CHK_vehiculo_dimensiones_positivas",
+        "expression": "\"volumen\" > 0 AND \"ancho\" > 0 AND \"altura\" > 0 AND \"profundidad\" > 0"
+      }
+    ],
+    "exclusions": []
+  }
+]

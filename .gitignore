@@ -1,0 +1,14 @@
+# Dependencias y salidas temporales de validación
+**/node_modules/
+**/store/
+**/__pycache__/
+**/*.pyc
+**/*.log
+agro-schema/.validation/codigo-actual/
+
+# Configuración privada y archivos del sistema
+.env
+.env.*
+!.env.example
+Thumbs.db
+.DS_Store

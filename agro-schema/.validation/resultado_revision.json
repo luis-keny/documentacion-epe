@@ -1,0 +1,87 @@
+{
+  "motor": "PGlite PostgreSQL WASM con btree_gist",
+  "tablas": 66,
+  "tablas_actuales": 19,
+  "tablas_propuestas": 47,
+  "columnas_actuales_preservadas": 173,
+  "atributos_adicionales": 63,
+  "foreignKeys": 137,
+  "pruebas": [
+    {
+      "prueba": "Se conservan 173 columnas actuales; archivo queda excluida y se retira finca_id de la participación",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Se conservan restricciones actuales salvo las relaciones excluidas a finca/archivo; se adapta la unicidad de participación",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Se crean seis vistas de consulta para saldos, control anual, despacho y programación",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "66 tablas y todos sus atributos documentados existen en el SQL",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Las 137 FK se crean; no hay FK a archivo",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Las 28 referencias documentales quedan opcionales, sin FK y pendientes de integración",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Inserción del modelo revisado sin finca en participación y con finca en entrevista",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Año de aplicación 2026 y cuatro aplicaciones al año se conservan como datos distintos",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Varios certificados de campaña, dimensiones del vehículo y SCTR siguen admitidos",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Segunda campaña activa por fruta",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Asignación solapada del chofer",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Código FVV duplicado",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Modificar a acopio una asignación con entrevista",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Capacidad adicional negativa",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Participación duplicada de proveedor en campaña",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Una participación admite entrevistas de distintas fincas del mismo proveedor",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Entrevistar finca de otro proveedor",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Cambiar proveedor de participación con entrevistas incompatibles",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "El análisis puede registrarse por participación y finca antes de existir cosecha, con cosecha_id nulo",
+      "resultado": "correcto"
+    }
+  ]
+}

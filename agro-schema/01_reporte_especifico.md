@@ -1,0 +1,5349 @@
+# Base de datos por vista — modelo revisado sobre el backend actual
+
+Este documento incorpora la [auditoría](auditoria-bd-actual-vs-planificada.md) y prepara el modelo para tu revisión manual contra las vistas. **No se cambiaron entidades TypeORM, migraciones ni una base desplegada.** El [SQL de revisión](03_schema_total.sql) crea una instalación nueva separada en `agro`; no es una actualización sobre tu base existente.
+
+**Base revisada al 27/10/2026:** se incluyen 19 de las 20 tablas actuales; `archivo` queda fuera del esquema por decisión de negocio. Se conservan **173 columnas actuales**: se excluyen las diez de archivo y se retira `campania_x_proveedores.finca_id`, su FK y sus tres índices asociados. El SQL propone unicidad por campaña/proveedor; las validaciones de entrevista se adaptan para comprobar la propiedad de la finca sin exigirla en la participación. El backend real sigue sin cambios.
+
+**Modelo vigente:** 66 tablas: 19 actuales más 47 propuestas. Se conservan `trazabilidad_transporte`, `chofer_vehiculo_externo` y `detalle_trazabilidad` con sus nombres actuales. `archivo` no se crea ni aparece como entidad en los diagramas. Sus referencias documentales se reservan como columnas opcionales, **sin FK y pendientes de relación**; no deben rellenarse con identificadores inventados. La integración, almacenamiento y obligatoriedad de evidencias se definirán después.
+
+**Atributos adicionales:** 63 columnas nuevas en las tablas actuales incluidas. Las referencias documentales pendientes son opcionales. Se retiran las comprobaciones que exigían identificadores de archivo para pagos, evidencia de descarte, salida o factura; las reglas locales de montos, kilos y datos de emisión se conservan. La exigencia de respaldos y su validación se definirán al retomar la integración documental.
+
+**Cómo leer cada vista:** se muestran sus tablas actuales y propuestas, relaciones Mermaid y el diccionario de cada tabla en su primera aparición. **ACTUAL** conserva la definición existente. **AGREGAR** es una columna adicional en una tabla actual. **TABLA NUEVA** pertenece a una entidad aún no programada. PK = clave primaria; FK = vínculo a otra tabla; NULL = dato opcional. Los nombres de columna se alinean con las claves reales: por ejemplo, `campania_id`, `cxp_id` y `fruta_derivada_id`.
+
+**Reglas conservadas y cambio aprobado:** una campaña activa por fruta, vínculo único cliente/campaña, certificados múltiples por campaña, códigos FVV, rangos de asignación inclusivos y bajas CASCADE/RESTRICT permanecen. Cambia la selección directa de finca en la participación; la finca se identifica en entrevista u origen operativo. Antes de migrar, revisar proveedores con varias participaciones en la misma campaña: no sumar cantidades ni consolidar entrevistas o transportes automáticamente. Tampoco se convierten documentos/teléfonos enteros, hectáreas enteras o enums.
+
+**Pendientes antes de implementar:** el RUC de transportista y el resultado del examen siguen siendo obligatorios en el backend; añadir tipo de transportista o estado del examen no permite por sí solo un independiente sin RUC ni un examen sin resultado. La incorporación manual de una campaña a Calidad tampoco tiene aún una decisión de persistencia propia: no se inventó una tabla para ese punto. La cabecera adicional de participación y los vínculos entre transporte actual y carga futura deben revisarse antes de llenarse.
+
+**Alcance del SQL:** estructura, relaciones y restricciones del modelo revisado, conservando las protecciones ya programadas en el backend. No incorpora los triggers financieros experimentales del plan anterior de 64 tablas: saldos, aplicación de adelantos, distribución de kilos entre guías, permisos del chofer y cierre completo requieren validar e implementar sus servicios/transacciones después de tu revisión. No se presenta esta versión como un sistema financiero terminado ni se reutilizan las 29 pruebas de aquel SQL distinto.
+
+**Fuentes y fecha de revisión:** nuevo recorrido de [la aplicación de referencia](https://campaign-management-system-umber.vercel.app/) el **27/10/2026, America/Lima**, por los ocho módulos del administrador y los perfiles de chofer Miguel Torres y Elena Ruiz. Las 62 fichas agrupan listados, detalles y formularios relacionados; una ficha no representa necesariamente una URL distinta. No se guardaron formularios de negocio ni se ejecutaron pagos, emisiones o cierres. Al abrir Preparar guía el mockup mostró automáticamente un borrador y aviso de sincronización; esa navegación debe revisarse como posible creación implícita. Se conserva como antecedente la auditoría del código local y sus nueve migraciones; no se hizo una nueva auditoría de producción.
+
+**Decisiones confirmadas en esta revisión:** campania_x_proveedores agrupa las entrevistas por proveedor/campaña; las fincas de esa participación son las de entrevista_extencion. Cada finca tendrá una variedad por ahora. Los análisis se registran por participación/finca antes de cosecha y su cosecha_id queda opcional. No se elimina ninguna otra tabla por una recomendación: las propuestas por discutir conservan ese estado explícito.
+
+**Cómo se documenta cada tabla dentro de una vista:** Escritura esperada significa que el futuro servicio creará/actualizará esa entidad desde la acción indicada; Consulta significa que aporta contexto o resultados. Por discutir identifica una propuesta cuya función o existencia debe afinarse. Compatibilidad corresponde a tablas actuales sin editor propio observado en esa pantalla. Estos usos describen el desarrollo esperado; el SQL no implementa por sí solo los flujos ni los permisos.
+
+**Resumen de los atributos adicionales sobre las tablas actuales:**
+
+| Tabla actual | Atributos para agregar | Para qué se añaden |
+|---|---|---|
+
+| `campana` | `temporada`, `responsable_usuario_id`, `lineamientos_archivo_id`, `observaciones`, `cerrada_at`, `cerrada_por_usuario_id`, `motivo_cierre` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `campania_x_proveedores` | `participacion_proveedor_campana_id` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `certificado_campana` | `codigo`, `norma_id`, `organismo`, `fecha_emision`, `moneda`, `documento_archivo_id` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `certificado_proveedor` | Ninguno en esta revisión | Se conserva el catálogo o asociación actual. |
+| `chofer_transporte_externo` | `persona_id`, `activo`, `usuario_id`, `numero_licencia` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `chofer_vehiculo_externo` | `coordinacion_entrega_id` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `cliente_negocio` | `fecha_registro` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `cliente_negocio_campana` | `ficha_tecnica_archivo_id`, `destino_solicitado`, `entrega_desde`, `entrega_hasta`, `observaciones` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `detalle_trazabilidad` | `carga_id`, `guia_remision_id`, `sctr_archivo_id` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `empresa_transporte_externo` | `tipo_transportista`, `tipo_documento`, `numero_documento`, `persona_id`, `registro_mtc`, `departamento`, `provincia`, `ciudad`, `activo` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `entrevista_extencion` | `fruta_derivada_id`, `distanciamiento_descripcion`, `frecuencia_riego_descripcion`, `aplicaciones_al_ano`, `observaciones`, `archivo_id`, `registrado_por_usuario_id` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `examen_proveedor` | `cxp_id`, `finca_id`, `codigo_muestra`, `fecha_envio`, `estado_examen`, `documento_archivo_id` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `finca` | `codigo_lugar_produccion`, `codigo_catastral`, `ubigeo`, `direccion`, `codigo_establecimiento`, `fruta_derivada_id`, `edad_cultivo_anios` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `fruta` | Ninguno en esta revisión | Se conserva el catálogo o asociación actual. |
+| `fruta_derivada` | Ninguno en esta revisión | Se conserva el catálogo o asociación actual. |
+| `proveedor` | `persona_id`, `activo`, `documento_archivo_id` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `proveedor_x_fruta` | Ninguno en esta revisión | Se conserva el catálogo o asociación actual. |
+| `trazabilidad_transporte` | `coordinacion_entrega_id`, `carga_id` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `vehiculo_externo` | `capacidad_kg` | Consultar la finalidad de cada columna en su diccionario por vista. |
+
+**Mermaid:** `||` = exactamente uno; `o|` = cero o uno; `o{` = cero o muchos. Cada caja es una tabla del esquema general. Las líneas son FK del SQL revisado: actual indica relación ya programada y propuesta indica una relación del diseño revisado, sin afirmar aprobación definitiva ni despliegue. Las FK compuestas del mismo par se agrupan. Una tabla aislada se consulta o participa en una decisión de diseño, sin FK directa en ese recorte. No se dibujan relaciones de navegación como si fueran FK.
+
+**Mapa de integración:** las tablas actuales se conservan junto al flujo adicional propuesto, incluyendo empresas transportistas, choferes, unidades y sus asignaciones.
+
+```mermaid
+erDiagram
+    fruta ||..o{ campana : actual
+    campana ||..o{ campania_x_proveedores : actual
+    proveedor ||..o{ campania_x_proveedores : actual
+    campana ||..o{ certificado_campana : actual
+    proveedor ||..o{ certificado_proveedor : actual
+    empresa_transporte_externo ||..o{ chofer_transporte_externo : actual
+    vehiculo_externo ||..o{ chofer_vehiculo_externo : actual
+    chofer_transporte_externo ||..o{ chofer_vehiculo_externo : actual
+    trazabilidad_transporte ||..o{ chofer_vehiculo_externo : actual
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    trazabilidad_transporte ||..o{ detalle_trazabilidad : actual
+    campania_x_proveedores ||..o{ entrevista_extencion : actual
+    finca ||..o{ entrevista_extencion : actual
+    proveedor ||..o{ examen_proveedor : actual
+    proveedor ||..o{ finca : actual
+    fruta ||..o{ fruta_derivada : actual
+    proveedor ||..o{ proveedor_x_fruta : actual
+    fruta ||..o{ proveedor_x_fruta : actual
+    campania_x_proveedores ||..o{ trazabilidad_transporte : actual
+    empresa_transporte_externo ||..o{ vehiculo_externo : actual
+    liquidacion_proveedor ||..o{ pago_proveedor : propuesta
+    liquidacion_transporte ||..o{ pago_transporte : propuesta
+    factura_venta ||..o{ cobro_venta : propuesta
+    persona ||..o| usuario : propuesta
+    rol ||..o{ usuario : propuesta
+    usuario ||..o{ sesion_usuario : propuesta
+    campana ||..o{ campana_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ campana_x_fruta_derivada : propuesta
+    proveedor ||..o{ proveedor_x_persona : propuesta
+    persona ||..o{ proveedor_x_persona : propuesta
+    proveedor ||..o{ proveedor_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ proveedor_x_fruta_derivada : propuesta
+    campana ||..o{ participacion_proveedor_campana : propuesta
+    proveedor ||..o{ participacion_proveedor_campana : propuesta
+    participacion_proveedor_campana ||..o{ participacion_proveedor_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ participacion_proveedor_x_fruta_derivada : propuesta
+    campania_x_proveedores ||..o{ acuerdo_compra : propuesta
+    fruta_derivada ||..o{ acuerdo_compra : propuesta
+    certificado_campana ||..o{ certificado_campana_x_proveedor : propuesta
+    campana ||..o{ certificado_campana_x_proveedor : propuesta
+    participacion_proveedor_campana ||..o{ certificado_campana_x_proveedor : propuesta
+    proveedor ||..o{ certificado_campana_x_proveedor : propuesta
+    certificado_campana ||..o{ ampliacion_certificado_campana : propuesta
+    usuario o|..o{ ampliacion_certificado_campana : propuesta
+    certificado_campana ||..o{ pago_certificado_campana : propuesta
+    usuario o|..o{ pago_certificado_campana : propuesta
+    cliente_negocio ||..o{ destino_cliente_negocio : propuesta
+    cliente_negocio_campana ||..o{ cliente_negocio_campana_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ cliente_negocio_campana_x_fruta_derivada : propuesta
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    destino_cliente_negocio ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o{ entrega_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ entrega_x_fruta_derivada : propuesta
+    campana ||..o{ solicitud_transporte : propuesta
+    solicitud_transporte ||..o{ invitacion_transporte : propuesta
+    empresa_transporte_externo ||..o{ invitacion_transporte : propuesta
+    invitacion_transporte ||..o{ cotizacion_transporte : propuesta
+    campana ||..o{ acuerdo_transporte : propuesta
+    empresa_transporte_externo ||..o{ acuerdo_transporte : propuesta
+    cotizacion_transporte o|..o{ acuerdo_transporte : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    acuerdo_transporte ||..o{ coordinacion_entrega : propuesta
+    empresa_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o{ origen_entrega : propuesta
+    campania_x_proveedores ||..o{ origen_entrega : propuesta
+    entrega_programada ||..o{ cosecha : propuesta
+    cosecha o|..o{ analisis_calidad : propuesta
+    campania_x_proveedores ||..o{ analisis_calidad : propuesta
+    campania_x_proveedores ||..o{ medicion_mtd : propuesta
+    usuario o|..o{ medicion_mtd : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o{ proveedor_carga : propuesta
+    participacion_proveedor_campana ||..o{ proveedor_carga : propuesta
+    fruta_derivada ||..o{ proveedor_carga : propuesta
+    proveedor_carga ||..o{ origen_carga : propuesta
+    campania_x_proveedores ||..o{ origen_carga : propuesta
+    carga ||..o{ gasto_carga : propuesta
+    carga ||..o{ guia_remision : propuesta
+    finca ||..o{ guia_remision : propuesta
+    destino_cliente_negocio ||..o{ guia_remision : propuesta
+    guia_remision ||..o{ proveedor_guia : propuesta
+    carga ||..o{ proveedor_guia : propuesta
+    proveedor_carga ||..o{ proveedor_guia : propuesta
+    guia_remision ||..o{ guia_x_norma : propuesta
+    norma ||..o{ guia_x_norma : propuesta
+    coordinacion_entrega ||..o{ historial_chofer : propuesta
+    carga o|..o{ historial_chofer : propuesta
+    chofer_transporte_externo ||..o{ historial_chofer : propuesta
+    carga ||..o| recepcion_planta : propuesta
+    chofer_transporte_externo ||..o{ recepcion_planta : propuesta
+    carga ||..o{ liquidacion_proveedor : propuesta
+    proveedor ||..o{ liquidacion_proveedor : propuesta
+    usuario ||..o{ liquidacion_proveedor : propuesta
+    carga ||..o| liquidacion_transporte : propuesta
+    usuario ||..o{ liquidacion_transporte : propuesta
+    carga ||..o{ gasto_transporte : propuesta
+    acuerdo_transporte ||..o{ adelanto_transporte : propuesta
+    adelanto_transporte ||..o{ aplicacion_adelanto : propuesta
+    carga ||..o| factura_venta : propuesta
+    usuario o|..o{ pago_proveedor : propuesta
+    usuario o|..o{ pago_transporte : propuesta
+    usuario o|..o{ cobro_venta : propuesta
+    vehiculo_externo ||..o{ coordinacion_entrega : propuesta
+    proveedor_x_persona ||..o{ liquidacion_proveedor : propuesta
+    liquidacion_transporte ||..o{ aplicacion_adelanto : propuesta
+    usuario o|..o{ campana : propuesta
+    participacion_proveedor_campana o|..o{ campania_x_proveedores : propuesta
+    norma o|..o{ certificado_campana : propuesta
+    persona o|..o{ chofer_transporte_externo : propuesta
+    persona o|..o{ proveedor : propuesta
+    usuario o|..o{ chofer_transporte_externo : propuesta
+    coordinacion_entrega o|..o{ chofer_vehiculo_externo : propuesta
+    carga o|..o{ detalle_trazabilidad : propuesta
+    guia_remision o|..o{ detalle_trazabilidad : propuesta
+    persona o|..o{ empresa_transporte_externo : propuesta
+    fruta_derivada o|..o{ entrevista_extencion : propuesta
+    usuario o|..o{ entrevista_extencion : propuesta
+    campania_x_proveedores o|..o{ examen_proveedor : propuesta
+    finca o|..o{ examen_proveedor : propuesta
+    fruta_derivada o|..o{ finca : propuesta
+    coordinacion_entrega o|..o{ trazabilidad_transporte : propuesta
+    carga o|..o{ trazabilidad_transporte : propuesta
+    finca ||..o{ origen_entrega : propuesta
+    finca ||..o{ origen_carga : propuesta
+    finca ||..o{ analisis_calidad : propuesta
+    finca ||..o{ medicion_mtd : propuesta
+    parametro_uit
+```
+
+**Gestión de empresas logísticas, choferes y unidades:** `empresa_transporte_externo` registra al proveedor logístico externo contratado por la agroexportadora; `chofer_transporte_externo` y `vehiculo_externo` registran sus choferes y unidades. `chofer_vehiculo_externo` asigna un chofer y una unidad a `trazabilidad_transporte`, con fechas de inicio y fin. Estas cuatro tablas ya existen y se conservan en el SQL. `acuerdo_transporte` es la tabla propuesta para vincular la empresa transportista con la campaña y sus condiciones comerciales. La empresa agroexportadora que opera el sistema no se representa con `empresa_transporte_externo`; este modelo todavía no define una entidad propia para gestionar varias agroexportadoras.
+
+**Entidades amarillas de las referencias incorporadas al mapa:** `fruta`, `fruta_derivada`, `proveedor_x_fruta`, `certificado_proveedor`, `examen_proveedor` y `certificado_campana`. Los rótulos históricos `Certificados` y `certificados_campana` se representan con `certificado_campana` para el certificado de campaña; `certificado_x_productor` se corresponde con la cobertura propuesta `certificado_campana_x_proveedor`, vinculada a proveedor y campaña. Esta equivalencia expresa su función; no afirma que todos los atributos del dibujo sean idénticos. `certificado_proveedor` permanece separado para documentos propios del proveedor. No se añade otra tabla genérica Certificados sin definir un ciclo de vida distinto. `proveedor_x_fruta` se conserva: la nota de la imagen que plantea trasladarlo a finca dice CONFIRMAR y no constituye una decisión aprobada. Las hectáreas están en `finca` (`ha_total_finca`, `ha_cultivo`) en el diccionario específico.
+
+**Trazabilidad de finca tras el cambio:** origen_entrega, origen_carga, analisis_calidad y medicion_mtd ahora identifican finca directamente; antes la obtenían de la participación. El servicio deberá comprobar que esa finca pertenece al proveedor de cxp_id. Los orígenes admiten varias fincas de un proveedor en la misma entrega o carga. acuerdo_compra mantiene condiciones por proveedor y variedad, sin inferir una finca.
+
+**Decisión de negocio — 27/10/2026:** se elimina el vínculo directo finca–campania_x_proveedores del modelo objetivo. Se mantiene proveedor–finca y la entrevista relaciona campaña/proveedor con la finca visitada. El código actual todavía contiene el vínculo retirado; estos documentos y el SQL son la propuesta para revisión.
+
+**Relaciones documentales pendientes:** archivo queda excluida del SQL y de todos los diagramas. Las referencias de documentos, comprobantes, guías y evidencias se definirán en otra etapa. Las columnas reservadas quedan opcionales, sin FK ni obligación de asignarles un identificador. Las URL actuales se conservan.
+
+**Inventario de relaciones pendientes a archivo (sin implementar):**
+
+| Tabla | Referencia reservada opcional, sin FK |
+|---|---|
+| `certificado_proveedor` | `documento_archivo_id` |
+| `persona` | `documento_archivo_id` |
+| `pago_certificado_campana` | `comprobante_id` |
+| `contrato_venta` | `archivo_id` |
+| `solicitud_transporte` | `archivo_id` |
+| `cotizacion_transporte` | `archivo_id` |
+| `acuerdo_transporte` | `archivo_id` |
+| `cosecha` | `evidencia_id` |
+| `analisis_calidad` | `archivo_id` |
+| `medicion_mtd` | `archivo_id` |
+| `carga` | `guia_salida_id` |
+| `guia_remision` | `archivo_id` |
+| `recepcion_planta` | `evidencia_descarte_id` |
+| `recepcion_planta` | `reporte_recepcion_id` |
+| `liquidacion_proveedor` | `archivo_id` |
+| `liquidacion_transporte` | `archivo_id` |
+| `adelanto_transporte` | `comprobante_id` |
+| `factura_venta` | `archivo_id` |
+| `pago_proveedor` | `comprobante_id` |
+| `pago_transporte` | `comprobante_id` |
+| `cobro_venta` | `comprobante_id` |
+| `campana` | `lineamientos_archivo_id` |
+| `certificado_campana` | `documento_archivo_id` |
+| `proveedor` | `documento_archivo_id` |
+| `cliente_negocio_campana` | `ficha_tecnica_archivo_id` |
+| `detalle_trazabilidad` | `sctr_archivo_id` |
+| `entrevista_extencion` | `archivo_id` |
+| `examen_proveedor` | `documento_archivo_id` |
+
+**Decisiones para afinar el modelo durante el desarrollo:**
+
+| Referencia | Estado | Tema | Alcance |
+|---|---|---|---|
+| D01 | Por discutir | Participación adicional | campania_x_proveedores se conserva para agrupar entrevistas del proveedor por campaña. participacion_proveedor_campana sigue en el general como propuesta, pero duplica funciones; no se ha aprobado borrarla ni mantener dos fuentes editables. Revisar también sus tablas de variedades y cobertura. |
+| D02 | Aprobado por el usuario | Fincas entrevistadas | El listado de fincas de una participación se obtiene desde entrevista_extencion. No se vuelve a agregar finca_id a campania_x_proveedores; los orígenes de entrega/carga seleccionan las fincas físicas de recojo. |
+| D03 | Aprobado por el usuario | Análisis antes de cosecha | analisis_calidad identifica cxp_id y finca_id; cosecha_id queda opcional. La campaña se obtiene por la participación, sin otra FK redundante a campaña. El servicio validará coincidencia de campaña y origen si se vincula posteriormente una cosecha. |
+| D04 | Aprobado por el usuario | Una variedad por finca | Se conserva finca.fruta_derivada_id y se obtiene fruta por fruta_derivada.fruta_id. No se agrega una tabla de varios cultivos por finca. El vínculo permanece opcional para datos históricos; completar variedad antes de operar cuando la vista la requiere. |
+| D05 | Por discutir | Autoridad de transporte | chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias. |
+| D06 | Por discutir | Vincular antes del acuerdo | El mockup permite vincular transportista y registrar el acuerdo después. acuerdo_transporte exige condiciones completas en el SQL: evaluar estado borrador con atributos opcionales o un vínculo independiente. No se agrega otra tabla todavía. |
+| D07 | Por discutir | Incorporación de campaña a Calidad | Agregar campaña puede ser habilitación manual por canal o un filtro de las operaciones existentes. Solo si el negocio exige persistir esa habilitación tendría sentido una entidad específica; aún no se añade. |
+| D08 | Por discutir | Destinos del cliente | destino_cliente_negocio permite reutilizar plantas y direcciones; no se encontró un editor propio en el recorrido. Decidir si es catálogo de negocio o basta capturar destino en cada programación/documento. |
+| D09 | Por discutir | Cantidad de certificados | El editor dice uno por campaña; el backend y el resumen admiten varios. Se mantiene la capacidad actual hasta decidir si las normas requieren certificados distintos. |
+| D10 | Por discutir | Condiciones de compra | acuerdo_compra permitiría precios por proveedor/variedad/vigencia, pero no tiene editor observado en Entrevista. Decidir si se administra allí o si basta el precio histórico capturado al liquidar. |
+| D11 | Por discutir | Personas y autenticación | persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo. |
+| D12 | Pendiente técnico por decidir | Examen pendiente de resultado | El resultado actual de examen_proveedor sigue obligatorio positivo/negativo. El estado adicional no habilita un examen sin resultado; requiere decidir nulabilidad y adaptar DTO/servicio. |
+| D13 | Decisión previa conservada | Gestión documental diferida | archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa. |
+| D14 | Por discutir | Una carga por entrega | La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla. |
+| D15 | Por discutir | Un requerimiento por cliente/campaña | El listado demo repite Batimix/Mango 2026, mientras el backend exige un vínculo único cliente/campaña. La propuesta conserva esa unicidad y varios contratos como hijos; confirmar si las filas son duplicados de prueba o requerimientos comerciales independientes. |
+
+**Recorrido entre módulos:** Comercial programa la entrega; Campaña coordina transporte y fincas; Calidad registra análisis y carga; el Chofer reporta eventos y recepción; Logística consulta el seguimiento; Facturación registra venta y cobros; Liquidación registra compras, transporte y pagos. Volver a módulos cambia de navegación, sin crear otro registro de negocio.
+
+**Mapa del flujo funcional:** estas flechas indican navegación o información compartida; no son claves foráneas.
+
+```mermaid
+flowchart LR
+    acceso["Selección de perfil"] --> inicio["Administrador: módulos"]
+    acceso --> jornada["Chofer: Mis campañas y Mis cargas"]
+    inicio --> comercial["Gestión Comercial"]
+    inicio --> campanas["Gestión de Campaña"]
+    inicio --> proveedores["Gestión de Proveedores"]
+    inicio --> transporte["Gestión de Transporte"]
+    inicio --> calidad["Cosecha y Calidad"]
+    inicio --> logistica["Logística y Despacho"]
+    inicio --> ventas["Facturación y cobros"]
+    inicio --> compras["Liquidación de Compra"]
+    comercial -->|"Entregas programadas"| campanas
+    proveedores -->|"Proveedor y fincas"| campanas
+    transporte -->|"Empresa, unidad y chofer"| campanas
+    campanas -->|"Entrevistas y orígenes"| calidad
+    campanas -->|"Entregas asignadas"| jornada
+    calidad -->|"Carga real y guías"| logistica
+    jornada -->|"Carga, eventos y recepción"| logistica
+    logistica -->|"Recepción"| ventas
+    calidad -->|"Detalle real de carga"| compras
+    ventas --> revision["Revisión de cierre de campaña"]
+    compras --> revision
+    logistica --> revision
+```
+
+## Bienvenido (Acceso > Selección de perfil)
+
+**Referencia de revisión:** V01 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Seleccionar Administrador → Entrar como administrador → Módulos; seleccionar Chofer → elegir usuario → Mis campañas.
+
+**Observado en la aplicación de referencia:** Selector de perfil y conductores de demo; se accedió como administrador, Miguel Torres y Elena Ruiz. Los registros se anuncian compartidos entre dispositivos.
+
+**Criterio para revisar el modelo:** Una persona puede actuar como proveedor y como conductor sin duplicar su identidad. Un usuario tiene un rol en este alcance. La sesión persistente es una propuesta técnica: el retorno al login al recargar no se corrige únicamente creando tablas. El backend debe emitir/verificar una cookie o token con vencimiento, y el frontend restaurar sesión antes de cargar el perfil. Nunca guardar el token en claro ni usar los nombres del demo como autenticación real.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`usuario`](#tabla-usuario) | Consulta | Identificar al usuario en la futura autenticación; el selector actual permite entrar sin credenciales y no prueba que se persista una cuenta. | Tabla propuesta, sin implementar |
+| [`rol`](#tabla-rol) | Consulta | Distingue permisos de Administrador y Chofer; las autorizaciones se comprobarán en el servidor. | Tabla propuesta, sin implementar |
+| [`persona`](#tabla-persona) | Consulta | Identifica a una persona natural para cuentas o destinatarios de compras; su reutilización no crea otro proveedor ni autoriza por sí sola a cobrar. | Tabla propuesta, sin implementar |
+| [`sesion_usuario`](#tabla-sesion_usuario) | Por discutir | Propuesta técnica para mantener acceso y vencimiento; no se ha decidido si se usará sesión propia o un proveedor de autenticación. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas propuestas para revisar:** `usuario`, `rol`, `persona`, `sesion_usuario`.
+
+```mermaid
+erDiagram
+    persona ||..o| usuario : propuesta
+    rol ||..o{ usuario : propuesta
+    usuario ||..o{ sesion_usuario : propuesta
+```
+
+**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+
+<a id="tabla-usuario"></a>
+
+**Diccionario de `usuario` — tabla propuesta.**
+
+**Clave primaria:** `usuario_id`. Cuenta asociada a una persona; no se crea una cuenta por cada participación comercial.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `usuario_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `persona_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `persona.persona_id`. |
+| `rol_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `rol.rol_id`. |
+| `usuario` | **TABLA NUEVA** | `varchar(80) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `password_hash` | **TABLA NUEVA** | `text NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `activo` | **TABLA NUEVA** | `boolean NOT NULL DEFAULT true` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (persona_id)`; `UNIQUE (usuario)`.
+
+<a id="tabla-rol"></a>
+
+**Diccionario de `rol` — tabla propuesta.**
+
+**Clave primaria:** `rol_id`. Perfiles de acceso; los permisos efectivos se aplican en el servidor.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `rol_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `nombre` | **TABLA NUEVA** | `varchar(40) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (nombre)`.
+
+<a id="tabla-persona"></a>
+
+**Diccionario de `persona` — tabla propuesta.**
+
+**Clave primaria:** `persona_id`. Identidad única de productores, familiares y conductores.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `persona_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `tipo_documento` | **TABLA NUEVA** | `varchar(20) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `numero_documento` | **TABLA NUEVA** | `varchar(30) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `nombres` | **TABLA NUEVA** | `varchar(120) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `apellidos` | **TABLA NUEVA** | `varchar(120) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `telefono` | **TABLA NUEVA** | `varchar(30)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `correo` | **TABLA NUEVA** | `varchar(180)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `documento_archivo_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (tipo_documento, numero_documento)`.
+
+<a id="tabla-sesion_usuario"></a>
+
+**Diccionario de `sesion_usuario` — tabla propuesta.**
+
+**Clave primaria:** `sesion_usuario_id`. Propuesta técnica para persistir sesiones; solo se conserva el hash del token.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `sesion_usuario_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `usuario_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `usuario.usuario_id`. |
+| `token_hash` | **TABLA NUEVA** | `text NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `creada_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Atributo propuesto para cubrir el flujo de la vista. |
+| `expira_at` | **TABLA NUEVA** | `timestamptz NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `revocada_at` | **TABLA NUEVA** | `timestamptz` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (token_hash)`; `CHECK (expira_at > creada_at)`.
+
+## Módulos del sistema (Administrador > Inicio)
+
+**Referencia de revisión:** V02 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Cada una de las ocho tarjetas abre su módulo; Volver a módulos permite cambiar de flujo.
+
+**Observado en la aplicación de referencia:** Ocho módulos y botón de cierre de sesión. La aplicación mantiene la URL raíz; los breadcrumbs de este documento son rutas lógicas.
+
+**Criterio para revisar el modelo:** No representa una tabla de negocio. Es navegación y permisos sobre entidades compartidas. No se observó un módulo de sueldos. Los nombres de breadcrumb de este informe son rutas lógicas propuestas; la navegación inspeccionada mantiene la URL raíz, no URLs técnicas distintas.
+
+Es navegación de módulos; no requiere una tabla de negocio propia.
+
+## Gestión Comercial — Clientes (Administrador > Gestión Comercial > Clientes)
+
+**Referencia de revisión:** V03 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Gestión Comercial → Clientes → Ver cliente, Editar o Vincular a campaña; Contratos cambia al listado de participaciones.
+
+**Observado en la aplicación de referencia:** Padrón con empresa, contacto, teléfono, correo, RUC y tipo Exportador/Industria; acciones Ver, Editar y Vincular.
+
+**Criterio para revisar el modelo:** Se reutiliza cliente_negocio y se propone destino_cliente_negocio como hijo. Al programar una entrega, el servicio debe comprobar que el destino elegido pertenece al cliente del contrato; las FK simples no comprueban por sí solas esa coincidencia.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`cliente_negocio`](#tabla-cliente_negocio) | Escritura esperada | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`destino_cliente_negocio`](#tabla-destino_cliente_negocio) | Por discutir | Propuesta de puntos de llegada reutilizables de un cliente. La pantalla muestra destinos, pero no se observó un padrón independiente que obligue a esta tabla. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `cliente_negocio`.
+
+**Tablas propuestas para revisar:** `destino_cliente_negocio`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ destino_cliente_negocio : propuesta
+```
+
+**D08 — Destinos del cliente (Por discutir):** destino_cliente_negocio permite reutilizar plantas y direcciones; no se encontró un editor propio en el recorrido. Decidir si es catálogo de negocio o basta capturar destino en cada programación/documento.
+
+<a id="tabla-cliente_negocio"></a>
+
+**Diccionario de `cliente_negocio` — tabla actual ampliada.**
+
+**Clave primaria:** `cliente_negocio_id`. Padrón general del cliente y contacto.
+
+**Fuente actual:** [ClienteNegocio](D:/upeu/proyecto-carrera/app/epe-backend/src/cliente-negocio/entities/cliente-negocio.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `cliente_negocio_id` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `nombre_empresa` | **ACTUAL** | `varchar(255) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `nombre_contacto` | **ACTUAL** | `varchar(255) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `telefono` | **ACTUAL** | `varchar(20) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `ruc` | **ACTUAL** | `varchar(11) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `correo_corporativo` | **ACTUAL** | `varchar(320) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `ubicacion` | **ACTUAL** | `text NOT NULL` | Se conserva de la entidad/migración actual. |
+| `tipo_cliente` | **ACTUAL** | `"cliente_negocio_tipo_cliente_enum" NOT NULL` | Se conserva de la entidad/migración actual. |
+| `fecha_registro` | **AGREGAR** | `date` | Fecha comercial de registro, si se conoce; created_at se conserva. |
+
+**Restricciones actuales conservadas:** `PRIMARY KEY (cliente_negocio_id)`; `UNIQUE (correo_corporativo)`; `UNIQUE (ruc)`.
+
+<a id="tabla-destino_cliente_negocio"></a>
+
+**Diccionario de `destino_cliente_negocio` — tabla propuesta.**
+
+**Clave primaria:** `destino_cliente_negocio_id`. Puntos de llegada de cada cliente; no asumir que todos comparten una planta.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `destino_cliente_negocio_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `cliente_negocio_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `cliente_negocio.cliente_negocio_id`. |
+| `nombre` | **TABLA NUEVA** | `varchar(150) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `ubigeo` | **TABLA NUEVA** | `varchar(6)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `direccion` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `codigo_establecimiento` | **TABLA NUEVA** | `varchar(4)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `latitud` | **TABLA NUEVA** | `numeric(10,7)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `longitud` | **TABLA NUEVA** | `numeric(10,7)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (destino_cliente_negocio_id, cliente_negocio_id)`; `CHECK (latitud BETWEEN -90 AND 90)`; `CHECK (longitud BETWEEN -180 AND 180)`; `CHECK ((latitud IS NULL) = (longitud IS NULL))`.
+
+## Detalle de cliente (Administrador > Gestión Comercial > Clientes > Detalle)
+
+**Referencia de revisión:** V04 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Clientes → Ver cliente SUTRIMEX → Participaciones por campaña → Abrir participación.
+
+**Observado en la aplicación de referencia:** SUTRIMEX muestra sus datos generales y participaciones de Mango 2026 y Palta 2027, kilos y número de contratos.
+
+**Criterio para revisar el modelo:** La ficha agrega información desde requerimientos y contratos. No crear tablas detalle_cliente ni copia de campañas. Cantidad registrada, kilos acordados y kilos entregados son métricas diferentes.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `cliente_negocio`, `cliente_negocio_campana`, `campana`.
+
+**Tablas propuestas para revisar:** `contrato_venta`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+```
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-cliente_negocio_campana"></a>
+
+**Diccionario de `cliente_negocio_campana` — tabla actual ampliada.**
+
+**Clave primaria:** `cliente_negocio_campana_id`. Participación cliente–campaña y necesidad original, previa a sus contratos.
+
+**Fuente actual:** [ClienteNegocioCampana](D:/upeu/proyecto-carrera/app/epe-backend/src/cliente-negocio-campana/entities/cliente-negocio-campana.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `cliente_negocio_campana_id` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `documento_url` | **ACTUAL** | `text NOT NULL` | Se conserva de la entidad/migración actual. |
+| `fecha_registro` | **ACTUAL** | `date NOT NULL` | Se conserva de la entidad/migración actual. |
+| `ficha_tecnica_url` | **ACTUAL** | `text NOT NULL` | Se conserva de la entidad/migración actual. |
+| `cantidad_kg` | **ACTUAL** | `numeric(14,3) NOT NULL DEFAULT '0'::numeric` | Se conserva de la entidad/migración actual. |
+| `kilos_acordados` | **ACTUAL** | `numeric(14,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `cliente_negocio_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `cliente_negocio.cliente_negocio_id`. |
+| `campania_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `campana.campania_id`. |
+| `ficha_tecnica_archivo_id` | **AGREGAR** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `destino_solicitado` | **AGREGAR** | `varchar(255)` | Ciudad/planta/país solicitado en el requerimiento. |
+| `entrega_desde` | **AGREGAR** | `date` | Inicio de la ventana solicitada. |
+| `entrega_hasta` | **AGREGAR** | `date` | Fin de la ventana solicitada. |
+| `observaciones` | **AGREGAR** | `text` | Requerimientos y notas comerciales. |
+
+**Restricciones actuales conservadas:** `PRIMARY KEY (cliente_negocio_campana_id)`.
+
+**Índices actuales conservados:** `CREATE UNIQUE INDEX "UQ_cliente_negocio_campania" ON agro.cliente_negocio_campana USING btree (cliente_negocio_id, campania_id)`.
+
+**Restricciones propuestas para revisar:** `CHECK (entrega_hasta >= entrega_desde)`.
+
+<a id="tabla-campana"></a>
+
+**Diccionario de `campana` — tabla actual ampliada.**
+
+**Clave primaria:** `campania_id`. Campaña con sus fechas, responsable y cierre manual.
+
+**Fuente actual:** [Campana](D:/upeu/proyecto-carrera/app/epe-backend/src/campana/entities/campana.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `campania_id` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `nombre` | **ACTUAL** | `varchar NOT NULL` | Se conserva de la entidad/migración actual. |
+| `fecha_inicio` | **ACTUAL** | `date NOT NULL` | Se conserva de la entidad/migración actual. |
+| `fecha_fin` | **ACTUAL** | `date NOT NULL` | Se conserva de la entidad/migración actual. |
+| `estado` | **ACTUAL** | `"campana_estado_enum" NOT NULL DEFAULT 'planificacion'::campana_estado_enum` | Se conserva de la entidad/migración actual. |
+| `requerimiento_comercial` | **ACTUAL** | `numeric(12,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `fruta_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `fruta.fruta_id`. |
+| `temporada` | **AGREGAR** | `varchar(30)` | Periodo o temporada de la campaña. |
+| `responsable_usuario_id` | **AGREGAR** | `integer` | Responsable de la campaña. FK a `usuario.usuario_id`. |
+| `lineamientos_archivo_id` | **AGREGAR** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `observaciones` | **AGREGAR** | `text` | Notas generales de campaña. |
+| `cerrada_at` | **AGREGAR** | `timestamptz` | Fecha del cierre revisado. |
+| `cerrada_por_usuario_id` | **AGREGAR** | `integer` | Usuario que confirmó el cierre. FK a `usuario.usuario_id`. |
+| `motivo_cierre` | **AGREGAR** | `text` | Resumen o justificación del cierre. |
+
+**Restricciones actuales conservadas:** `PRIMARY KEY (campania_id)`.
+
+**Índices actuales conservados:** `CREATE UNIQUE INDEX "UQ_campana_fruta_activa" ON agro.campana USING btree (fruta_id) WHERE (estado <> 'terminado'::campana_estado_enum)`.
+
+**Restricciones propuestas para revisar:** `CHECK (fecha_fin >= fecha_inicio)`.
+
+<a id="tabla-contrato_venta"></a>
+
+**Diccionario de `contrato_venta` — tabla propuesta.**
+
+**Clave primaria:** `contrato_venta_id`. Varios contratos por requerimiento, con precio y moneda propios.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `contrato_venta_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `cliente_negocio_campana_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `cliente_negocio_campana.cliente_negocio_campana_id`. |
+| `numero` | **TABLA NUEVA** | `varchar(60) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `canal` | **TABLA NUEVA** | `varchar(20) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `kilos_acordados` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `precio_kg` | **TABLA NUEVA** | `numeric(14,4) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `moneda` | **TABLA NUEVA** | `varchar(3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `estado` | **TABLA NUEVA** | `varchar(25) NOT NULL DEFAULT 'VIGENTE'` | Atributo propuesto para cubrir el flujo de la vista. |
+| `condiciones_pago` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `archivo_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (numero)`; `CHECK (kilos_acordados > 0)`; `CHECK (precio_kg > 0)`; `CHECK (canal IN ('EXPORTACION','INDUSTRIA'))`; `CHECK (moneda IN ('PEN','USD','EUR'))`.
+
+## Contratos — Participaciones comerciales (Administrador > Gestión Comercial > Contratos)
+
+**Referencia de revisión:** V05 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Gestión Comercial → Contratos → Ver/Editar participación; Más opciones → Contratos o Entregas.
+
+**Observado en la aplicación de referencia:** Listado cliente/campaña con cantidades, kilos acordados y contratos; existen varias filas de Batimix/Mango 2026 en los datos de demostración.
+
+**Criterio para revisar el modelo:** Se conserva el vínculo único cliente/campaña de cliente_negocio_campana. Los contratos múltiples se agregan como hijos en contrato_venta; no se duplica el vínculo para crear otro contrato.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Escritura esperada | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio_campana_x_fruta_derivada`](#tabla-cliente_negocio_campana_x_fruta_derivada) | Escritura esperada | Conserva la selección múltiple de variedades solicitadas en el requerimiento comercial. | Tabla propuesta, sin implementar |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `cliente_negocio_campana`, `cliente_negocio`, `campana`, `fruta_derivada`.
+
+**Tablas propuestas para revisar:** `cliente_negocio_campana_x_fruta_derivada`, `contrato_venta`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    cliente_negocio_campana ||..o{ cliente_negocio_campana_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ cliente_negocio_campana_x_fruta_derivada : propuesta
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+```
+
+**D08 — Destinos del cliente (Por discutir):** destino_cliente_negocio permite reutilizar plantas y direcciones; no se encontró un editor propio en el recorrido. Decidir si es catálogo de negocio o basta capturar destino en cada programación/documento.
+
+**D15 — Un requerimiento por cliente/campaña (Por discutir):** El listado demo repite Batimix/Mango 2026, mientras el backend exige un vínculo único cliente/campaña. La propuesta conserva esa unicidad y varios contratos como hijos; confirmar si las filas son duplicados de prueba o requerimientos comerciales independientes.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-cliente_negocio_campana_x_fruta_derivada"></a>
+
+**Diccionario de `cliente_negocio_campana_x_fruta_derivada` — tabla propuesta.**
+
+**Clave primaria:** `cliente_negocio_campana_x_fruta_derivada_id`. Selección múltiple de variedades requeridas.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `cliente_negocio_campana_x_fruta_derivada_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `cliente_negocio_campana_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `cliente_negocio_campana.cliente_negocio_campana_id`. |
+| `fruta_derivada_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `fruta_derivada.fruta_derivada_id`. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (cliente_negocio_campana_id, fruta_derivada_id)`.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-fruta_derivada"></a>
+
+**Diccionario de `fruta_derivada` — tabla actual ampliada.**
+
+**Clave primaria:** `fruta_derivada_id`. Variedades pertenecientes a una fruta.
+
+**Fuente actual:** [FrutaDerivada](D:/upeu/proyecto-carrera/app/epe-backend/src/fruta/entities/fruta-derivada.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `fruta_derivada_id` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `name` | **ACTUAL** | `varchar(150) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `fruta_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `fruta.fruta_id`. |
+
+**Restricciones actuales conservadas:** `PRIMARY KEY (fruta_derivada_id)`.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Consulta cliente–campaña (Administrador > Gestión Comercial > Contratos > Participación)
+
+**Referencia de revisión:** V06 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Ver participación o Abrir participación → consulta cliente–campaña → Volver al origen.
+
+**Observado en la aplicación de referencia:** Consulta SUTRIMEX/Mango 2026 con ficha técnica, variedades, destino Rotterdam, ventana de entrega y resúmenes programados.
+
+**Criterio para revisar el modelo:** Reutiliza la participación y agrega contratos y entregas por sus claves. La suma programada no debe confundirse con lo efectivamente cargado o recibido. La integración documental queda pendiente; las referencias reservadas son opcionales y no tienen FK.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`cliente_negocio_campana_x_fruta_derivada`](#tabla-cliente_negocio_campana_x_fruta_derivada) | Consulta | Conserva la selección múltiple de variedades solicitadas en el requerimiento comercial. | Tabla propuesta, sin implementar |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `cliente_negocio_campana`, `cliente_negocio`, `campana`, `fruta_derivada`.
+
+**Tablas propuestas para revisar:** `cliente_negocio_campana_x_fruta_derivada`, `contrato_venta`, `entrega_programada`, `coordinacion_entrega`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    cliente_negocio_campana ||..o{ cliente_negocio_campana_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ cliente_negocio_campana_x_fruta_derivada : propuesta
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+```
+
+**D15 — Un requerimiento por cliente/campaña (Por discutir):** El listado demo repite Batimix/Mango 2026, mientras el backend exige un vínculo único cliente/campaña. La propuesta conserva esa unicidad y varios contratos como hijos; confirmar si las filas son duplicados de prueba o requerimientos comerciales independientes.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana_x_fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-entrega_programada"></a>
+
+**Diccionario de `entrega_programada` — tabla propuesta.**
+
+**Clave primaria:** `entrega_programada_id`. Programación comercial; puede existir antes de asignar transporte.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `entrega_programada_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `contrato_venta_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `contrato_venta.contrato_venta_id`. |
+| `destino_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `destino_cliente_negocio.destino_cliente_negocio_id`. |
+| `fecha` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `kilos_programados` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `observaciones` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `CHECK (kilos_programados > 0)`.
+
+<a id="tabla-coordinacion_entrega"></a>
+
+**Diccionario de `coordinacion_entrega` — tabla propuesta.**
+
+**Clave primaria:** `coordinacion_entrega_id`. Asignación previa a la carga real; un registro por entrega.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `coordinacion_entrega_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `entrega_programada_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `entrega_programada.entrega_programada_id`. |
+| `acuerdo_transporte_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `acuerdo_transporte.acuerdo_transporte_id`; FK a `acuerdo_transporte.acuerdo_transporte_id,id_empresa_transporte_externo`. |
+| `id_empresa_transporte_externo` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `empresa_transporte_externo.id_empresa_transporte_externo`; FK a `acuerdo_transporte.acuerdo_transporte_id,id_empresa_transporte_externo`; FK a `vehiculo_externo.id_vehiculo_externo,id_empresa_transporte_externo`; FK a `chofer_transporte_externo.id_chofer_transporte_externo,id_empresa_transporte_externo`. |
+| `id_vehiculo_externo` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `vehiculo_externo.id_vehiculo_externo,id_empresa_transporte_externo`. |
+| `id_chofer_transporte_externo` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `chofer_transporte_externo.id_chofer_transporte_externo`; FK a `chofer_transporte_externo.id_chofer_transporte_externo,id_empresa_transporte_externo`. |
+| `inicio_programado` | **TABLA NUEVA** | `timestamptz NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fin_programado` | **TABLA NUEVA** | `timestamptz NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `origen_descripcion` | **TABLA NUEVA** | `text NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `condiciones_carga` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `observaciones` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (entrega_programada_id)`; `UNIQUE (coordinacion_entrega_id, entrega_programada_id)`; `CHECK (fin_programado >= inicio_programado)`.
+
+## Contratos del cliente en campaña (Administrador > Gestión Comercial > Contratos > Participación > Contratos)
+
+**Referencia de revisión:** V07 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Contratos → Más opciones de SUTRIMEX → Contratos → Registrar/Editar contrato o Entregas.
+
+**Observado en la aplicación de referencia:** Cuatro contratos de SUTRIMEX/Mango 2026; tres en USD y uno en PEN. Cada contrato accede a sus entregas.
+
+**Criterio para revisar el modelo:** El contrato pertenece a un requerimiento; su cliente y campaña se obtienen desde este. Precio total=kg acordados×precio/kg. No sumar importes de monedas distintas. Se adopta un precio por contrato, como la UI; se retira precios_venta del modelo compacto para evitar dos fuentes editables. Si luego se confirma precio diferente por variedad, sustituir el precio de cabecera por líneas completas, sin duplicarlo.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`contrato_venta`](#tabla-contrato_venta) | Escritura esperada | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `cliente_negocio_campana`, `cliente_negocio`, `campana`.
+
+**Tablas propuestas para revisar:** `contrato_venta`, `entrega_programada`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+```
+
+**D15 — Un requerimiento por cliente/campaña (Por discutir):** El listado demo repite Batimix/Mango 2026, mientras el backend exige un vínculo único cliente/campaña. La propuesta conserva esa unicidad y varios contratos como hijos; confirmar si las filas son duplicados de prueba o requerimientos comerciales independientes.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Entregas programadas (Administrador > Gestión Comercial > Contratos > Contrato > Entregas)
+
+**Referencia de revisión:** V08 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Contrato → Entregas → Registrar/Ver entrega; completar transporte corresponde a Campaña en proceso.
+
+**Observado en la aplicación de referencia:** Contrato con dos entregas de 500 kg, destino y preparación; edición y eliminación deshabilitadas con carga registrada.
+
+**Criterio para revisar el modelo:** Un contrato puede tener varias entregas. El servicio deberá controlar que sus kilos no superen el contrato y que la distribución por variedad sume la cabecera. El SQL declara las relaciones y cantidades positivas; esas sumas entre filas siguen pendientes de implementación transaccional.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`entrega_programada`](#tabla-entrega_programada) | Escritura esperada | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`entrega_x_fruta_derivada`](#tabla-entrega_x_fruta_derivada) | Escritura esperada | Desglosa los kilos programados por variedad para el calendario semanal; no es una segunda entrega. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`destino_cliente_negocio`](#tabla-destino_cliente_negocio) | Consulta | Propuesta de puntos de llegada reutilizables de un cliente. La pantalla muestra destinos, pero no se observó un padrón independiente que obligue a esta tabla. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `cliente_negocio_campana`, `cliente_negocio`, `fruta_derivada`.
+
+**Tablas propuestas para revisar:** `entrega_programada`, `entrega_x_fruta_derivada`, `contrato_venta`, `destino_cliente_negocio`, `coordinacion_entrega`, `carga`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    cliente_negocio ||..o{ destino_cliente_negocio : propuesta
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    destino_cliente_negocio ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o{ entrega_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ entrega_x_fruta_derivada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+```
+
+**D08 — Destinos del cliente (Por discutir):** destino_cliente_negocio permite reutilizar plantas y direcciones; no se encontró un editor propio en el recorrido. Decidir si es catálogo de negocio o basta capturar destino en cada programación/documento.
+
+**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-entrega_x_fruta_derivada"></a>
+
+**Diccionario de `entrega_x_fruta_derivada` — tabla propuesta.**
+
+**Clave primaria:** `entrega_x_fruta_derivada_id`. Distribución programada por variedad para el programa semanal.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `entrega_x_fruta_derivada_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `entrega_programada_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `entrega_programada.entrega_programada_id`. |
+| `fruta_derivada_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `fruta_derivada.fruta_derivada_id`. |
+| `kilos_programados` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (entrega_programada_id, fruta_derivada_id)`; `CHECK (kilos_programados > 0)`.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`destino_cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-carga"></a>
+
+**Diccionario de `carga` — tabla propuesta.**
+
+**Clave primaria:** `carga_id`. Carga física real de la coordinación; no crea otra asignación de camión o chofer.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `carga_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `coordinacion_entrega_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `coordinacion_entrega.coordinacion_entrega_id`. |
+| `codigo` | **TABLA NUEVA** | `varchar(80) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_carga` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `anotador_nombre` | **TABLA NUEVA** | `varchar(180) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `estado_calidad` | **TABLA NUEVA** | `varchar(30) NOT NULL DEFAULT 'PENDIENTE'` | Atributo propuesto para cubrir el flujo de la vista. |
+| `viaticos_movilidad` | **TABLA NUEVA** | `numeric(14,2) NOT NULL DEFAULT 0` | Atributo propuesto para cubrir el flujo de la vista. |
+| `viaticos_insumos` | **TABLA NUEVA** | `numeric(14,2) NOT NULL DEFAULT 0` | Atributo propuesto para cubrir el flujo de la vista. |
+| `guia_salida_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `guia_salida_registrada_at` | **TABLA NUEVA** | `timestamptz` | Atributo propuesto para cubrir el flujo de la vista. |
+| `observaciones` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (coordinacion_entrega_id)`; `UNIQUE (codigo)`; `UNIQUE (carga_id, coordinacion_entrega_id)`; `CHECK (viaticos_movilidad >= 0)`; `CHECK (viaticos_insumos >= 0)`.
+
+## Gestión de Campaña (Administrador > Gestión de Campaña > Listado)
+
+**Referencia de revisión:** V09 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Módulos → Gestión de Campaña → Planificado / En Proceso / Finalizado → Detalle o Más opciones.
+
+**Observado en la aplicación de referencia:** Planificado, En Proceso y Finalizado; campaña pasa por fecha a En proceso según texto visible. La fecha final no ejecuta el cierre.
+
+**Criterio para revisar el modelo:** Se conservan campania_id, fruta_id, estado y requerimiento_comercial, con la regla de una campaña activa por fruta. Se añaden temporada, responsable, lineamientos y datos de cierre. Cambiar el estado automáticamente o verificar el cierre completo corresponde al servicio posterior.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Escritura esperada | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`campana_x_fruta_derivada`](#tabla-campana_x_fruta_derivada) | Escritura esperada | Conserva las variedades seleccionadas para la campaña, distintas de las variedades efectivamente cargadas. | Tabla propuesta, sin implementar |
+| [`fruta`](#tabla-fruta) | Consulta | Proporciona el catálogo de cultivos y la fruta de la campaña. No representa kilos comprados ni cosechados. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`usuario`](#tabla-usuario) | Consulta | Relaciona la cuenta autenticada con la identidad y, cuando corresponde, con el chofer. El selector del demo todavía no constituye autenticación. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `fruta`, `fruta_derivada`.
+
+**Tablas propuestas para revisar:** `campana_x_fruta_derivada`, `usuario`.
+
+```mermaid
+erDiagram
+    fruta ||..o{ campana : actual
+    fruta ||..o{ fruta_derivada : actual
+    campana ||..o{ campana_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ campana_x_fruta_derivada : propuesta
+    usuario o|..o{ campana : propuesta
+```
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-campana_x_fruta_derivada"></a>
+
+**Diccionario de `campana_x_fruta_derivada` — tabla propuesta.**
+
+**Clave primaria:** `campana_x_fruta_derivada_id`. Variedades elegidas para una campaña.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `campana_x_fruta_derivada_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `campania_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campana.campania_id`. |
+| `fruta_derivada_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `fruta_derivada.fruta_derivada_id`. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (campania_id, fruta_derivada_id)`.
+
+<a id="tabla-fruta"></a>
+
+**Diccionario de `fruta` — tabla actual ampliada.**
+
+**Clave primaria:** `fruta_id`. Catálogo de frutas.
+
+**Fuente actual:** [Fruta](D:/upeu/proyecto-carrera/app/epe-backend/src/fruta/entities/fruta.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `fruta_id` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `name` | **ACTUAL** | `varchar(150) NOT NULL` | Se conserva de la entidad/migración actual. |
+
+**Restricciones actuales conservadas:** `PRIMARY KEY (fruta_id)`.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`usuario`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Datos generales y resumen de campaña (Administrador > Gestión de Campaña > Campaña > Detalle)
+
+**Referencia de revisión:** V10 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** En Proceso → Ver detalle de Mango 2026 → Datos generales; Revisar cierre abre su control separado.
+
+**Observado en la aplicación de referencia:** Resumen de Mango 2026 con estimados, certificados y comprometidos; advertencias de recepciones incompletas; no equivalen a nuevas tablas.
+
+**Criterio para revisar el modelo:** Son consultas sobre varias entidades. Distinguir sumas por requerimiento, contrato, proveedor y certificado; agregar cada conjunto por separado antes de combinarlos para evitar multiplicar kilos por un JOIN 1:N. La advertencia de cobertura duplicada no acredita producción nueva.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`fruta`](#tabla-fruta) | Consulta | Proporciona el catálogo de cultivos y la fruta de la campaña. No representa kilos comprados ni cosechados. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`campana_x_fruta_derivada`](#tabla-campana_x_fruta_derivada) | Consulta | Conserva las variedades seleccionadas para la campaña, distintas de las variedades efectivamente cargadas. | Tabla propuesta, sin implementar |
+| [`usuario`](#tabla-usuario) | Consulta | Relaciona la cuenta autenticada con la identidad y, cuando corresponde, con el chofer. El selector del demo todavía no constituye autenticación. | Tabla propuesta, sin implementar |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Consultar oferta estimada y estado de evaluación por participación; no sumar otra vez los campos equivalentes de participacion_proveedor_campana. | Tabla actual incluida |
+| [`examen_proveedor`](#tabla-examen_proveedor) | Consulta | Registra muestras y exámenes de evaluación del proveedor, con contexto de campaña propuesto. No sustituye los análisis operativos de Calidad. | Tabla actual incluida |
+| [`certificado_campana`](#tabla-certificado_campana) | Consulta | Guarda el certificado de campaña, vigencia y costo. No guarda como pago el recibo ni reemplaza el certificado propio del proveedor. | Tabla actual incluida |
+| [`certificado_campana_x_proveedor`](#tabla-certificado_campana_x_proveedor) | Consulta | Distribuye la cobertura inicial del certificado entre productores de esa campaña. Su dependencia de la cabecera adicional de participación sigue por afinar. | Tabla propuesta, sin implementar |
+| [`ampliacion_certificado_campana`](#tabla-ampliacion_certificado_campana) | Consulta | Registra cada aumento de kilos certificados como evento, sin sobrescribir el volumen inicial. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`cosecha`](#tabla-cosecha) | Consulta | Representa la operación agrícola, sus estimados, cantidades y estado propios. No debe crearse artificialmente solo para permitir un análisis previo. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`recepcion_planta`](#tabla-recepcion_planta) | Consulta | Mantiene una recepción por carga, peso de planta, descarte y cierres previstos. Recepción y descarte son pasos distintos sobre la misma fila. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `fruta`, `fruta_derivada`, `campania_x_proveedores`, `examen_proveedor`, `certificado_campana`, `cliente_negocio_campana`.
+
+**Tablas propuestas para revisar:** `campana_x_fruta_derivada`, `usuario`, `certificado_campana_x_proveedor`, `ampliacion_certificado_campana`, `contrato_venta`, `entrega_programada`, `coordinacion_entrega`, `cosecha`, `carga`, `recepcion_planta`.
+
+```mermaid
+erDiagram
+    fruta ||..o{ campana : actual
+    campana ||..o{ campania_x_proveedores : actual
+    campana ||..o{ certificado_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    fruta ||..o{ fruta_derivada : actual
+    campana ||..o{ campana_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ campana_x_fruta_derivada : propuesta
+    certificado_campana ||..o{ certificado_campana_x_proveedor : propuesta
+    campana ||..o{ certificado_campana_x_proveedor : propuesta
+    certificado_campana ||..o{ ampliacion_certificado_campana : propuesta
+    usuario o|..o{ ampliacion_certificado_campana : propuesta
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    entrega_programada ||..o{ cosecha : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o| recepcion_planta : propuesta
+    usuario o|..o{ campana : propuesta
+    campania_x_proveedores o|..o{ examen_proveedor : propuesta
+```
+
+**D01 — Participación adicional (Por discutir):** campania_x_proveedores se conserva para agrupar entrevistas del proveedor por campaña. participacion_proveedor_campana sigue en el general como propuesta, pero duplica funciones; no se ha aprobado borrarla ni mantener dos fuentes editables. Revisar también sus tablas de variedades y cobertura.
+
+**D09 — Cantidad de certificados (Por discutir):** El editor dice uno por campaña; el backend y el resumen admiten varios. Se mantiene la capacidad actual hasta decidir si las normas requieren certificados distintos.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campana_x_fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`usuario`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-campania_x_proveedores"></a>
+
+**Diccionario de `campania_x_proveedores` — tabla actual ampliada.**
+
+**Clave primaria:** `cxp_id`. Participación del proveedor en una campaña, sin relación directa a finca. La entrevista y los orígenes operativos identifican la finca cuando corresponde.
+
+**Fuente actual:** [CampaniaProveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/campana-proveedor/entities/campania-proveedor.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `cxp_id` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `cantidad_proveedor` | **ACTUAL** | `numeric(12,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `mtd_ceratitis` | **ACTUAL** | `numeric(12,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `fruta_convencional_estimado` | **ACTUAL** | `integer` | Se conserva de la entidad/migración actual. |
+| `tipo_proveedor` | **ACTUAL** | `"campania_x_proveedores_tipo_proveedor_enum" NOT NULL` | Se conserva de la entidad/migración actual. |
+| `estado` | **ACTUAL** | `"campania_x_proveedores_estado_enum" NOT NULL DEFAULT 'sin validar'::campania_x_proveedores_estado_enum` | Se conserva de la entidad/migración actual. |
+| `campania_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `campana.campania_id`. |
+| `proveedor_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `proveedor.proveedor_id`. |
+| `participacion_proveedor_campana_id` | **AGREGAR** | `integer` | Vínculo opcional a la cabecera propuesta; revisar su necesidad al quedar la participación sin finca. FK a `participacion_proveedor_campana.participacion_proveedor_campana_id`. |
+
+**Restricciones actuales conservadas:** `CHECK (((tipo_proveedor = 'productor'::campania_x_proveedores_tipo_proveedor_enum) OR (fruta_convencional_estimado IS NULL)))`; `PRIMARY KEY (cxp_id)`.
+
+**Restricciones propuestas para revisar:** `UNIQUE (campania_id, proveedor_id)`.
+
+<a id="tabla-examen_proveedor"></a>
+
+**Diccionario de `examen_proveedor` — tabla actual ampliada.**
+
+**Clave primaria:** `examen_proveedor_id`. Exámenes sanitarios de la participación, con muestra y fechas de laboratorio.
+
+**Fuente actual:** [ExamenProveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/proveedor/entities/examen-proveedor.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `examen_proveedor_id` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `fecha` | **ACTUAL** | `date NOT NULL` | Se conserva de la entidad/migración actual. |
+| `tipo_examen` | **ACTUAL** | `varchar(150) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `resultado` | **ACTUAL** | `"examen_proveedor_resultado_enum" NOT NULL` | Se conserva de la entidad/migración actual. |
+| `origen` | **ACTUAL** | `varchar(255) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `observacion` | **ACTUAL** | `text NOT NULL` | Se conserva de la entidad/migración actual. |
+| `documento_url` | **ACTUAL** | `text NOT NULL` | Se conserva de la entidad/migración actual. |
+| `proveedor_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `proveedor.proveedor_id`. |
+| `cxp_id` | **AGREGAR** | `integer` | Contexto de campaña/proveedor cuando se conoce. FK a `campania_x_proveedores.cxp_id`. |
+| `finca_id` | **AGREGAR** | `integer` | Finca de la muestra cuando se conoce. FK a `finca.finca_id`. |
+| `codigo_muestra` | **AGREGAR** | `varchar(80)` | Identificador de muestra. |
+| `fecha_envio` | **AGREGAR** | `date` | Fecha de envío al laboratorio. |
+| `estado_examen` | **AGREGAR** | `varchar(30)` | Estado del trámite. Resultado actual sigue obligatorio: permitir pendiente requiere otro cambio explícito. |
+| `documento_archivo_id` | **AGREGAR** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+
+**Restricciones actuales conservadas:** `PRIMARY KEY (examen_proveedor_id)`.
+
+<a id="tabla-certificado_campana"></a>
+
+**Diccionario de `certificado_campana` — tabla actual ampliada.**
+
+**Clave primaria:** `certificado_id`. Certificado de campaña y su costo; el backend admite varios, aunque el editor del mockup anuncia uno. Unicidad pendiente de decisión.
+
+**Fuente actual:** [CertificadoCampana](D:/upeu/proyecto-carrera/app/epe-backend/src/certificado-campana/entities/certificado-campana.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `certificado_id` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `nombre` | **ACTUAL** | `varchar(255) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `document_url` | **ACTUAL** | `text NOT NULL` | Se conserva de la entidad/migración actual. |
+| `costo` | **ACTUAL** | `numeric(12,2) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `recibo_url` | **ACTUAL** | `text NOT NULL` | Se conserva de la entidad/migración actual. |
+| `fecha_vencimiento` | **ACTUAL** | `date NOT NULL` | Se conserva de la entidad/migración actual. |
+| `estado` | **ACTUAL** | `"certificado_campana_estado_enum" NOT NULL` | Se conserva de la entidad/migración actual. |
+| `campania_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `campana.campania_id`. |
+| `codigo` | **AGREGAR** | `varchar(80)` | Identificador externo del certificado. |
+| `norma_id` | **AGREGAR** | `integer` | Norma del certificado. FK a `norma.norma_id`. |
+| `organismo` | **AGREGAR** | `varchar(255)` | Organismo certificador. |
+| `fecha_emision` | **AGREGAR** | `date` | Fecha de emisión del certificado. |
+| `moneda` | **AGREGAR** | `varchar(3)` | Moneda del costo y de sus pagos; no se deduce automáticamente. |
+| `documento_archivo_id` | **AGREGAR** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+
+**Restricciones actuales conservadas:** `PRIMARY KEY (certificado_id)`.
+
+**Restricciones propuestas para revisar:** `CHECK (moneda IS NULL OR moneda IN ('PEN','USD','EUR'))`; `UNIQUE (certificado_id, campania_id)`.
+
+<a id="tabla-certificado_campana_x_proveedor"></a>
+
+**Diccionario de `certificado_campana_x_proveedor` — tabla propuesta.**
+
+**Clave primaria:** `certificado_campana_x_proveedor_id`. Productores cubiertos y kilos iniciales capturados al certificar.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `certificado_campana_x_proveedor_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `certificado_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `certificado_campana.certificado_id`; FK a `certificado_campana.certificado_id,campania_id`. |
+| `campania_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campana.campania_id`; FK a `certificado_campana.certificado_id,campania_id`; FK a `participacion_proveedor_campana.participacion_proveedor_campana_id,campania_id,proveedor_id`. |
+| `participacion_proveedor_campana_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `participacion_proveedor_campana.participacion_proveedor_campana_id`; FK a `participacion_proveedor_campana.participacion_proveedor_campana_id,campania_id,proveedor_id`. |
+| `proveedor_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `proveedor.proveedor_id`; FK a `participacion_proveedor_campana.participacion_proveedor_campana_id,campania_id,proveedor_id`. |
+| `kilos_autorizados` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (certificado_id, participacion_proveedor_campana_id)`; `CHECK (kilos_autorizados > 0)`.
+
+<a id="tabla-ampliacion_certificado_campana"></a>
+
+**Diccionario de `ampliacion_certificado_campana` — tabla propuesta.**
+
+**Clave primaria:** `ampliacion_certificado_campana_id`. Incrementos de cobertura, sin sobrescribir los kilos iniciales.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `ampliacion_certificado_campana_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `certificado_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `certificado_campana.certificado_id`. |
+| `fecha` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `kilos_adicionales` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `referencia` | **TABLA NUEVA** | `varchar(180) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `registrado_por_usuario_id` | **TABLA NUEVA** | `integer` | Atributo propuesto para cubrir el flujo de la vista. FK a `usuario.usuario_id`. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `CHECK (kilos_adicionales > 0)`.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-cosecha"></a>
+
+**Diccionario de `cosecha` — tabla propuesta.**
+
+**Clave primaria:** `cosecha_id`. Operación de cosecha de una entrega; estado separado del despacho.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `cosecha_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `entrega_programada_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `entrega_programada.entrega_programada_id`. |
+| `codigo_lote` | **TABLA NUEVA** | `varchar(60) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_prevista` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `kilos_estimados` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `kilos_cosechados` | **TABLA NUEVA** | `numeric(14,3)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `kilos_aceptados` | **TABLA NUEVA** | `numeric(14,3)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `estado` | **TABLA NUEVA** | `varchar(30) NOT NULL DEFAULT 'PENDIENTE'` | Atributo propuesto para cubrir el flujo de la vista. |
+| `cierre_cosecha_at` | **TABLA NUEVA** | `timestamptz` | Atributo propuesto para cubrir el flujo de la vista. |
+| `evidencia_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (codigo_lote)`; `CHECK (kilos_estimados >= 0)`; `CHECK (kilos_cosechados >= 0)`; `CHECK (kilos_aceptados >= 0)`.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-recepcion_planta"></a>
+
+**Diccionario de `recepcion_planta` — tabla propuesta.**
+
+**Clave primaria:** `recepcion_planta_id`. Recepción única con checklist, peso, descarte y cierre físico/administrativo.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `recepcion_planta_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `carga_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `carga.carga_id`. |
+| `id_chofer_transporte_externo` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `chofer_transporte_externo.id_chofer_transporte_externo`. |
+| `fecha_recepcion` | **TABLA NUEVA** | `timestamptz` | Atributo propuesto para cubrir el flujo de la vista. |
+| `peso_planta_kg` | **TABLA NUEVA** | `numeric(14,3)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `hubo_descarte` | **TABLA NUEVA** | `boolean` | Atributo propuesto para cubrir el flujo de la vista. |
+| `descarte_kg` | **TABLA NUEVA** | `numeric(14,3)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `evidencia_descarte_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `reporte_recepcion_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `resultado` | **TABLA NUEVA** | `varchar(80)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `recepcion_confirmada_at` | **TABLA NUEVA** | `timestamptz` | Atributo propuesto para cubrir el flujo de la vista. |
+| `descarte_confirmado_at` | **TABLA NUEVA** | `timestamptz` | Atributo propuesto para cubrir el flujo de la vista. |
+| `jabas_devueltas` | **TABLA NUEVA** | `integer` | Atributo propuesto para cubrir el flujo de la vista. |
+| `jabas_devolucion_at` | **TABLA NUEVA** | `timestamptz` | Atributo propuesto para cubrir el flujo de la vista. |
+| `descarga_at` | **TABLA NUEVA** | `timestamptz` | Atributo propuesto para cubrir el flujo de la vista. |
+| `cierre_fisico_at` | **TABLA NUEVA** | `timestamptz` | Atributo propuesto para cubrir el flujo de la vista. |
+| `cierre_administrativo_at` | **TABLA NUEVA** | `timestamptz` | Atributo propuesto para cubrir el flujo de la vista. |
+| `observaciones` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (carga_id)`; `CHECK (peso_planta_kg > 0)`; `CHECK (descarte_kg >= 0)`; `CHECK (jabas_devueltas >= 0)`; `CHECK (hubo_descarte IS DISTINCT FROM false OR descarte_kg = 0)`; `CHECK (hubo_descarte IS DISTINCT FROM true OR descarte_kg > 0)`.
+
+## Proveedores de campaña (Administrador > Gestión de Campaña > Planificado > Campaña > Proveedores)
+
+**Referencia de revisión:** V11 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Planificado → Más opciones de Palta 2027 → Proveedores → Ver participación; Más opciones del proveedor → Entrevista / Exámenes.
+
+**Observado en la aplicación de referencia:** Roberto Palacios aparece como productor de Palta 2027. El detalle muestra dos fincas; se confirma con el usuario que serán las fincas entrevistadas.
+
+**Criterio para revisar el modelo:** Por decisión del 27/10/2026, campania_x_proveedores representa al proveedor en la campaña y no selecciona finca: se retira finca_id y su FK. El SQL propone un registro por campaña/proveedor, extendiendo la unicidad que antes aplicaba a registros sin finca. Las entrevistas conservan finca_id y comprueban su pertenencia al proveedor. participacion_proveedor_campana sigue siendo una cabecera opcional propuesta cuya necesidad debe revisarse para evitar duplicar la participación. No se fusionan registros existentes automáticamente.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Escritura esperada | Crear o actualizar la participación del proveedor, su tipo, cantidad y evaluación en la campaña; es el identificador usado para agrupar sus entrevistas. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`proveedor_x_fruta`](#tabla-proveedor_x_fruta) | Consulta | Asocia las frutas del padrón al proveedor; se conserva mientras no se apruebe derivarlas exclusivamente de sus fincas. | Tabla actual incluida |
+| [`proveedor_x_fruta_derivada`](#tabla-proveedor_x_fruta_derivada) | Consulta | Propuesta para las variedades del padrón del proveedor. No identifica la finca física de recojo. | Tabla propuesta, sin implementar |
+| [`fruta`](#tabla-fruta) | Consulta | Proporciona el catálogo de cultivos y la fruta de la campaña. No representa kilos comprados ni cosechados. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`entrevista_extencion`](#tabla-entrevista_extencion) | Consulta | Consultar las entrevistas de la participación y obtener sus fincas distintas para el detalle «Fincas vinculadas a la campaña», según decisión confirmada. | Tabla actual incluida |
+| [`finca`](#tabla-finca) | Consulta | Leer las fincas alcanzadas a través de entrevistas; no es una asociación directa de finca con la participación. | Tabla actual incluida |
+| [`examen_proveedor`](#tabla-examen_proveedor) | Consulta | Registra muestras y exámenes de evaluación del proveedor, con contexto de campaña propuesto. No sustituye los análisis operativos de Calidad. | Tabla actual incluida |
+| [`participacion_proveedor_campana`](#tabla-participacion_proveedor_campana) | Por discutir | Cabecera adicional propuesta por el diseño anterior que se solapa con campania_x_proveedores. No se debe poblar como segunda participación hasta definir una función diferente. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+| [`participacion_proveedor_x_fruta_derivada`](#tabla-participacion_proveedor_x_fruta_derivada) | Por discutir | Selección propuesta de variedades por participación. Su FK a la cabecera adicional deberá revisarse si se consolida el diseño en campania_x_proveedores. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campania_x_proveedores`, `proveedor`, `campana`, `proveedor_x_fruta`, `fruta`, `fruta_derivada`, `entrevista_extencion`, `finca`, `examen_proveedor`.
+
+**Tablas propuestas para revisar:** `proveedor_x_fruta_derivada`, `participacion_proveedor_campana`, `participacion_proveedor_x_fruta_derivada`.
+
+```mermaid
+erDiagram
+    fruta ||..o{ campana : actual
+    campana ||..o{ campania_x_proveedores : actual
+    proveedor ||..o{ campania_x_proveedores : actual
+    campania_x_proveedores ||..o{ entrevista_extencion : actual
+    finca ||..o{ entrevista_extencion : actual
+    proveedor ||..o{ examen_proveedor : actual
+    proveedor ||..o{ finca : actual
+    fruta ||..o{ fruta_derivada : actual
+    proveedor ||..o{ proveedor_x_fruta : actual
+    fruta ||..o{ proveedor_x_fruta : actual
+    proveedor ||..o{ proveedor_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ proveedor_x_fruta_derivada : propuesta
+    campana ||..o{ participacion_proveedor_campana : propuesta
+    proveedor ||..o{ participacion_proveedor_campana : propuesta
+    participacion_proveedor_campana ||..o{ participacion_proveedor_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ participacion_proveedor_x_fruta_derivada : propuesta
+    participacion_proveedor_campana o|..o{ campania_x_proveedores : propuesta
+    fruta_derivada o|..o{ entrevista_extencion : propuesta
+    campania_x_proveedores o|..o{ examen_proveedor : propuesta
+    finca o|..o{ examen_proveedor : propuesta
+    fruta_derivada o|..o{ finca : propuesta
+```
+
+**D01 — Participación adicional (Por discutir):** campania_x_proveedores se conserva para agrupar entrevistas del proveedor por campaña. participacion_proveedor_campana sigue en el general como propuesta, pero duplica funciones; no se ha aprobado borrarla ni mantener dos fuentes editables. Revisar también sus tablas de variedades y cobertura.
+
+**D02 — Fincas entrevistadas (Aprobado por el usuario):** El listado de fincas de una participación se obtiene desde entrevista_extencion. No se vuelve a agregar finca_id a campania_x_proveedores; los orígenes de entrega/carga seleccionan las fincas físicas de recojo.
+
+**`campania_x_proveedores`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-proveedor"></a>
+
+**Diccionario de `proveedor` — tabla actual ampliada.**
+
+**Clave primaria:** `proveedor_id`. Identidad comercial del proveedor principal.
+
+**Fuente actual:** [Proveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/proveedor/entities/proveedor.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `proveedor_id` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `nombres` | **ACTUAL** | `varchar(150) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `apellido` | **ACTUAL** | `varchar(150) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `tipo_documento` | **ACTUAL** | `"proveedor_tipo_documento_enum" NOT NULL` | Se conserva de la entidad/migración actual. |
+| `nmr_documento` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. |
+| `identidad_doc_url` | **ACTUAL** | `text NOT NULL` | Se conserva de la entidad/migración actual. |
+| `zona` | **ACTUAL** | `text NOT NULL` | Se conserva de la entidad/migración actual. |
+| `telefono` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. |
+| `email` | **ACTUAL** | `varchar(320) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `codigo_lugar_produccion` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. |
+| `nombre_agronomico` | **ACTUAL** | `varchar(255)` | Se conserva de la entidad/migración actual. |
+| `densidad_plantacion` | **ACTUAL** | `numeric(12,3)` | Se conserva de la entidad/migración actual. |
+| `distanciamiento` | **ACTUAL** | `numeric(12,3)` | Se conserva de la entidad/migración actual. |
+| `frecuencia_riego` | **ACTUAL** | `integer` | Se conserva de la entidad/migración actual. |
+| `nombre_aplicacion` | **ACTUAL** | `varchar(255)` | Se conserva de la entidad/migración actual. |
+| `aplicaciones_al_ano` | **ACTUAL** | `integer` | Se conserva de la entidad/migración actual. |
+| `estado_examen_sanidad_agraria` | **ACTUAL** | `varchar(100)` | Se conserva de la entidad/migración actual. |
+| `persona_id` | **AGREGAR** | `integer` | Vincular identidad compartida sin eliminar los nombres/documentos actuales. FK a `persona.persona_id`. |
+| `activo` | **AGREGAR** | `boolean NOT NULL DEFAULT true` | Permitir desactivación sin borrar historial. |
+| `documento_archivo_id` | **AGREGAR** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+
+**Restricciones actuales conservadas:** `PRIMARY KEY (proveedor_id)`.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-proveedor_x_fruta"></a>
+
+**Diccionario de `proveedor_x_fruta` — tabla actual ampliada.**
+
+**Clave primaria:** `pxf_id`. Frutas asociadas al padrón general.
+
+**Fuente actual:** [ProveedorFruta](D:/upeu/proyecto-carrera/app/epe-backend/src/proveedor-fruta/entities/proveedor-fruta.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `pxf_id` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `proveedor_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `proveedor.proveedor_id`. |
+| `fruta_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `fruta.fruta_id`. |
+
+**Restricciones actuales conservadas:** `PRIMARY KEY (pxf_id)`.
+
+**Índices actuales conservados:** `CREATE UNIQUE INDEX "UQ_proveedor_fruta" ON agro.proveedor_x_fruta USING btree (proveedor_id, fruta_id)`.
+
+<a id="tabla-proveedor_x_fruta_derivada"></a>
+
+**Diccionario de `proveedor_x_fruta_derivada` — tabla propuesta.**
+
+**Clave primaria:** `proveedor_x_fruta_derivada_id`. Variedades asociadas al padrón general.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `proveedor_x_fruta_derivada_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `proveedor_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `proveedor.proveedor_id`. |
+| `fruta_derivada_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `fruta_derivada.fruta_derivada_id`. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (proveedor_id, fruta_derivada_id)`.
+
+**`fruta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-entrevista_extencion"></a>
+
+**Diccionario de `entrevista_extencion` — tabla actual ampliada.**
+
+**Clave primaria:** `entrevista_id`. Registro agronómico de cada finca entrevistada en una campaña.
+
+**Fuente actual:** [EntrevistaExtencion](D:/upeu/proyecto-carrera/app/epe-backend/src/entrevista-extencion/entities/entrevista-extencion.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `entrevista_id` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `densidad` | **ACTUAL** | `numeric(12,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `distanciamiento` | **ACTUAL** | `numeric(12,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `frecuencia` | **ACTUAL** | `numeric(12,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `nombre_aplicacion` | **ACTUAL** | `varchar(255) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `anio_aplicacion` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. |
+| `codigo` | **ACTUAL** | `varchar(255) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `cam_x_prov_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `campania_x_proveedores.cxp_id`. |
+| `finca_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `finca.finca_id`. |
+| `fruta_derivada_id` | **AGREGAR** | `integer` | Variedad entrevistada, si se registra. FK a `fruta_derivada.fruta_derivada_id`. |
+| `distanciamiento_descripcion` | **AGREGAR** | `varchar(60)` | Expresión como 5 x 4; no sustituye automáticamente el escalar actual. |
+| `frecuencia_riego_descripcion` | **AGREGAR** | `varchar(120)` | Expresión como cada cuatro días; frecuencia actual sigue numérica. |
+| `aplicaciones_al_ano` | **AGREGAR** | `integer` | Cantidad de aplicaciones en un año; distinta de anio_aplicacion. |
+| `observaciones` | **AGREGAR** | `text` | Notas de la entrevista. |
+| `archivo_id` | **AGREGAR** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `registrado_por_usuario_id` | **AGREGAR** | `integer` | Responsable de la entrevista. FK a `usuario.usuario_id`. |
+
+**Restricciones actuales conservadas:** `CHECK (((codigo)::text ~ '^FVV-[A-Z0-9-]+-[0-9]+$'::text))`; `CHECK (((densidad >= (0)::numeric) AND (distanciamiento >= (0)::numeric) AND (frecuencia >= (0)::numeric) AND ((anio_aplicacion >= 1900) AND (anio_aplicacion <= 9999))))`; `PRIMARY KEY (entrevista_id)`.
+
+**Índices actuales conservados:** `CREATE INDEX "IDX_entrevista_extencion_cxp" ON agro.entrevista_extencion USING btree (cam_x_prov_id)`; `CREATE INDEX "IDX_entrevista_extencion_finca" ON agro.entrevista_extencion USING btree (finca_id)`; `CREATE UNIQUE INDEX "UQ_entrevista_extencion_codigo" ON agro.entrevista_extencion USING btree (codigo)`.
+
+**Restricciones propuestas para revisar:** `CHECK (aplicaciones_al_ano >= 0)`.
+
+<a id="tabla-finca"></a>
+
+**Diccionario de `finca` — tabla actual ampliada.**
+
+**Clave primaria:** `finca_id`. Datos físicos de cada finca, independientes de la campaña.
+
+**Fuente actual:** [Finca](D:/upeu/proyecto-carrera/app/epe-backend/src/finca/entities/finca.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `finca_id` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `nombre_finca` | **ACTUAL** | `varchar(255) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `departamento` | **ACTUAL** | `varchar(100) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `provincia` | **ACTUAL** | `varchar(100) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `distrito` | **ACTUAL** | `varchar(100) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `latitud` | **ACTUAL** | `numeric(10,7) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `longitud` | **ACTUAL** | `numeric(10,7) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `ha_total_finca` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. |
+| `ha_cultivo` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. |
+| `proveedor_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `proveedor.proveedor_id`. |
+| `codigo_lugar_produccion` | **AGREGAR** | `varchar(60)` | Código SENASA del lugar físico de producción. |
+| `codigo_catastral` | **AGREGAR** | `varchar(60)` | Código catastral de la finca. |
+| `ubigeo` | **AGREGAR** | `varchar(6)` | Ubigeo de la finca. |
+| `direccion` | **AGREGAR** | `text` | Dirección física para recojo/guías. |
+| `codigo_establecimiento` | **AGREGAR** | `varchar(4)` | Código de establecimiento si aplica. |
+| `fruta_derivada_id` | **AGREGAR** | `integer` | Variedad asociada a la finca. FK a `fruta_derivada.fruta_derivada_id`. |
+| `edad_cultivo_anios` | **AGREGAR** | `numeric(6,2)` | Edad del cultivo expresada en años. |
+
+**Restricciones actuales conservadas:** `CHECK (((ha_total_finca >= 0) AND (ha_cultivo >= 0) AND (ha_cultivo <= ha_total_finca)))`; `PRIMARY KEY (finca_id)`.
+
+**Índices actuales conservados:** `CREATE INDEX "IDX_finca_proveedor" ON agro.finca USING btree (proveedor_id)`.
+
+**Restricciones propuestas para revisar:** `CHECK (ubigeo IS NULL OR ubigeo ~ '^[0-9]{6}$')`; `CHECK (edad_cultivo_anios >= 0)`.
+
+**`examen_proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-participacion_proveedor_campana"></a>
+
+**Diccionario de `participacion_proveedor_campana` — tabla propuesta.**
+
+**Clave primaria:** `participacion_proveedor_campana_id`. Vinculación proveedor–campaña; aquí pertenecen rol, oferta y evaluación.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `participacion_proveedor_campana_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `campania_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campana.campania_id`. |
+| `proveedor_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `proveedor.proveedor_id`. |
+| `rol_comercial` | **TABLA NUEVA** | `varchar(20) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `tipo_fruta` | **TABLA NUEVA** | `varchar(20) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `kilos_estimados` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `estado` | **TABLA NUEVA** | `varchar(30) NOT NULL DEFAULT 'EXAMEN_PENDIENTE'` | Atributo propuesto para cubrir el flujo de la vista. |
+| `entrevista_aplica` | **TABLA NUEVA** | `boolean NOT NULL DEFAULT true` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_registro` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Atributo propuesto para cubrir el flujo de la vista. |
+| `observaciones` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (campania_id, proveedor_id)`; `UNIQUE (participacion_proveedor_campana_id, campania_id, proveedor_id)`; `CHECK (rol_comercial IN ('PRODUCTOR','ACOPIADOR'))`; `CHECK (tipo_fruta IN ('ORGANICA','CONVENCIONAL'))`; `CHECK (kilos_estimados >= 0)`; `CHECK (estado IN ('EXAMEN_PENDIENTE','ENTREVISTA_PENDIENTE','APROBADO','RECHAZADO'))`.
+
+<a id="tabla-participacion_proveedor_x_fruta_derivada"></a>
+
+**Diccionario de `participacion_proveedor_x_fruta_derivada` — tabla propuesta.**
+
+**Clave primaria:** `participacion_proveedor_x_fruta_derivada_id`. Variedades de la participación, sin deducirlas solo de contratos de compra.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `participacion_proveedor_x_fruta_derivada_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `participacion_proveedor_campana_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `participacion_proveedor_campana.participacion_proveedor_campana_id`. |
+| `fruta_derivada_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `fruta_derivada.fruta_derivada_id`. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (participacion_proveedor_campana_id, fruta_derivada_id)`.
+
+## Entrevista (Administrador > Gestión de Campaña > Planificado > Proveedores > Participación > Entrevista)
+
+**Referencia de revisión:** V12 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Proveedores de campaña → Más opciones de Roberto Palacios → Entrevista → Fincas entrevistadas → Ver finca o Registrar entrevista.
+
+**Observado en la aplicación de referencia:** Dos fincas entrevistadas, fecha/hora, códigos FYV de la UI y detalle agronómico. El backend conserva codigo FVV; revisar el prefijo antes de cambiar datos.
+
+**Criterio para revisar el modelo:** Se conserva entrevista_extencion agrupada por campania_x_proveedores y vinculada a finca. Reutiliza los datos físicos de finca y agrega los datos agronómicos de la visita/campaña. La propiedad de la finca debe coincidir con el proveedor. La UI muestra FYV y el backend conserva FVV; no se renombra el código sin decidirlo.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`entrevista_extencion`](#tabla-entrevista_extencion) | Escritura esperada | Guardar una visita por finca y participación, fecha/hora y datos agronómicos; el código identifica la entrevista, no una nueva finca. | Tabla actual incluida |
+| [`finca`](#tabla-finca) | Escritura esperada | Reutilizar una finca existente del proveedor o registrar una nueva desde la entrevista, separando datos físicos del registro agronómico de campaña. | Tabla actual incluida |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Es la participación del proveedor en una campaña y el punto de agrupación de entrevistas, evaluación y cantidades. Se conserva obligatoriamente y no selecciona finca. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`fruta`](#tabla-fruta) | Consulta | Proporciona el catálogo de cultivos y la fruta de la campaña. No representa kilos comprados ni cosechados. | Tabla actual incluida |
+| [`acuerdo_compra`](#tabla-acuerdo_compra) | Por discutir | Propuesta para condiciones de precio y vigencia por proveedor/variedad. No se observó un editor propio de acuerdos en entrevistas; el precio aplicado existe al liquidar. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `entrevista_extencion`, `finca`, `campania_x_proveedores`, `proveedor`, `campana`, `fruta_derivada`, `fruta`.
+
+**Tablas propuestas para revisar:** `acuerdo_compra`.
+
+```mermaid
+erDiagram
+    fruta ||..o{ campana : actual
+    campana ||..o{ campania_x_proveedores : actual
+    proveedor ||..o{ campania_x_proveedores : actual
+    campania_x_proveedores ||..o{ entrevista_extencion : actual
+    finca ||..o{ entrevista_extencion : actual
+    proveedor ||..o{ finca : actual
+    fruta ||..o{ fruta_derivada : actual
+    campania_x_proveedores ||..o{ acuerdo_compra : propuesta
+    fruta_derivada ||..o{ acuerdo_compra : propuesta
+    fruta_derivada o|..o{ entrevista_extencion : propuesta
+    fruta_derivada o|..o{ finca : propuesta
+```
+
+**D02 — Fincas entrevistadas (Aprobado por el usuario):** El listado de fincas de una participación se obtiene desde entrevista_extencion. No se vuelve a agregar finca_id a campania_x_proveedores; los orígenes de entrega/carga seleccionan las fincas físicas de recojo.
+
+**D04 — Una variedad por finca (Aprobado por el usuario):** Se conserva finca.fruta_derivada_id y se obtiene fruta por fruta_derivada.fruta_id. No se agrega una tabla de varios cultivos por finca. El vínculo permanece opcional para datos históricos; completar variedad antes de operar cuando la vista la requiere.
+
+**D10 — Condiciones de compra (Por discutir):** acuerdo_compra permitiría precios por proveedor/variedad/vigencia, pero no tiene editor observado en Entrevista. Decidir si se administra allí o si basta el precio histórico capturado al liquidar.
+
+**`entrevista_extencion`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`finca`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campania_x_proveedores`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-acuerdo_compra"></a>
+
+**Diccionario de `acuerdo_compra` — tabla propuesta.**
+
+**Clave primaria:** `acuerdo_compra_id`. Condiciones de compra por participación de proveedor, variedad y vigencia; no identifica una finca.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `acuerdo_compra_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `cxp_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campania_x_proveedores.cxp_id`. |
+| `fruta_derivada_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `fruta_derivada.fruta_derivada_id`. |
+| `precio_kg` | **TABLA NUEVA** | `numeric(14,4) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `kilos_acordados` | **TABLA NUEVA** | `numeric(14,3)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_inicio` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_fin` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `estado` | **TABLA NUEVA** | `varchar(25) NOT NULL DEFAULT 'VIGENTE'` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `CHECK (precio_kg > 0)`; `CHECK (kilos_acordados >= 0)`; `CHECK (fecha_fin >= fecha_inicio)`.
+
+## Exámenes (Administrador > Gestión de Campaña > Planificado > Proveedores > Participación > Exámenes)
+
+**Referencia de revisión:** V13 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Proveedores de campaña → Más opciones del proveedor → Exámenes → Registrar examen.
+
+**Observado en la aplicación de referencia:** Examen por fruta, análisis, muestra, origen, toma/envío, estado, resultado y documento. El registro visible tiene resultado negativo.
+
+**Criterio para revisar el modelo:** Se conserva examen_proveedor y su resultado obligatorio positivo/negativo. Se proponen contexto cxp_id/finca_id, muestra, envío, estado y archivo. El nuevo estado por sí solo no habilita exámenes pendientes sin resultado: esa transición requiere revisar nulabilidad y DTO en una futura implementación.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`examen_proveedor`](#tabla-examen_proveedor) | Escritura esperada | Registra muestras y exámenes de evaluación del proveedor, con contexto de campaña propuesto. No sustituye los análisis operativos de Calidad. | Tabla actual incluida |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Aportar el contexto de campaña/proveedor del examen; validar que el proveedor del examen coincide con el de la participación. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`finca`](#tabla-finca) | Consulta | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`fruta`](#tabla-fruta) | Consulta | Proporciona el catálogo de cultivos y la fruta de la campaña. No representa kilos comprados ni cosechados. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `examen_proveedor`, `campania_x_proveedores`, `proveedor`, `finca`, `campana`, `fruta`.
+
+```mermaid
+erDiagram
+    fruta ||..o{ campana : actual
+    campana ||..o{ campania_x_proveedores : actual
+    proveedor ||..o{ campania_x_proveedores : actual
+    proveedor ||..o{ examen_proveedor : actual
+    proveedor ||..o{ finca : actual
+    campania_x_proveedores o|..o{ examen_proveedor : propuesta
+    finca o|..o{ examen_proveedor : propuesta
+```
+
+**D12 — Examen pendiente de resultado (Pendiente técnico por decidir):** El resultado actual de examen_proveedor sigue obligatorio positivo/negativo. El estado adicional no habilita un examen sin resultado; requiere decidir nulabilidad y adaptar DTO/servicio.
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`examen_proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campania_x_proveedores`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`finca`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Certificaciones (Administrador > Gestión de Campaña > Planificado > Campaña > Certificaciones)
+
+**Referencia de revisión:** V14 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Planificado → Más opciones de campaña → Certificaciones → Editar certificado / Ampliación / Registrar pago.
+
+**Observado en la aplicación de referencia:** El editor dice un certificado por campaña y muestra productor cubierto, kilos iniciales, ampliaciones y pago. El resumen reconoce cobertura múltiple; no se cambia la unicidad sin decidirlo.
+
+**Criterio para revisar el modelo:** La referencia inspeccionada muestra un certificado por campaña, pero el backend admite varios. Esta revisión conserva esa capacidad: cada certificado puede incorporar norma, organismo, moneda y cobertura. Revisar la diferencia con las vistas antes de imponer una nueva unicidad.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`certificado_campana`](#tabla-certificado_campana) | Escritura esperada | Guarda el certificado de campaña, vigencia y costo. No guarda como pago el recibo ni reemplaza el certificado propio del proveedor. | Tabla actual incluida |
+| [`certificado_campana_x_proveedor`](#tabla-certificado_campana_x_proveedor) | Escritura esperada | Guardar productores cubiertos y kilos iniciales por certificado. La selección debe corresponder a la campaña; su FK a la cabecera adicional sigue por afinar. | Tabla propuesta, sin implementar |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Es la participación del proveedor en una campaña y el punto de agrupación de entrevistas, evaluación y cantidades. Se conserva obligatoriamente y no selecciona finca. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`norma`](#tabla-norma) | Consulta | Catálogo de normas que se referencian desde certificación y guías; evita duplicar nombres libres en cada documento. | Tabla propuesta, sin implementar |
+| [`ampliacion_certificado_campana`](#tabla-ampliacion_certificado_campana) | Consulta | Registra cada aumento de kilos certificados como evento, sin sobrescribir el volumen inicial. | Tabla propuesta, sin implementar |
+| [`pago_certificado_campana`](#tabla-pago_certificado_campana) | Consulta | Registra desembolsos parciales del certificado en su moneda. El saldo se calcula con los pagos y no por una etiqueta de estado. | Tabla propuesta, sin implementar |
+| [`participacion_proveedor_campana`](#tabla-participacion_proveedor_campana) | Por discutir | Cabecera adicional propuesta por el diseño anterior que se solapa con campania_x_proveedores. No se debe poblar como segunda participación hasta definir una función diferente. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `certificado_campana`, `campana`, `campania_x_proveedores`, `proveedor`.
+
+**Tablas propuestas para revisar:** `certificado_campana_x_proveedor`, `norma`, `ampliacion_certificado_campana`, `pago_certificado_campana`, `participacion_proveedor_campana`.
+
+```mermaid
+erDiagram
+    campana ||..o{ campania_x_proveedores : actual
+    proveedor ||..o{ campania_x_proveedores : actual
+    campana ||..o{ certificado_campana : actual
+    campana ||..o{ participacion_proveedor_campana : propuesta
+    proveedor ||..o{ participacion_proveedor_campana : propuesta
+    certificado_campana ||..o{ certificado_campana_x_proveedor : propuesta
+    campana ||..o{ certificado_campana_x_proveedor : propuesta
+    participacion_proveedor_campana ||..o{ certificado_campana_x_proveedor : propuesta
+    proveedor ||..o{ certificado_campana_x_proveedor : propuesta
+    certificado_campana ||..o{ ampliacion_certificado_campana : propuesta
+    certificado_campana ||..o{ pago_certificado_campana : propuesta
+    participacion_proveedor_campana o|..o{ campania_x_proveedores : propuesta
+    norma o|..o{ certificado_campana : propuesta
+```
+
+**D01 — Participación adicional (Por discutir):** campania_x_proveedores se conserva para agrupar entrevistas del proveedor por campaña. participacion_proveedor_campana sigue en el general como propuesta, pero duplica funciones; no se ha aprobado borrarla ni mantener dos fuentes editables. Revisar también sus tablas de variedades y cobertura.
+
+**D09 — Cantidad de certificados (Por discutir):** El editor dice uno por campaña; el backend y el resumen admiten varios. Se mantiene la capacidad actual hasta decidir si las normas requieren certificados distintos.
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`certificado_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`certificado_campana_x_proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campania_x_proveedores`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-norma"></a>
+
+**Diccionario de `norma` — tabla propuesta.**
+
+**Clave primaria:** `norma_id`. Catálogo de normas de certificación y traslado.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `norma_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `codigo` | **TABLA NUEVA** | `varchar(40) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `nombre` | **TABLA NUEVA** | `varchar(180) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (codigo)`.
+
+**`ampliacion_certificado_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-pago_certificado_campana"></a>
+
+**Diccionario de `pago_certificado_campana` — tabla propuesta.**
+
+**Clave primaria:** `pago_certificado_campana_id`. Desembolsos de la certificación en su misma moneda.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `pago_certificado_campana_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `certificado_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `certificado_campana.certificado_id`. |
+| `fecha` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `monto` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `referencia` | **TABLA NUEVA** | `varchar(100) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `comprobante_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `registrado_por_usuario_id` | **TABLA NUEVA** | `integer` | Atributo propuesto para cubrir el flujo de la vista. FK a `usuario.usuario_id`. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (certificado_id, referencia)`; `CHECK (monto > 0)`.
+
+**`participacion_proveedor_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Ampliación de certificación (Administrador > Gestión de Campaña > Certificaciones > Ampliación)
+
+**Referencia de revisión:** V15 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Certificaciones → + Ampliación → modal; Cancelar vuelve sin registrar evento.
+
+**Observado en la aplicación de referencia:** Modal de kilos adicionales, fecha y referencia/evidencia textual. No se guardó ampliación.
+
+**Criterio para revisar el modelo:** Cada ampliación es un evento con kilos positivos; no sustituye ni modifica los kilos iniciales. En el formulario observado la evidencia es texto de referencia, no un archivo obligatorio. Se preserva el evento sin edición destructiva.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`ampliacion_certificado_campana`](#tabla-ampliacion_certificado_campana) | Escritura esperada | Registra cada aumento de kilos certificados como evento, sin sobrescribir el volumen inicial. | Tabla propuesta, sin implementar |
+| [`certificado_campana`](#tabla-certificado_campana) | Consulta | Guarda el certificado de campaña, vigencia y costo. No guarda como pago el recibo ni reemplaza el certificado propio del proveedor. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `certificado_campana`.
+
+**Tablas propuestas para revisar:** `ampliacion_certificado_campana`.
+
+```mermaid
+erDiagram
+    certificado_campana ||..o{ ampliacion_certificado_campana : propuesta
+```
+
+**D09 — Cantidad de certificados (Por discutir):** El editor dice uno por campaña; el backend y el resumen admiten varios. Se mantiene la capacidad actual hasta decidir si las normas requieren certificados distintos.
+
+**`ampliacion_certificado_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`certificado_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Pago de certificación (Administrador > Gestión de Campaña > Certificaciones > Pagos)
+
+**Referencia de revisión:** V16 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Certificaciones → Registrar pago → modal; Cancelar vuelve sin registrar desembolso.
+
+**Observado en la aplicación de referencia:** Modal con costo, pagado, monto, fecha, referencia y evidencia de pago. No se registró desembolso.
+
+**Criterio para revisar el modelo:** Se proponen pagos parciales en la moneda del certificado. Comprobar el saldo antes de registrar un pago y conservar sus evidencias son reglas del servicio a implementar. El costo y recibo actuales se conservan sin convertir automáticamente un recibo en un pago.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`pago_certificado_campana`](#tabla-pago_certificado_campana) | Escritura esperada | Registra desembolsos parciales del certificado en su moneda. El saldo se calcula con los pagos y no por una etiqueta de estado. | Tabla propuesta, sin implementar |
+| [`certificado_campana`](#tabla-certificado_campana) | Consulta | Guarda el certificado de campaña, vigencia y costo. No guarda como pago el recibo ni reemplaza el certificado propio del proveedor. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `certificado_campana`.
+
+**Tablas propuestas para revisar:** `pago_certificado_campana`.
+
+```mermaid
+erDiagram
+    certificado_campana ||..o{ pago_certificado_campana : propuesta
+```
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`pago_certificado_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`certificado_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Transportistas por campaña (Administrador > Gestión de Campaña > En Proceso > Campaña > Transportistas)
+
+**Referencia de revisión:** V17 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** En Proceso → Más opciones de Mango 2026 → Transportistas → Vincular; Más opciones de empresa → Acuerdo de pago.
+
+**Observado en la aplicación de referencia:** Tres transportistas vinculados; el acuerdo se abre aparte y queda solo lectura cuando ya tiene liquidación.
+
+**Criterio para revisar el modelo:** acuerdo_transporte es una entidad nueva vinculada a la empresa y campaña actuales. Sus adelantos se registran aparte; no se infiere un pago por elegir una modalidad. Si se requiere guardar la vinculación sin acuerdo completo, revisar ese estado antes de implementar.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`acuerdo_transporte`](#tabla-acuerdo_transporte) | Escritura esperada | La intención de esta vista es vincular al transportista y registrar sus condiciones aparte. La fila actual propuesta necesita un estado borrador o un rediseño para representar el intervalo sin acuerdo. | Tabla propuesta, sin implementar |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`adelanto_transporte`](#tabla-adelanto_transporte) | Por discutir | Registra el dinero efectivamente entregado por adelantado; el monto prometido en el acuerdo no acredita desembolso. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `empresa_transporte_externo`, `campana`.
+
+**Tablas propuestas para revisar:** `acuerdo_transporte`, `adelanto_transporte`.
+
+```mermaid
+erDiagram
+    campana ||..o{ acuerdo_transporte : propuesta
+    empresa_transporte_externo ||..o{ acuerdo_transporte : propuesta
+    acuerdo_transporte ||..o{ adelanto_transporte : propuesta
+```
+
+**D06 — Vincular antes del acuerdo (Por discutir):** El mockup permite vincular transportista y registrar el acuerdo después. acuerdo_transporte exige condiciones completas en el SQL: evaluar estado borrador con atributos opcionales o un vínculo independiente. No se agrega otra tabla todavía.
+
+<a id="tabla-acuerdo_transporte"></a>
+
+**Diccionario de `acuerdo_transporte` — tabla propuesta.**
+
+**Clave primaria:** `acuerdo_transporte_id`. Transportista vinculado a campaña y acuerdo de flete autorizado.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `acuerdo_transporte_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `campania_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campana.campania_id`. |
+| `id_empresa_transporte_externo` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `empresa_transporte_externo.id_empresa_transporte_externo`. |
+| `cotizacion_transporte_id` | **TABLA NUEVA** | `integer` | Atributo propuesto para cubrir el flujo de la vista. FK a `cotizacion_transporte.cotizacion_transporte_id`. |
+| `tipo_pago` | **TABLA NUEVA** | `varchar(20) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `monto_acordado` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_acuerdo` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_pago_final` | **TABLA NUEVA** | `date` | Atributo propuesto para cubrir el flujo de la vista. |
+| `archivo_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (campania_id, id_empresa_transporte_externo)`; `UNIQUE (acuerdo_transporte_id, id_empresa_transporte_externo)`; `CHECK (monto_acordado > 0)`; `CHECK (tipo_pago IN ('INMEDIATO','CON_ADELANTO','AL_FINAL'))`.
+
+<a id="tabla-empresa_transporte_externo"></a>
+
+**Diccionario de `empresa_transporte_externo` — tabla actual ampliada.**
+
+**Clave primaria:** `id_empresa_transporte_externo`. Padrón del proveedor logístico externo; datos adicionales previstos para empresas e independientes, con RUC obligatorio actual pendiente de adaptar.
+
+**Fuente actual:** [EmpresaTransporteExterno](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/empresa-transporte-externo.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `id_empresa_transporte_externo` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `nombre_completo` | **ACTUAL** | `varchar(255) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `ruc` | **ACTUAL** | `varchar(11) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `correo` | **ACTUAL** | `varchar(320) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `numero` | **ACTUAL** | `varchar(20) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `tipo_transportista` | **AGREGAR** | `varchar(20) NOT NULL DEFAULT 'EMPRESA'` | Diferenciar empresa e independiente; el RUC obligatorio actual todavía debe revisarse para independientes. |
+| `tipo_documento` | **AGREGAR** | `varchar(20)` | Tipo de identificación cuando se amplíe el flujo a independientes. |
+| `numero_documento` | **AGREGAR** | `varchar(30)` | Documento general; conservar el RUC actual hasta decidir su transición. |
+| `persona_id` | **AGREGAR** | `integer` | Identidad del transportista independiente. FK a `persona.persona_id`. |
+| `registro_mtc` | **AGREGAR** | `varchar(80)` | Registro MTC cuando corresponda. |
+| `departamento` | **AGREGAR** | `varchar(100)` | Ubicación del transportista. |
+| `provincia` | **AGREGAR** | `varchar(100)` | Ubicación del transportista. |
+| `ciudad` | **AGREGAR** | `varchar(100)` | Ubicación del transportista. |
+| `activo` | **AGREGAR** | `boolean NOT NULL DEFAULT true` | Desactivar sin borrar historial. |
+
+**Restricciones actuales conservadas:** `PRIMARY KEY (id_empresa_transporte_externo)`; `UNIQUE (correo)`; `UNIQUE (ruc)`.
+
+**Restricciones propuestas para revisar:** `CHECK (tipo_transportista IN ('EMPRESA','INDEPENDIENTE'))`.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-adelanto_transporte"></a>
+
+**Diccionario de `adelanto_transporte` — tabla propuesta.**
+
+**Clave primaria:** `adelanto_transporte_id`. Dinero entregado a la empresa antes de aplicarse a una carga.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `adelanto_transporte_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `acuerdo_transporte_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `acuerdo_transporte.acuerdo_transporte_id`. |
+| `fecha` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `monto` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `referencia` | **TABLA NUEVA** | `varchar(100) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `comprobante_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (acuerdo_transporte_id, referencia)`; `CHECK (monto > 0)`.
+
+## Entregas de la campaña (Administrador > Gestión de Campaña > En Proceso > Campaña > Entregas)
+
+**Referencia de revisión:** V18 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** En Proceso → Más opciones → Entregas → Completar entrega, Editar coordinación o Ver entrega según preparación.
+
+**Observado en la aplicación de referencia:** Entregas Por completar, Lista para carga o Con carga registrada; el texto diferencia programación comercial y coordinación.
+
+**Criterio para revisar el modelo:** Una entrega programada puede existir sin coordinación, y una coordinación sin carga real. Estas tres etapas no deben forzar kilos ficticios ni una cosecha para permitir la asignación del chofer.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `cliente_negocio_campana`, `cliente_negocio`.
+
+**Tablas propuestas para revisar:** `entrega_programada`, `contrato_venta`, `coordinacion_entrega`, `carga`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+```
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Completar coordinación de entrega (Administrador > Gestión de Campaña > En Proceso > Entregas > Coordinación)
+
+**Referencia de revisión:** V19 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Entregas → Completar entrega → Completar coordinación → elegir transportista, chofer, unidad y orígenes.
+
+**Observado en la aplicación de referencia:** Formulario con transportista vinculado, varios proveedores/fincas, camión, chofer, fechas, origen, condiciones y observaciones.
+
+**Criterio para revisar el modelo:** El camión y el chofer deben pertenecer al transportista del acuerdo y este a la campaña. Los orígenes son fincas de participaciones de esa campaña. Exportación admite origen orgánico según el prototipo. Una fila por finca evita guardar una cadena de nombres como relación. La descripción de origen sí puede mantenerse como texto informativo.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Escritura esperada | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`origen_entrega`](#tabla-origen_entrega) | Escritura esperada | Guardar una fila por finca seleccionada de cada proveedor participante; comprobar pertenencia de finca al proveedor y, cuando se exija, entrevista en esa campaña. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`acuerdo_transporte`](#tabla-acuerdo_transporte) | Consulta | Representa vinculación de transportista/campaña y condiciones comerciales. Debe definirse si puede existir como borrador antes de registrar el acuerdo. | Tabla propuesta, sin implementar |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Es la participación del proveedor en una campaña y el punto de agrupación de entrevistas, evaluación y cantidades. Se conserva obligatoriamente y no selecciona finca. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`entrevista_extencion`](#tabla-entrevista_extencion) | Consulta | Añade los datos agronómicos de la visita a una finca del proveedor en esa campaña. Las fincas entrevistadas se obtienen de estas filas, sin otra vinculación directa finca–participación. | Tabla actual incluida |
+| [`finca`](#tabla-finca) | Consulta | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `cliente_negocio_campana`, `cliente_negocio`, `campana`, `empresa_transporte_externo`, `vehiculo_externo`, `chofer_transporte_externo`, `campania_x_proveedores`, `proveedor`, `entrevista_extencion`, `finca`, `fruta_derivada`.
+
+**Tablas propuestas para revisar:** `coordinacion_entrega`, `origen_entrega`, `entrega_programada`, `contrato_venta`, `acuerdo_transporte`.
+
+```mermaid
+erDiagram
+    campana ||..o{ campania_x_proveedores : actual
+    proveedor ||..o{ campania_x_proveedores : actual
+    empresa_transporte_externo ||..o{ chofer_transporte_externo : actual
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    campania_x_proveedores ||..o{ entrevista_extencion : actual
+    finca ||..o{ entrevista_extencion : actual
+    proveedor ||..o{ finca : actual
+    empresa_transporte_externo ||..o{ vehiculo_externo : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    campana ||..o{ acuerdo_transporte : propuesta
+    empresa_transporte_externo ||..o{ acuerdo_transporte : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    acuerdo_transporte ||..o{ coordinacion_entrega : propuesta
+    empresa_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o{ origen_entrega : propuesta
+    campania_x_proveedores ||..o{ origen_entrega : propuesta
+    vehiculo_externo ||..o{ coordinacion_entrega : propuesta
+    fruta_derivada o|..o{ entrevista_extencion : propuesta
+    fruta_derivada o|..o{ finca : propuesta
+    finca ||..o{ origen_entrega : propuesta
+```
+
+**D02 — Fincas entrevistadas (Aprobado por el usuario):** El listado de fincas de una participación se obtiene desde entrevista_extencion. No se vuelve a agregar finca_id a campania_x_proveedores; los orígenes de entrega/carga seleccionan las fincas físicas de recojo.
+
+**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+
+**D06 — Vincular antes del acuerdo (Por discutir):** El mockup permite vincular transportista y registrar el acuerdo después. acuerdo_transporte exige condiciones completas en el SQL: evaluar estado borrador con atributos opcionales o un vínculo independiente. No se agrega otra tabla todavía.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-origen_entrega"></a>
+
+**Diccionario de `origen_entrega` — tabla propuesta.**
+
+**Clave primaria:** `origen_entrega_id`. Selección de varias fincas de varios proveedores antes de cargar.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `origen_entrega_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `coordinacion_entrega_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `coordinacion_entrega.coordinacion_entrega_id`. |
+| `cxp_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campania_x_proveedores.cxp_id`. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+| `finca_id` | **TABLA NUEVA** | `integer NOT NULL` | Finca del origen o medición; ya no se obtiene de campania_x_proveedores. El servicio debe validar que pertenece al proveedor de cxp_id. FK a `finca.finca_id`. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (coordinacion_entrega_id, cxp_id, finca_id)`.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`acuerdo_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-vehiculo_externo"></a>
+
+**Diccionario de `vehiculo_externo` — tabla actual ampliada.**
+
+**Clave primaria:** `id_vehiculo_externo`. Unidad de transporte con capacidad y pesos explícitos.
+
+**Fuente actual:** [VehiculoExterno](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/vehiculo-externo.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `id_vehiculo_externo` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `placa` | **ACTUAL** | `varchar(15) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `volumen` | **ACTUAL** | `numeric(12,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `ancho` | **ACTUAL** | `numeric(10,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `altura` | **ACTUAL** | `numeric(10,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `profundidad` | **ACTUAL** | `numeric(10,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `peso_neto` | **ACTUAL** | `numeric(14,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `peso_bruto` | **ACTUAL** | `numeric(14,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `id_empresa_transporte_externo` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `empresa_transporte_externo.id_empresa_transporte_externo`. |
+| `capacidad_kg` | **AGREGAR** | `numeric(14,3)` | Capacidad útil en kg, independiente de peso_neto y peso_bruto. |
+
+**Restricciones actuales conservadas:** `CHECK (((volumen > (0)::numeric) AND (ancho > (0)::numeric) AND (altura > (0)::numeric) AND (profundidad > (0)::numeric)))`; `CHECK (((peso_neto >= (0)::numeric) AND (peso_bruto >= peso_neto)))`; `PRIMARY KEY (id_vehiculo_externo)`; `UNIQUE (placa)`.
+
+**Índices actuales conservados:** `CREATE INDEX "IDX_vehiculo_empresa_transporte" ON agro.vehiculo_externo USING btree (id_empresa_transporte_externo)`.
+
+**Restricciones propuestas para revisar:** `CHECK (capacidad_kg > 0)`; `UNIQUE (id_vehiculo_externo, id_empresa_transporte_externo)`.
+
+<a id="tabla-chofer_transporte_externo"></a>
+
+**Diccionario de `chofer_transporte_externo` — tabla actual ampliada.**
+
+**Clave primaria:** `id_chofer_transporte_externo`. Identidad del conductor y vínculo opcional a cuenta de acceso.
+
+**Fuente actual:** [ChoferTransporteExterno](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/chofer-transporte-externo.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `id_chofer_transporte_externo` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `nombre` | **ACTUAL** | `varchar(255) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `telefono` | **ACTUAL** | `varchar(20) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `correo` | **ACTUAL** | `varchar(320) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `id_empresa_transporte_externo` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `empresa_transporte_externo.id_empresa_transporte_externo`. |
+| `persona_id` | **AGREGAR** | `integer` | Vincular identidad compartida sin eliminar los nombres/documentos actuales. FK a `persona.persona_id`. |
+| `activo` | **AGREGAR** | `boolean NOT NULL DEFAULT true` | Permitir desactivación sin borrar historial. |
+| `usuario_id` | **AGREGAR** | `integer` | Cuenta que ingresará con el rol de chofer. FK a `usuario.usuario_id`. |
+| `numero_licencia` | **AGREGAR** | `varchar(40)` | Licencia real del conductor; completar antes de emitir documentos. |
+
+**Restricciones actuales conservadas:** `PRIMARY KEY (id_chofer_transporte_externo)`.
+
+**Índices actuales conservados:** `CREATE INDEX "IDX_chofer_empresa_transporte" ON agro.chofer_transporte_externo USING btree (id_empresa_transporte_externo)`.
+
+**Restricciones propuestas para revisar:** `UNIQUE (id_chofer_transporte_externo, id_empresa_transporte_externo)`.
+
+**`campania_x_proveedores`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrevista_extencion`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`finca`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Programa semanal de entregas (Administrador > Gestión de Campaña > Campaña > Programa semanal de entregas)
+
+**Referencia de revisión:** V20 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Campaña → Más opciones → Programa semanal de entregas → semana/variedad → cantidad diaria abre su composición.
+
+**Observado en la aplicación de referencia:** Programa por semana ISO, cliente, contrato, placa y variedad; las cantidades diarias se consultan y pueden existir con placa Por asignar.
+
+**Criterio para revisar el modelo:** La consulta v_programa_semanal agrupa programación por variedad, año y semana ISO. La placa puede seguir sin asignar. No se crea otra tabla calendario ni se confunden cantidades programadas con cantidades cargadas.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`entrega_x_fruta_derivada`](#tabla-entrega_x_fruta_derivada) | Consulta | Consultar cantidades programadas por variedad para cada día de la semana; las sumas del calendario se calculan sin otra tabla semanal. | Tabla propuesta, sin implementar |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `cliente_negocio`, `cliente_negocio_campana`, `fruta_derivada`, `vehiculo_externo`.
+
+**Tablas propuestas para revisar:** `contrato_venta`, `entrega_programada`, `entrega_x_fruta_derivada`, `coordinacion_entrega`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o{ entrega_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ entrega_x_fruta_derivada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    vehiculo_externo ||..o{ coordinacion_entrega : propuesta
+```
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_x_fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Gestión de proveedores (Administrador > Gestión de Proveedores > Listado)
+
+**Referencia de revisión:** V21 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Módulos → Gestión de Proveedores → Ver/Editar proveedor; Más opciones → Fincas o Certificados.
+
+**Observado en la aplicación de referencia:** Padrón general con frutas y variedades, sanidad y accesos separados a Fincas y Certificados.
+
+**Criterio para revisar el modelo:** Separar persona, proveedor y participación. Las personas vinculadas se reutilizan para liquidaciones y control anual; no crean un proveedor nuevo ni transfieren compras antiguas. Las asociaciones generales de fruta y variedad no implican automáticamente que se ofrece esa fruta en todas las campañas.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`proveedor`](#tabla-proveedor) | Escritura esperada | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`proveedor_x_fruta`](#tabla-proveedor_x_fruta) | Escritura esperada | Asocia las frutas del padrón al proveedor; se conserva mientras no se apruebe derivarlas exclusivamente de sus fincas. | Tabla actual incluida |
+| [`proveedor_x_fruta_derivada`](#tabla-proveedor_x_fruta_derivada) | Escritura esperada | Propuesta para las variedades del padrón del proveedor. No identifica la finca física de recojo. | Tabla propuesta, sin implementar |
+| [`fruta`](#tabla-fruta) | Consulta | Proporciona el catálogo de cultivos y la fruta de la campaña. No representa kilos comprados ni cosechados. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`persona`](#tabla-persona) | Por discutir | Identifica a una persona natural para cuentas o destinatarios de compras; su reutilización no crea otro proveedor ni autoriza por sí sola a cobrar. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+| [`proveedor_x_persona`](#tabla-proveedor_x_persona) | Por discutir | Vincula al proveedor con personas principal/vinculadas que pueden figurar como destinatarias; no reparte ni transfiere compras históricas. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `proveedor`, `proveedor_x_fruta`, `fruta`, `fruta_derivada`.
+
+**Tablas propuestas para revisar:** `proveedor_x_fruta_derivada`, `persona`, `proveedor_x_persona`.
+
+```mermaid
+erDiagram
+    fruta ||..o{ fruta_derivada : actual
+    proveedor ||..o{ proveedor_x_fruta : actual
+    fruta ||..o{ proveedor_x_fruta : actual
+    proveedor ||..o{ proveedor_x_persona : propuesta
+    persona ||..o{ proveedor_x_persona : propuesta
+    proveedor ||..o{ proveedor_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ proveedor_x_fruta_derivada : propuesta
+    persona o|..o{ proveedor : propuesta
+```
+
+**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_x_fruta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_x_fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`persona`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-proveedor_x_persona"></a>
+
+**Diccionario de `proveedor_x_persona` — tabla propuesta.**
+
+**Clave primaria:** `proveedor_x_persona_id`. Personas vinculadas; la relación no transfiere compras históricas.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `proveedor_x_persona_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `proveedor_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `proveedor.proveedor_id`. |
+| `persona_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `persona.persona_id`. |
+| `vinculo` | **TABLA NUEVA** | `varchar(60) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `activo` | **TABLA NUEVA** | `boolean NOT NULL DEFAULT true` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (proveedor_id, persona_id)`.
+
+## Detalle de proveedor (Administrador > Gestión de Proveedores > Proveedor > Detalle)
+
+**Referencia de revisión:** V22 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Gestión de Proveedores → Ver proveedor → Datos generales, frutas y variedades → Volver a proveedores.
+
+**Observado en la aplicación de referencia:** Ficha de Roberto Palacios con identidad, contacto, ubicación y frutas/variedades. No se observó editor de personas vinculadas en esta ficha.
+
+**Criterio para revisar el modelo:** Se conservan los datos personales y la URL de identidad actuales; la referencia documental propuesta queda opcional y pendiente de relación. Los datos de sanidad del padrón son un resumen general, no sustituyen el historial de exámenes por campaña.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`proveedor_x_fruta`](#tabla-proveedor_x_fruta) | Consulta | Asocia las frutas del padrón al proveedor; se conserva mientras no se apruebe derivarlas exclusivamente de sus fincas. | Tabla actual incluida |
+| [`proveedor_x_fruta_derivada`](#tabla-proveedor_x_fruta_derivada) | Consulta | Propuesta para las variedades del padrón del proveedor. No identifica la finca física de recojo. | Tabla propuesta, sin implementar |
+| [`fruta`](#tabla-fruta) | Consulta | Proporciona el catálogo de cultivos y la fruta de la campaña. No representa kilos comprados ni cosechados. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`persona`](#tabla-persona) | Por discutir | Identifica a una persona natural para cuentas o destinatarios de compras; su reutilización no crea otro proveedor ni autoriza por sí sola a cobrar. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `proveedor`, `proveedor_x_fruta`, `fruta`, `fruta_derivada`.
+
+**Tablas propuestas para revisar:** `proveedor_x_fruta_derivada`, `persona`.
+
+```mermaid
+erDiagram
+    fruta ||..o{ fruta_derivada : actual
+    proveedor ||..o{ proveedor_x_fruta : actual
+    fruta ||..o{ proveedor_x_fruta : actual
+    proveedor ||..o{ proveedor_x_fruta_derivada : propuesta
+    fruta_derivada ||..o{ proveedor_x_fruta_derivada : propuesta
+    persona o|..o{ proveedor : propuesta
+```
+
+**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_x_fruta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_x_fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`persona`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Fincas (Administrador > Gestión de Proveedores > Proveedor > Fincas)
+
+**Referencia de revisión:** V23 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Proveedor → Más opciones → Fincas → Registrar / Ver / Editar finca.
+
+**Observado en la aplicación de referencia:** Dos fincas con SENASA, ubicación, cultivo/variedad y hectáreas; datos agronómicos gestionados por campaña.
+
+**Criterio para revisar el modelo:** Una finca pertenece al proveedor y tendrá una variedad en este alcance; la fruta se obtiene de esa variedad. La asociación propuesta se mantiene opcional para registros históricos incompletos y debe completarse antes de la operación que la requiera. Las hectáreas son datos de finca; la entrevista añade datos de campaña sin duplicar la finca.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`finca`](#tabla-finca) | Escritura esperada | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`fruta`](#tabla-fruta) | Consulta | Proporciona el catálogo de cultivos y la fruta de la campaña. No representa kilos comprados ni cosechados. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `finca`, `proveedor`, `fruta`, `fruta_derivada`.
+
+```mermaid
+erDiagram
+    proveedor ||..o{ finca : actual
+    fruta ||..o{ fruta_derivada : actual
+    fruta_derivada o|..o{ finca : propuesta
+```
+
+**D04 — Una variedad por finca (Aprobado por el usuario):** Se conserva finca.fruta_derivada_id y se obtiene fruta por fruta_derivada.fruta_id. No se agrega una tabla de varios cultivos por finca. El vínculo permanece opcional para datos históricos; completar variedad antes de operar cuando la vista la requiere.
+
+**`finca`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Certificados del proveedor (Administrador > Gestión de Proveedores > Proveedor > Certificados)
+
+**Referencia de revisión:** V24 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Proveedor → Más opciones → Certificados → Registrar / Ver / Editar certificado propio.
+
+**Observado en la aplicación de referencia:** Certificados propios con nombre, revisión SENASA y documento, separados explícitamente del certificado de campaña.
+
+**Criterio para revisar el modelo:** No exigir campaña, costo, moneda o norma a un certificado propio que solo registra nombre, revisión y archivo. Separarlo evita columnas obligatorias artificiales del certificado de campaña.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`certificado_proveedor`](#tabla-certificado_proveedor) | Escritura esperada | Conserva certificados propios del proveedor y revisión SENASA, separados de la cobertura de campaña; su relación documental está pendiente. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `certificado_proveedor`, `proveedor`.
+
+```mermaid
+erDiagram
+    proveedor ||..o{ certificado_proveedor : actual
+```
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+<a id="tabla-certificado_proveedor"></a>
+
+**Diccionario de `certificado_proveedor` — tabla actual ampliada.**
+
+**Clave primaria:** `certificado_proveedor_id`. Certificados generales del proveedor; distintos del certificado de campaña.
+
+**Fuente actual:** [CertificadoProveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/certificado-proveedor/entities/certificado-proveedor.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `certificado_proveedor_id` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `fecha_revision_senasa` | **ACTUAL** | `date NOT NULL` | Se conserva de la entidad/migración actual. |
+| `nombre` | **ACTUAL** | `varchar(255) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `proveedor_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `proveedor.proveedor_id`. |
+| `documento_archivo_id` | **ACTUAL** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+
+**Restricciones actuales conservadas:** `PRIMARY KEY (certificado_proveedor_id)`.
+
+**Índices actuales conservados:** `CREATE INDEX "IDX_certificado_proveedor_documento_archivo" ON agro.certificado_proveedor USING btree (documento_archivo_id)`.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Gestión de transporte (Administrador > Gestión de Transporte > Transportistas)
+
+**Referencia de revisión:** V25 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Módulos → Gestión de Transporte → Ver empresa; selección de empresas → Solicitar cotización.
+
+**Observado en la aplicación de referencia:** Padrón de empresas e independientes; selección múltiple para cotizar. Las tablas actuales de trazabilidad no tienen un editor independiente en esta pantalla.
+
+**Criterio para revisar el modelo:** Se conservan empresa_transporte_externo, vehiculo_externo y chofer_transporte_externo. El mockup incluye independientes; el RUC obligatorio del backend todavía necesita adaptación para ese caso. Las tres tablas actuales de trazabilidad se presentan solo como compatibilidad, sin forzar su edición desde este padrón. La coincidencia del nombre del cliente y del transportista no fusiona ambas entidades.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Escritura esperada | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`persona`](#tabla-persona) | Por discutir | Identifica a una persona natural para cuentas o destinatarios de compras; su reutilización no crea otro proveedor ni autoriza por sí sola a cobrar. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+| [`trazabilidad_transporte`](#tabla-trazabilidad_transporte) | Compatibilidad actual | Solo compatibilidad: conservar los registros actuales por proveedor/campaña. No se edita un viaje paralelo desde el listado de transportistas. | Tabla actual incluida |
+| [`chofer_vehiculo_externo`](#tabla-chofer_vehiculo_externo) | Compatibilidad actual | Solo compatibilidad: conservar asignaciones y restricciones existentes. Su papel frente a coordinacion_entrega debe decidirse antes de generar nuevas asignaciones. | Tabla actual incluida |
+| [`detalle_trazabilidad`](#tabla-detalle_trazabilidad) | Compatibilidad actual | Solo compatibilidad: conservar guía URL, SCTR y costos históricos; no copiar esos importes como gastos nuevos por mostrar esta vista. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `empresa_transporte_externo`, `vehiculo_externo`, `chofer_transporte_externo`, `trazabilidad_transporte`, `chofer_vehiculo_externo`, `detalle_trazabilidad`.
+
+**Tablas propuestas para revisar:** `persona`.
+
+```mermaid
+erDiagram
+    empresa_transporte_externo ||..o{ chofer_transporte_externo : actual
+    vehiculo_externo ||..o{ chofer_vehiculo_externo : actual
+    chofer_transporte_externo ||..o{ chofer_vehiculo_externo : actual
+    trazabilidad_transporte ||..o{ chofer_vehiculo_externo : actual
+    trazabilidad_transporte ||..o{ detalle_trazabilidad : actual
+    empresa_transporte_externo ||..o{ vehiculo_externo : actual
+    persona o|..o{ chofer_transporte_externo : propuesta
+    persona o|..o{ empresa_transporte_externo : propuesta
+```
+
+**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+
+**Gestión de empresas logísticas, choferes y unidades:** `empresa_transporte_externo` registra al proveedor logístico externo contratado por la agroexportadora; `chofer_transporte_externo` y `vehiculo_externo` registran sus choferes y unidades. `chofer_vehiculo_externo` asigna un chofer y una unidad a `trazabilidad_transporte`, con fechas de inicio y fin. Estas cuatro tablas ya existen y se conservan en el SQL. `acuerdo_transporte` es la tabla propuesta para vincular la empresa transportista con la campaña y sus condiciones comerciales. La empresa agroexportadora que opera el sistema no se representa con `empresa_transporte_externo`; este modelo todavía no define una entidad propia para gestionar varias agroexportadoras.
+
+**Reglas para revisar antes de implementar:** la asignación conserva las fechas y la restricción actual que impide solapamientos del mismo chofer. Las FK por separado no garantizan que el chofer y la unidad pertenezcan a la misma empresa, ni impiden por sí solas que una unidad tenga asignaciones simultáneas. Validar esas reglas en el servicio y definir si se permiten unidades o conductores de otra empresa. El vínculo opcional a coordinacion_entrega integra el flujo propuesto sin sustituir la trazabilidad actual.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`persona`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-trazabilidad_transporte"></a>
+
+**Diccionario de `trazabilidad_transporte` — tabla actual ampliada.**
+
+**Clave primaria:** `id_trazabilidad_transporte`. Tabla actual de transporte que se conserva con su historial.
+
+**Fuente actual:** [TrazabilidadTransporte](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/trazabilidad-transporte.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `id_trazabilidad_transporte` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `contrato_url` | **ACTUAL** | `text NOT NULL` | Se conserva de la entidad/migración actual. |
+| `kg_comprados` | **ACTUAL** | `numeric(14,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `kg_planta` | **ACTUAL** | `numeric(14,3) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `estado` | **ACTUAL** | `"trazabilidad_transporte_estado_enum" NOT NULL` | Se conserva de la entidad/migración actual. |
+| `cxp_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `campania_x_proveedores.cxp_id`. |
+| `coordinacion_entrega_id` | **AGREGAR** | `integer` | Coordinación futura relacionada; revisar equivalencia sin agrupar por coincidencias de fechas. FK a `coordinacion_entrega.coordinacion_entrega_id`. |
+| `carga_id` | **AGREGAR** | `integer` | Carga multiproveedor futura relacionada; no convierte esta fila en una carga automáticamente. FK a `carga.carga_id`. |
+
+**Restricciones actuales conservadas:** `CHECK (((kg_comprados >= (0)::numeric) AND (kg_planta >= (0)::numeric)))`; `PRIMARY KEY (id_trazabilidad_transporte)`.
+
+**Índices actuales conservados:** `CREATE INDEX "IDX_trazabilidad_cxp" ON agro.trazabilidad_transporte USING btree (cxp_id)`.
+
+<a id="tabla-chofer_vehiculo_externo"></a>
+
+**Diccionario de `chofer_vehiculo_externo` — tabla actual ampliada.**
+
+**Clave primaria:** `id_chofer_vehiculo_externo`. Tabla actual de transporte que se conserva con su historial.
+
+**Fuente actual:** [ChoferVehiculoExterno](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/chofer-vehiculo-externo.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `id_chofer_vehiculo_externo` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `fecha_asignacion_inicio` | **ACTUAL** | `date NOT NULL` | Se conserva de la entidad/migración actual. |
+| `fecha_asignacion_final` | **ACTUAL** | `date NOT NULL` | Se conserva de la entidad/migración actual. |
+| `id_vehiculo_externo` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `vehiculo_externo.id_vehiculo_externo`. |
+| `id_chofer_transporte_externo` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `chofer_transporte_externo.id_chofer_transporte_externo`. |
+| `id_trazabilidad_transporte` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `trazabilidad_transporte.id_trazabilidad_transporte`. |
+| `coordinacion_entrega_id` | **AGREGAR** | `integer` | Identificar la entrega coordinada cuando se confirme la equivalencia. FK a `coordinacion_entrega.coordinacion_entrega_id`. |
+
+**Restricciones actuales conservadas:** `CHECK ((fecha_asignacion_final >= fecha_asignacion_inicio))`; `EXCLUDE USING gist (id_chofer_transporte_externo WITH =, daterange(fecha_asignacion_inicio, fecha_asignacion_final, '[]'::text) WITH &&)`; `PRIMARY KEY (id_chofer_vehiculo_externo)`.
+
+**Índices actuales conservados:** `CREATE INDEX "IDX_asignacion_chofer" ON agro.chofer_vehiculo_externo USING btree (id_chofer_transporte_externo)`; `CREATE INDEX "IDX_asignacion_trazabilidad" ON agro.chofer_vehiculo_externo USING btree (id_trazabilidad_transporte)`; `CREATE INDEX "IDX_asignacion_vehiculo" ON agro.chofer_vehiculo_externo USING btree (id_vehiculo_externo)`.
+
+<a id="tabla-detalle_trazabilidad"></a>
+
+**Diccionario de `detalle_trazabilidad` — tabla actual ampliada.**
+
+**Clave primaria:** `id_detalle_trazabilidad`. Tabla actual de transporte que se conserva con su historial.
+
+**Fuente actual:** [DetalleTrazabilidad](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/detalle-trazabilidad.ts).
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `created_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `updated_at` | **ACTUAL** | `timestamp with time zone NOT NULL DEFAULT now()` | Se conserva de la entidad/migración actual. |
+| `id_detalle_trazabilidad` | **ACTUAL** | `serial NOT NULL` | Se conserva de la entidad/migración actual. |
+| `guia_url` | **ACTUAL** | `text NOT NULL` | Se conserva de la entidad/migración actual. |
+| `flete` | **ACTUAL** | `numeric(12,2) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `sctr` | **ACTUAL** | `varchar(255) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `estibas` | **ACTUAL** | `numeric(12,2) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `pasajes` | **ACTUAL** | `numeric(12,2) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `comida` | **ACTUAL** | `numeric(12,2) NOT NULL` | Se conserva de la entidad/migración actual. |
+| `id_trazabilidad_transporte` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `trazabilidad_transporte.id_trazabilidad_transporte`. |
+| `carga_id` | **AGREGAR** | `integer` | Carga nueva a la que corresponden los costos, solo después de revisar el viaje. FK a `carga.carga_id`. |
+| `guia_remision_id` | **AGREGAR** | `integer` | Guía estructurada, sin borrar guia_url. FK a `guia_remision.guia_remision_id`. |
+| `sctr_archivo_id` | **AGREGAR** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+
+**Restricciones actuales conservadas:** `CHECK (((flete >= (0)::numeric) AND (estibas >= (0)::numeric) AND (pasajes >= (0)::numeric) AND (comida >= (0)::numeric)))`; `PRIMARY KEY (id_detalle_trazabilidad)`.
+
+**Índices actuales conservados:** `CREATE INDEX "IDX_detalle_trazabilidad" ON agro.detalle_trazabilidad USING btree (id_trazabilidad_transporte)`.
+
+## Ficha del transportista (Administrador > Gestión de Transporte > Transportista > Detalle)
+
+**Referencia de revisión:** V26 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Ver empresa SUTRIMEX → Ver vehículos / Ver choferes / Nuevo vehículo / Nuevo chofer / Editar transportista.
+
+**Observado en la aplicación de referencia:** Ficha SUTRIMEX con ubicación, MTC y accesos a sus dos vehículos y dos choferes.
+
+**Criterio para revisar el modelo:** La ficha agrega información de los hijos. No mantener contadores editables de vehículos o choferes. Los códigos de empresa se referencian desde el acuerdo y no se repiten como textos en cada carga.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Escritura esperada | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `empresa_transporte_externo`, `vehiculo_externo`, `chofer_transporte_externo`.
+
+```mermaid
+erDiagram
+    empresa_transporte_externo ||..o{ chofer_transporte_externo : actual
+    empresa_transporte_externo ||..o{ vehiculo_externo : actual
+```
+
+**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Vehículos (Administrador > Gestión de Transporte > Transportista > Vehículos)
+
+**Referencia de revisión:** V27 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Ficha del transportista → Ver vehículos → listado filtrado por empresa → Ver/Editar unidad.
+
+**Observado en la aplicación de referencia:** Listado de unidades filtrado por empresa, placa, volumen y pesos; Ver/Editar. No se interpreta peso neto como capacidad útil.
+
+**Criterio para revisar el modelo:** Se conservan volumen, ancho, altura, profundidad, peso_neto y peso_bruto. capacidad_kg es un atributo adicional independiente; no se convierte peso_neto a capacidad. Confirmar unidades con las vistas antes de importar datos.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Escritura esperada | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `vehiculo_externo`, `empresa_transporte_externo`.
+
+```mermaid
+erDiagram
+    empresa_transporte_externo ||..o{ vehiculo_externo : actual
+```
+
+**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+
+**`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Choferes (Administrador > Gestión de Transporte > Transportista > Choferes)
+
+**Referencia de revisión:** V28 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Ficha del transportista → Ver choferes → listado filtrado por empresa → Ver/Editar conductor.
+
+**Observado en la aplicación de referencia:** Listado de Miguel Torres y Rosa Aguilar para SUTRIMEX, con teléfono y correo. Usuario y chofer son conceptos distintos.
+
+**Criterio para revisar el modelo:** Se conserva el nombre y contacto del conductor. persona_id, usuario_id y numero_licencia son adicionales opcionales. No se inventan documentos ni se obliga a rehacer los registros actuales para instalar el modelo de revisión.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Escritura esperada | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`persona`](#tabla-persona) | Por discutir | Identifica a una persona natural para cuentas o destinatarios de compras; su reutilización no crea otro proveedor ni autoriza por sí sola a cobrar. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+| [`usuario`](#tabla-usuario) | Por discutir | Relaciona la cuenta autenticada con la identidad y, cuando corresponde, con el chofer. El selector del demo todavía no constituye autenticación. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `chofer_transporte_externo`, `empresa_transporte_externo`.
+
+**Tablas propuestas para revisar:** `persona`, `usuario`.
+
+```mermaid
+erDiagram
+    empresa_transporte_externo ||..o{ chofer_transporte_externo : actual
+    persona ||..o| usuario : propuesta
+    persona o|..o{ chofer_transporte_externo : propuesta
+    usuario o|..o{ chofer_transporte_externo : propuesta
+    persona o|..o{ empresa_transporte_externo : propuesta
+```
+
+**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+
+**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`persona`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`usuario`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Requerimientos y cotizaciones (Administrador > Gestión de Transporte > Requerimientos y cotizaciones)
+
+**Referencia de revisión:** V29 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Gestión de Transporte → Requerimientos y cotizaciones → Nueva solicitud. El listado estaba vacío.
+
+**Observado en la aplicación de referencia:** La lista de solicitudes estaba vacía; se inspeccionó el acceso a nueva solicitud. No hay respuesta de cotización observable sin crear datos.
+
+**Criterio para revisar el modelo:** Solicitud 1:N invitados; cada invitación puede recibir N versiones de cotización. La tabla cotizacion_transporte y sus atributos de respuesta son propuestos porque no había respuestas para inspeccionar. No afirmar que existe envío real: la interfaz lo declara simulado.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`solicitud_transporte`](#tabla-solicitud_transporte) | Escritura esperada | Guarda el requerimiento común de servicio, campaña, ruta, ventana y condiciones antes de recibir respuestas. | Tabla propuesta, sin implementar |
+| [`invitacion_transporte`](#tabla-invitacion_transporte) | Escritura esperada | Identifica cada transportista destinatario de una solicitud, preservando el contacto usado. No supone que se haya enviado un correo real. | Tabla propuesta, sin implementar |
+| [`cotizacion_transporte`](#tabla-cotizacion_transporte) | Escritura esperada | Propuesta para cada respuesta económica de un invitado; la lista actual está vacía y el formulario de respuesta no pudo contrastarse. | Tabla propuesta, sin implementar |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `empresa_transporte_externo`.
+
+**Tablas propuestas para revisar:** `solicitud_transporte`, `invitacion_transporte`, `cotizacion_transporte`.
+
+```mermaid
+erDiagram
+    campana ||..o{ solicitud_transporte : propuesta
+    solicitud_transporte ||..o{ invitacion_transporte : propuesta
+    empresa_transporte_externo ||..o{ invitacion_transporte : propuesta
+    invitacion_transporte ||..o{ cotizacion_transporte : propuesta
+```
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+<a id="tabla-solicitud_transporte"></a>
+
+**Diccionario de `solicitud_transporte` — tabla propuesta.**
+
+**Clave primaria:** `solicitud_transporte_id`. Solicitud persistida; enviar correos está simulado en el prototipo.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `solicitud_transporte_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `campania_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campana.campania_id`. |
+| `referencia` | **TABLA NUEVA** | `varchar(100) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Atributo propuesto para cubrir el flujo de la vista. |
+| `origen` | **TABLA NUEVA** | `text NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `destino` | **TABLA NUEVA** | `text NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `ventana_servicio` | **TABLA NUEVA** | `varchar(180)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `cantidad_estimada` | **TABLA NUEVA** | `varchar(100)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `caracteristicas_vehiculo` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `condiciones` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `limite_respuesta` | **TABLA NUEVA** | `timestamptz` | Atributo propuesto para cubrir el flujo de la vista. |
+| `mensaje` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `archivo_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `estado` | **TABLA NUEVA** | `varchar(25) NOT NULL DEFAULT 'BORRADOR'` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (referencia)`.
+
+<a id="tabla-invitacion_transporte"></a>
+
+**Diccionario de `invitacion_transporte` — tabla propuesta.**
+
+**Clave primaria:** `invitacion_transporte_id`. Destinatarios por solicitud, con contacto capturado al invitar.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `invitacion_transporte_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `solicitud_transporte_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `solicitud_transporte.solicitud_transporte_id`. |
+| `id_empresa_transporte_externo` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `empresa_transporte_externo.id_empresa_transporte_externo`. |
+| `correo_snapshot` | **TABLA NUEVA** | `varchar(180)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `estado` | **TABLA NUEVA** | `varchar(25) NOT NULL DEFAULT 'INVITADA'` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (solicitud_transporte_id, id_empresa_transporte_externo)`.
+
+<a id="tabla-cotizacion_transporte"></a>
+
+**Diccionario de `cotizacion_transporte` — tabla propuesta.**
+
+**Clave primaria:** `cotizacion_transporte_id`. Propuesta de respuesta; atributos no observables por lista vacía se proponen.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `cotizacion_transporte_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `invitacion_transporte_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `invitacion_transporte.invitacion_transporte_id`. |
+| `fecha` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `monto` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `moneda` | **TABLA NUEVA** | `varchar(3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `condiciones` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `archivo_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `estado` | **TABLA NUEVA** | `varchar(25) NOT NULL DEFAULT 'RECIBIDA'` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `CHECK (monto > 0)`; `CHECK (moneda IN ('PEN','USD','EUR'))`.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Solicitar cotización (Administrador > Gestión de Transporte > Requerimientos y cotizaciones > Solicitud)
+
+**Referencia de revisión:** V30 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Padrón → seleccionar transportistas → Solicitar cotización → formulario → Revisar solicitud. No se ejecutó envío.
+
+**Observado en la aplicación de referencia:** Formulario de solicitud a empresas seleccionadas con campaña, ruta, ventana, estimado, vehículo, condiciones y fecha límite. El correo se anuncia simulado.
+
+**Criterio para revisar el modelo:** La referencia es única y los invitados son una tabla puente; no serializar la lista de empresas en una columna. La cantidad estimada observada es un campo textual que puede expresar kg o volumen; se conserva como tal hasta acordar un formato estructurado. No se envió la solicitud.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`solicitud_transporte`](#tabla-solicitud_transporte) | Escritura esperada | Guarda el requerimiento común de servicio, campaña, ruta, ventana y condiciones antes de recibir respuestas. | Tabla propuesta, sin implementar |
+| [`invitacion_transporte`](#tabla-invitacion_transporte) | Escritura esperada | Identifica cada transportista destinatario de una solicitud, preservando el contacto usado. No supone que se haya enviado un correo real. | Tabla propuesta, sin implementar |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `empresa_transporte_externo`.
+
+**Tablas propuestas para revisar:** `solicitud_transporte`, `invitacion_transporte`.
+
+```mermaid
+erDiagram
+    campana ||..o{ solicitud_transporte : propuesta
+    solicitud_transporte ||..o{ invitacion_transporte : propuesta
+    empresa_transporte_externo ||..o{ invitacion_transporte : propuesta
+```
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`solicitud_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`invitacion_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Cosecha y control de calidad (Administrador > Cosecha y Control de Calidad > Campañas)
+
+**Referencia de revisión:** V31 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Módulos → Cosecha y Control de Calidad → Exportador/Industria → Ver campaña o menú de opciones.
+
+**Observado en la aplicación de referencia:** Campañas de Calidad por canal Exportador/Industria y botón Agregar campaña. La persistencia de esa incorporación requiere decisión propia.
+
+**Criterio para revisar el modelo:** Exportador/Industria son canales de la operación/contrato, no dos bases independientes. El listado usa campañas existentes; Agregar campaña no justifica duplicar la entidad campanias.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Consulta | Leer campañas para incorporarlas o consultarlas en Calidad. No se crea otra campaña; la persistencia de «Agregar campaña» y su canal sigue en discusión. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`cosecha`](#tabla-cosecha) | Consulta | Representa la operación agrícola, sus estimados, cantidades y estado propios. No debe crearse artificialmente solo para permitir un análisis previo. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `cliente_negocio`, `cliente_negocio_campana`.
+
+**Tablas propuestas para revisar:** `contrato_venta`, `entrega_programada`, `cosecha`, `carga`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o{ cosecha : propuesta
+    carga
+```
+
+**D07 — Incorporación de campaña a Calidad (Por discutir):** Agregar campaña puede ser habilitación manual por canal o un filtro de las operaciones existentes. Solo si el negocio exige persistir esa habilitación tendría sentido una entidad específica; aún no se añade.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cosecha`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Resumen de cosecha y calidad (Administrador > Cosecha y Control de Calidad > Campaña > Resumen)
+
+**Referencia de revisión:** V32 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Calidad → Ver campaña Mango 2026 → resumen de estado y fechas → Volver a campañas.
+
+**Observado en la aplicación de referencia:** La ficha consultada muestra estado, inicio y fin; indica consultar los estados de calidad desde las opciones de campaña.
+
+**Criterio para revisar el modelo:** El estado de campaña, el de cosecha, el de calidad y el del chofer tienen responsabilidades distintas. No usar una única columna estado para cuatro procesos.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`fruta`](#tabla-fruta) | Consulta | Proporciona el catálogo de cultivos y la fruta de la campaña. No representa kilos comprados ni cosechados. | Tabla actual incluida |
+| [`cosecha`](#tabla-cosecha) | Consulta | Consulta prevista desde las opciones de campaña. La ficha resumen visitada solo muestra estado y fechas; no exige una tabla de resumen ni crea operaciones. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `fruta`.
+
+**Tablas propuestas para revisar:** `cosecha`, `carga`.
+
+```mermaid
+erDiagram
+    fruta ||..o{ campana : actual
+    cosecha
+    carga
+```
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cosecha`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Análisis y revisión (Administrador > Cosecha y Control de Calidad > Exportador > Campaña > Análisis y revisión)
+
+**Referencia de revisión:** V33 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Calidad → Opciones de campaña → Análisis y revisión → Registrar análisis o Completar/editar.
+
+**Observado en la aplicación de referencia:** Análisis por proveedor/finca y fecha, con resultado pendiente permitido; MTD y captura son obligatorios en el mockup. Se aprobó permitir análisis anterior a cosecha.
+
+**Criterio para revisar el modelo:** El usuario aprobó registrar análisis por participación y finca antes de cosecha; cosecha_id queda opcional. La campaña se obtiene desde cxp_id. El MTD conserva historial y límite aplicado por finca/campaña. Si después se vincula una operación, el servicio comprobará que corresponde a la misma campaña y finca. La evidencia exigida por el mockup queda pendiente de integración documental.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`analisis_calidad`](#tabla-analisis_calidad) | Escritura esperada | Crear el análisis previo por participación y finca, permitiendo resultado pendiente. Vincular cosecha solo cuando exista y pertenezca al mismo contexto. | Tabla propuesta, sin implementar |
+| [`medicion_mtd`](#tabla-medicion_mtd) | Escritura esperada | Registrar el valor de la finca y conservar historial. La captura que exige el mockup queda pendiente de integración documental en este esquema. | Tabla propuesta, sin implementar |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Es la participación del proveedor en una campaña y el punto de agrupación de entrevistas, evaluación y cantidades. Se conserva obligatoriamente y no selecciona finca. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`entrevista_extencion`](#tabla-entrevista_extencion) | Consulta | Añade los datos agronómicos de la visita a una finca del proveedor en esa campaña. Las fincas entrevistadas se obtienen de estas filas, sin otra vinculación directa finca–participación. | Tabla actual incluida |
+| [`finca`](#tabla-finca) | Consulta | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`cosecha`](#tabla-cosecha) | Consulta | Consultar o vincular opcionalmente una operación posterior; ya no es requisito para registrar el muestreo inicial. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `campania_x_proveedores`, `proveedor`, `entrevista_extencion`, `finca`, `fruta_derivada`.
+
+**Tablas propuestas para revisar:** `analisis_calidad`, `medicion_mtd`, `cosecha`.
+
+```mermaid
+erDiagram
+    campana ||..o{ campania_x_proveedores : actual
+    proveedor ||..o{ campania_x_proveedores : actual
+    campania_x_proveedores ||..o{ entrevista_extencion : actual
+    finca ||..o{ entrevista_extencion : actual
+    proveedor ||..o{ finca : actual
+    cosecha o|..o{ analisis_calidad : propuesta
+    campania_x_proveedores ||..o{ analisis_calidad : propuesta
+    campania_x_proveedores ||..o{ medicion_mtd : propuesta
+    fruta_derivada o|..o{ entrevista_extencion : propuesta
+    fruta_derivada o|..o{ finca : propuesta
+    finca ||..o{ analisis_calidad : propuesta
+    finca ||..o{ medicion_mtd : propuesta
+```
+
+**D03 — Análisis antes de cosecha (Aprobado por el usuario):** analisis_calidad identifica cxp_id y finca_id; cosecha_id queda opcional. La campaña se obtiene por la participación, sin otra FK redundante a campaña. El servicio validará coincidencia de campaña y origen si se vincula posteriormente una cosecha.
+
+**D04 — Una variedad por finca (Aprobado por el usuario):** Se conserva finca.fruta_derivada_id y se obtiene fruta por fruta_derivada.fruta_id. No se agrega una tabla de varios cultivos por finca. El vínculo permanece opcional para datos históricos; completar variedad antes de operar cuando la vista la requiere.
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+<a id="tabla-analisis_calidad"></a>
+
+**Diccionario de `analisis_calidad` — tabla propuesta.**
+
+**Clave primaria:** `analisis_calidad_id`. Muestreo previo por participación de campaña/proveedor y finca. Puede vincularse a cosecha después; no equivale al examen de admisión.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `analisis_calidad_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `cosecha_id` | **TABLA NUEVA** | `integer` | Vínculo opcional posterior a una operación; el análisis puede registrarse antes de la cosecha. La campaña se obtiene de cxp_id. FK a `cosecha.cosecha_id`. |
+| `cxp_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campania_x_proveedores.cxp_id`. |
+| `tipo` | **TABLA NUEVA** | `varchar(100) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_muestreo` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `estado` | **TABLA NUEVA** | `varchar(30) NOT NULL DEFAULT 'PENDIENTE'` | Atributo propuesto para cubrir el flujo de la vista. |
+| `resultado_texto` | **TABLA NUEVA** | `varchar(180)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `resultado_numerico` | **TABLA NUEVA** | `numeric(14,4)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `unidad` | **TABLA NUEVA** | `varchar(30)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `archivo_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `observaciones` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+| `finca_id` | **TABLA NUEVA** | `integer NOT NULL` | Finca del origen o medición; ya no se obtiene de campania_x_proveedores. El servicio debe validar que pertenece al proveedor de cxp_id. FK a `finca.finca_id`. |
+
+<a id="tabla-medicion_mtd"></a>
+
+**Diccionario de `medicion_mtd` — tabla propuesta.**
+
+**Clave primaria:** `medicion_mtd_id`. Historial de MTD por finca y campaña, con captura de respaldo.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `medicion_mtd_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `cxp_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campania_x_proveedores.cxp_id`. |
+| `medido_at` | **TABLA NUEVA** | `timestamptz NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `valor` | **TABLA NUEVA** | `numeric(12,4) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `limite_aplicado` | **TABLA NUEVA** | `numeric(12,4) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `archivo_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `registrado_por_usuario_id` | **TABLA NUEVA** | `integer` | Atributo propuesto para cubrir el flujo de la vista. FK a `usuario.usuario_id`. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+| `trampa_referencia` | **TABLA NUEVA** | `varchar(120)` | Referencia textual de trampa observada en el modelo de Calidad; no se inventa un catálogo de trampas. |
+| `finca_id` | **TABLA NUEVA** | `integer NOT NULL` | Finca del origen o medición; ya no se obtiene de campania_x_proveedores. El servicio debe validar que pertenece al proveedor de cxp_id. FK a `finca.finca_id`. |
+
+**Restricciones propuestas para revisar:** `CHECK (valor >= 0)`; `CHECK (limite_aplicado >= 0)`.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campania_x_proveedores`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrevista_extencion`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`finca`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cosecha`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Cargas por entrega (Administrador > Cosecha y Control de Calidad > Campaña > Cargas por entrega)
+
+**Referencia de revisión:** V34 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Calidad → Opciones → Carga / Cargas por entrega → Registrar carga, Ver carga o Editar datos.
+
+**Observado en la aplicación de referencia:** Listado de carga por entrega con transportista, placa/chofer, kilos e indicador de calidad. La UI declara una carga por entrega pero repite en1 en datos demo.
+
+**Criterio para revisar el modelo:** Se adopta la regla explícita de una carga por coordinación/entrega. La repetición observada se trata como anomalía del demo; no se usa para permitir duplicación silenciosa. Si se requieren viajes parciales, separar viajes y repartir kg por viaje antes de quitar esta unicidad. La carga real se detalla por proveedor/variedad; el reparto por finca no está medido en el formulario, por lo que kilos_origen puede ser nulo.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`carga`](#tabla-carga) | Escritura esperada | Registrar o editar datos propios de la carga real, respetando una por coordinación en el SQL propuesto. No copiar el viaje desde la campaña como si fuera otra asignación. | Tabla propuesta, sin implementar |
+| [`proveedor_carga`](#tabla-proveedor_carga) | Escritura esperada | Desglosa kilos reales, variedad, bultos y precio aplicado por proveedor. No distribuye automáticamente kilos entre las fincas de ese proveedor. | Tabla propuesta, sin implementar |
+| [`origen_carga`](#tabla-origen_carga) | Escritura esperada | Conserva las fincas que aportaron a una línea de proveedor de la carga; los kilos por finca pueden quedar sin medir. | Tabla propuesta, sin implementar |
+| [`gasto_carga`](#tabla-gasto_carga) | Escritura esperada | Desglosa costos como cuadrilla o anotadores de esa carga. No equivale al flete ni a los desembolsos de transporte. | Tabla propuesta, sin implementar |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`finca`](#tabla-finca) | Consulta | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`cosecha`](#tabla-cosecha) | Consulta | Representa la operación agrícola, sus estimados, cantidades y estado propios. No debe crearse artificialmente solo para permitir un análisis previo. | Tabla propuesta, sin implementar |
+| [`analisis_calidad`](#tabla-analisis_calidad) | Consulta | Registra muestreo por campaña/proveedor/finca antes de la cosecha; cosecha_id es opcional por decisión aprobada. Conserva resultado y unidad cuando lleguen. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `cliente_negocio_campana`, `cliente_negocio`, `empresa_transporte_externo`, `vehiculo_externo`, `chofer_transporte_externo`, `proveedor`, `finca`, `fruta_derivada`.
+
+**Tablas propuestas para revisar:** `carga`, `proveedor_carga`, `origen_carga`, `gasto_carga`, `coordinacion_entrega`, `entrega_programada`, `contrato_venta`, `cosecha`, `analisis_calidad`.
+
+```mermaid
+erDiagram
+    empresa_transporte_externo ||..o{ chofer_transporte_externo : actual
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    proveedor ||..o{ finca : actual
+    empresa_transporte_externo ||..o{ vehiculo_externo : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    empresa_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    entrega_programada ||..o{ cosecha : propuesta
+    cosecha o|..o{ analisis_calidad : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o{ proveedor_carga : propuesta
+    fruta_derivada ||..o{ proveedor_carga : propuesta
+    proveedor_carga ||..o{ origen_carga : propuesta
+    carga ||..o{ gasto_carga : propuesta
+    vehiculo_externo ||..o{ coordinacion_entrega : propuesta
+    fruta_derivada o|..o{ finca : propuesta
+    finca ||..o{ origen_carga : propuesta
+    finca ||..o{ analisis_calidad : propuesta
+```
+
+**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+
+**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-proveedor_carga"></a>
+
+**Diccionario de `proveedor_carga` — tabla propuesta.**
+
+**Clave primaria:** `proveedor_carga_id`. Kilos reales por proveedor y variedad; la UI no reparte automáticamente por finca.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `proveedor_carga_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `carga_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `carga.carga_id`. |
+| `participacion_proveedor_campana_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `participacion_proveedor_campana.participacion_proveedor_campana_id`. |
+| `fruta_derivada_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `fruta_derivada.fruta_derivada_id`. |
+| `kilos_cargados` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `precio_compra_kg_aplicado` | **TABLA NUEVA** | `numeric(14,4)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `jabas_cargadas` | **TABLA NUEVA** | `integer NOT NULL DEFAULT 0` | Atributo propuesto para cubrir el flujo de la vista. |
+| `jabas_vacias` | **TABLA NUEVA** | `integer NOT NULL DEFAULT 0` | Atributo propuesto para cubrir el flujo de la vista. |
+| `bines_cargados` | **TABLA NUEVA** | `integer NOT NULL DEFAULT 0` | Atributo propuesto para cubrir el flujo de la vista. |
+| `bines_vacios` | **TABLA NUEVA** | `integer NOT NULL DEFAULT 0` | Atributo propuesto para cubrir el flujo de la vista. |
+| `mallas_cargadas` | **TABLA NUEVA** | `integer NOT NULL DEFAULT 0` | Atributo propuesto para cubrir el flujo de la vista. |
+| `mallas_vacias` | **TABLA NUEVA** | `integer NOT NULL DEFAULT 0` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (carga_id, participacion_proveedor_campana_id, fruta_derivada_id)`; `UNIQUE (proveedor_carga_id, carga_id)`; `CHECK (kilos_cargados > 0)`; `CHECK (precio_compra_kg_aplicado > 0)`; `CHECK (jabas_cargadas >= 0)`; `CHECK (jabas_vacias >= 0)`; `CHECK (bines_cargados >= 0)`; `CHECK (bines_vacios >= 0)`; `CHECK (mallas_cargadas >= 0)`; `CHECK (mallas_vacias >= 0)`.
+
+<a id="tabla-origen_carga"></a>
+
+**Diccionario de `origen_carga` — tabla propuesta.**
+
+**Clave primaria:** `origen_carga_id`. Trazabilidad a fincas seleccionadas; asignación de kg opcional hasta medirla.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `origen_carga_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `proveedor_carga_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `proveedor_carga.proveedor_carga_id`. |
+| `cxp_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campania_x_proveedores.cxp_id`. |
+| `kilos_origen` | **TABLA NUEVA** | `numeric(14,3)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+| `finca_id` | **TABLA NUEVA** | `integer NOT NULL` | Finca del origen o medición; ya no se obtiene de campania_x_proveedores. El servicio debe validar que pertenece al proveedor de cxp_id. FK a `finca.finca_id`. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (proveedor_carga_id, cxp_id, finca_id)`; `CHECK (kilos_origen > 0)`.
+
+<a id="tabla-gasto_carga"></a>
+
+**Diccionario de `gasto_carga` — tabla propuesta.**
+
+**Clave primaria:** `gasto_carga_id`. Cuadrilla, anotadores y otros costos de carga; no son automáticamente gasto de transporte.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `gasto_carga_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `carga_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `carga.carga_id`. |
+| `concepto` | **TABLA NUEVA** | `varchar(150) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `monto` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (carga_id, concepto)`; `CHECK (monto >= 0)`.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`finca`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cosecha`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`analisis_calidad`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Detalle de operación y carga (Administrador > Cosecha y Control de Calidad > Cargas por entrega > Detalle)
+
+**Referencia de revisión:** V35 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Cargas por entrega → Ver carga 2 → operación EXP-MAN-002 → entrega, controles, MTD y documentos.
+
+**Observado en la aplicación de referencia:** Detalle EXP-MAN-002 con datos programados, finca/orígenes y controles. Hay diferencias entre kilos de lista y detalle: no se resuelven inventando pesos.
+
+**Criterio para revisar el modelo:** La cantidad prevista no se sobrescribe con la real. Una operación puede abarcar varias fincas a través de la entrega; el modelo no obliga a dividir artificialmente los kilos reales por finca. Una eventual relación operación–lote físico adicional debe definirse si el negocio maneja varios lotes identificables dentro de la misma operación.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`cosecha`](#tabla-cosecha) | Consulta | Representa la operación agrícola, sus estimados, cantidades y estado propios. No debe crearse artificialmente solo para permitir un análisis previo. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`origen_entrega`](#tabla-origen_entrega) | Consulta | Selecciona cada finca de los proveedores de la entrega. finca_id identifica el punto físico; cxp_id acredita la participación en campaña. | Tabla propuesta, sin implementar |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Es la participación del proveedor en una campaña y el punto de agrupación de entrevistas, evaluación y cantidades. Se conserva obligatoriamente y no selecciona finca. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`finca`](#tabla-finca) | Consulta | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`analisis_calidad`](#tabla-analisis_calidad) | Consulta | Registra muestreo por campaña/proveedor/finca antes de la cosecha; cosecha_id es opcional por decisión aprobada. Conserva resultado y unidad cuando lleguen. | Tabla propuesta, sin implementar |
+| [`medicion_mtd`](#tabla-medicion_mtd) | Consulta | Consultar historial por finca y campaña de la operación; el demo muestra también fincas externas al detalle, por lo que el filtro deberá revisarse. | Tabla propuesta, sin implementar |
+| [`proveedor_carga`](#tabla-proveedor_carga) | Consulta | Desglosa kilos reales, variedad, bultos y precio aplicado por proveedor. No distribuye automáticamente kilos entre las fincas de ese proveedor. | Tabla propuesta, sin implementar |
+| [`origen_carga`](#tabla-origen_carga) | Consulta | Conserva las fincas que aportaron a una línea de proveedor de la carga; los kilos por finca pueden quedar sin medir. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campania_x_proveedores`, `proveedor`, `finca`, `fruta_derivada`, `cliente_negocio_campana`, `empresa_transporte_externo`, `vehiculo_externo`, `chofer_transporte_externo`.
+
+**Tablas propuestas para revisar:** `cosecha`, `carga`, `coordinacion_entrega`, `origen_entrega`, `entrega_programada`, `contrato_venta`, `analisis_calidad`, `medicion_mtd`, `proveedor_carga`, `origen_carga`.
+
+```mermaid
+erDiagram
+    proveedor ||..o{ campania_x_proveedores : actual
+    empresa_transporte_externo ||..o{ chofer_transporte_externo : actual
+    proveedor ||..o{ finca : actual
+    empresa_transporte_externo ||..o{ vehiculo_externo : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    empresa_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o{ origen_entrega : propuesta
+    campania_x_proveedores ||..o{ origen_entrega : propuesta
+    entrega_programada ||..o{ cosecha : propuesta
+    cosecha o|..o{ analisis_calidad : propuesta
+    campania_x_proveedores ||..o{ analisis_calidad : propuesta
+    campania_x_proveedores ||..o{ medicion_mtd : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o{ proveedor_carga : propuesta
+    fruta_derivada ||..o{ proveedor_carga : propuesta
+    proveedor_carga ||..o{ origen_carga : propuesta
+    campania_x_proveedores ||..o{ origen_carga : propuesta
+    vehiculo_externo ||..o{ coordinacion_entrega : propuesta
+    fruta_derivada o|..o{ finca : propuesta
+    finca ||..o{ origen_entrega : propuesta
+    finca ||..o{ origen_carga : propuesta
+    finca ||..o{ analisis_calidad : propuesta
+    finca ||..o{ medicion_mtd : propuesta
+```
+
+**D03 — Análisis antes de cosecha (Aprobado por el usuario):** analisis_calidad identifica cxp_id y finca_id; cosecha_id queda opcional. La campaña se obtiene por la participación, sin otra FK redundante a campaña. El servicio validará coincidencia de campaña y origen si se vincula posteriormente una cosecha.
+
+**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+
+**`cosecha`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`origen_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campania_x_proveedores`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`finca`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`analisis_calidad`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`medicion_mtd`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`origen_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Guías de remisión (Administrador > Cosecha y Control de Calidad > Campaña > Guías de remisión)
+
+**Referencia de revisión:** V36 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Calidad → Opciones → Guías de remisión → fila de carga → Preparar guía o Ver detalle.
+
+**Observado en la aplicación de referencia:** Guías por carga, estado y kilos; la preparación abre el conjunto de guías de esa carga.
+
+**Criterio para revisar el modelo:** Una carga puede tener varias guías, con proveedores y kilos asignados. Las FK compuestas mantienen guía y detalle en la misma carga. La validación de kilos acumulados, punto físico de salida, bultos y emisión documental debe implementarse antes de utilizarlo en operación.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`proveedor_carga`](#tabla-proveedor_carga) | Consulta | Desglosa kilos reales, variedad, bultos y precio aplicado por proveedor. No distribuye automáticamente kilos entre las fincas de ese proveedor. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`guia_remision`](#tabla-guia_remision) | Consulta | Representa el documento estructurado del traslado, con datos históricos de partida, llegada, transportista y conductor. Permanece aunque archivo se difiera. | Tabla propuesta, sin implementar |
+| [`proveedor_guia`](#tabla-proveedor_guia) | Consulta | Asigna kilos de las líneas de proveedor de la carga a cada guía; permite varias guías sin duplicar kilos. | Tabla propuesta, sin implementar |
+| [`guia_x_norma`](#tabla-guia_x_norma) | Consulta | Guarda las normas seleccionadas para una guía, reutilizando el catálogo norma. | Tabla propuesta, sin implementar |
+| [`norma`](#tabla-norma) | Consulta | Catálogo de normas que se referencian desde certificación y guías; evita duplicar nombres libres en cada documento. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `cliente_negocio_campana`, `cliente_negocio`, `empresa_transporte_externo`, `vehiculo_externo`, `chofer_transporte_externo`.
+
+**Tablas propuestas para revisar:** `carga`, `proveedor_carga`, `coordinacion_entrega`, `entrega_programada`, `contrato_venta`, `guia_remision`, `proveedor_guia`, `guia_x_norma`, `norma`.
+
+```mermaid
+erDiagram
+    empresa_transporte_externo ||..o{ chofer_transporte_externo : actual
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    empresa_transporte_externo ||..o{ vehiculo_externo : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    empresa_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o{ proveedor_carga : propuesta
+    carga ||..o{ guia_remision : propuesta
+    guia_remision ||..o{ proveedor_guia : propuesta
+    carga ||..o{ proveedor_guia : propuesta
+    proveedor_carga ||..o{ proveedor_guia : propuesta
+    guia_remision ||..o{ guia_x_norma : propuesta
+    norma ||..o{ guia_x_norma : propuesta
+    vehiculo_externo ||..o{ coordinacion_entrega : propuesta
+```
+
+**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-guia_remision"></a>
+
+**Diccionario de `guia_remision` — tabla propuesta.**
+
+**Clave primaria:** `guia_remision_id`. Documento de traslado y captura histórica de origen, destino y transportista.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `guia_remision_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `carga_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `carga.carga_id`. |
+| `numero` | **TABLA NUEVA** | `varchar(30) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_inicio_traslado` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_entrega_transportista` | **TABLA NUEVA** | `date` | Atributo propuesto para cubrir el flujo de la vista. |
+| `peso_bruto_kg` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `unidad_peso` | **TABLA NUEVA** | `varchar(3) NOT NULL DEFAULT 'KGM'` | Atributo propuesto para cubrir el flujo de la vista. |
+| `numero_bultos` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `finca_partida_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `finca.finca_id`. |
+| `destino_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `destino_cliente_negocio.destino_cliente_negocio_id`. |
+| `ubigeo_partida_snapshot` | **TABLA NUEVA** | `varchar(6) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `direccion_partida_snapshot` | **TABLA NUEVA** | `text NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `establecimiento_partida_snapshot` | **TABLA NUEVA** | `varchar(4) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `ubigeo_llegada_snapshot` | **TABLA NUEVA** | `varchar(6) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `direccion_llegada_snapshot` | **TABLA NUEVA** | `text NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `establecimiento_llegada_snapshot` | **TABLA NUEVA** | `varchar(4) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `transportista_documento_snapshot` | **TABLA NUEVA** | `varchar(30) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `mtc_snapshot` | **TABLA NUEVA** | `varchar(80)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `placa_snapshot` | **TABLA NUEVA** | `varchar(15) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `conductor_documento_snapshot` | **TABLA NUEVA** | `varchar(30) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `conductor_nombre_snapshot` | **TABLA NUEVA** | `varchar(180) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `conductor_licencia_snapshot` | **TABLA NUEVA** | `varchar(40) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `archivo_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `observaciones` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (numero)`; `UNIQUE (guia_remision_id, carga_id)`; `CHECK (peso_bruto_kg > 0)`; `CHECK (numero_bultos > 0)`; `CHECK (unidad_peso = 'KGM')`.
+
+<a id="tabla-proveedor_guia"></a>
+
+**Diccionario de `proveedor_guia` — tabla propuesta.**
+
+**Clave primaria:** `proveedor_guia_id`. Distribución de kilos de una carga entre sus guías, sin duplicarlos.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `proveedor_guia_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `guia_remision_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `guia_remision.guia_remision_id`; FK a `guia_remision.guia_remision_id,carga_id`. |
+| `carga_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `carga.carga_id`; FK a `guia_remision.guia_remision_id,carga_id`; FK a `proveedor_carga.proveedor_carga_id,carga_id`. |
+| `proveedor_carga_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `proveedor_carga.proveedor_carga_id`; FK a `proveedor_carga.proveedor_carga_id,carga_id`. |
+| `kilos_asignados` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (guia_remision_id, proveedor_carga_id)`; `CHECK (kilos_asignados > 0)`.
+
+<a id="tabla-guia_x_norma"></a>
+
+**Diccionario de `guia_x_norma` — tabla propuesta.**
+
+**Clave primaria:** `guia_x_norma_id`. Selección múltiple de normas en la guía.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `guia_x_norma_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `guia_remision_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `guia_remision.guia_remision_id`. |
+| `norma_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `norma.norma_id`. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (guia_remision_id, norma_id)`.
+
+**`norma`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Preparar guía de remisión (Administrador > Cosecha y Control de Calidad > Guías de remisión > Carga > Preparar guía)
+
+**Referencia de revisión:** V37 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Preparar guía → Guías de la carga → Completar datos → formulario de traslado, proveedores, conductor, partida, llegada y normas.
+
+**Observado en la aplicación de referencia:** Formulario con kilos, KGM, bultos y secciones de transportista, conductor, partida, llegada y normas. Al abrir preparación apareció fila Por preparar y sincronización; no se guardó ni emitió una guía.
+
+**Criterio para revisar el modelo:** Los datos de traslado son capturas históricas: cambiar la placa o dirección del padrón no debe reescribir una guía emitida. Una guía tiene un punto de partida; una cadena con varias fincas no es una dirección válida. Para distintos puntos físicos se deben preparar guías separadas y asignar kilos medidos; el backend debe comprobar totales de cabecera, bultos y distribución completa antes de emitir.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`guia_remision`](#tabla-guia_remision) | Escritura esperada | Guardar el borrador estructurado y los datos históricos de traslado; definir una partida física y no convertir una cadena de fincas en dirección válida. | Tabla propuesta, sin implementar |
+| [`proveedor_guia`](#tabla-proveedor_guia) | Escritura esperada | Seleccionar proveedores de la misma carga y distribuir kilos pendientes entre guías; requiere validación transaccional de acumulados. | Tabla propuesta, sin implementar |
+| [`guia_x_norma`](#tabla-guia_x_norma) | Escritura esperada | Guarda las normas seleccionadas para una guía, reutilizando el catálogo norma. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`proveedor_carga`](#tabla-proveedor_carga) | Consulta | Desglosa kilos reales, variedad, bultos y precio aplicado por proveedor. No distribuye automáticamente kilos entre las fincas de ese proveedor. | Tabla propuesta, sin implementar |
+| [`origen_carga`](#tabla-origen_carga) | Consulta | Conserva las fincas que aportaron a una línea de proveedor de la carga; los kilos por finca pueden quedar sin medir. | Tabla propuesta, sin implementar |
+| [`origen_entrega`](#tabla-origen_entrega) | Consulta | Selecciona cada finca de los proveedores de la entrega. finca_id identifica el punto físico; cxp_id acredita la participación en campaña. | Tabla propuesta, sin implementar |
+| [`finca`](#tabla-finca) | Consulta | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`destino_cliente_negocio`](#tabla-destino_cliente_negocio) | Consulta | Propuesta de puntos de llegada reutilizables de un cliente. La pantalla muestra destinos, pero no se observó un padrón independiente que obligue a esta tabla. | Tabla propuesta, sin implementar |
+| [`norma`](#tabla-norma) | Consulta | Catálogo de normas que se referencian desde certificación y guías; evita duplicar nombres libres en cada documento. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `finca`, `proveedor`, `fruta_derivada`, `empresa_transporte_externo`, `vehiculo_externo`, `chofer_transporte_externo`, `cliente_negocio_campana`, `cliente_negocio`.
+
+**Tablas propuestas para revisar:** `guia_remision`, `proveedor_guia`, `guia_x_norma`, `carga`, `proveedor_carga`, `origen_carga`, `origen_entrega`, `coordinacion_entrega`, `entrega_programada`, `contrato_venta`, `destino_cliente_negocio`, `norma`.
+
+```mermaid
+erDiagram
+    empresa_transporte_externo ||..o{ chofer_transporte_externo : actual
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    proveedor ||..o{ finca : actual
+    empresa_transporte_externo ||..o{ vehiculo_externo : actual
+    cliente_negocio ||..o{ destino_cliente_negocio : propuesta
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    destino_cliente_negocio ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    empresa_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o{ origen_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o{ proveedor_carga : propuesta
+    fruta_derivada ||..o{ proveedor_carga : propuesta
+    proveedor_carga ||..o{ origen_carga : propuesta
+    carga ||..o{ guia_remision : propuesta
+    finca ||..o{ guia_remision : propuesta
+    destino_cliente_negocio ||..o{ guia_remision : propuesta
+    guia_remision ||..o{ proveedor_guia : propuesta
+    carga ||..o{ proveedor_guia : propuesta
+    proveedor_carga ||..o{ proveedor_guia : propuesta
+    guia_remision ||..o{ guia_x_norma : propuesta
+    norma ||..o{ guia_x_norma : propuesta
+    vehiculo_externo ||..o{ coordinacion_entrega : propuesta
+    fruta_derivada o|..o{ finca : propuesta
+    finca ||..o{ origen_entrega : propuesta
+    finca ||..o{ origen_carga : propuesta
+```
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+
+**`guia_remision`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_guia`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`guia_x_norma`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`origen_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`origen_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`finca`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`destino_cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`norma`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Logística y despacho (Administrador > Logística y Despacho > Campañas)
+
+**Referencia de revisión:** V38 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Módulos → Logística y Despacho → Ingresar a cargas de una campaña.
+
+**Observado en la aplicación de referencia:** Tablero por campaña y estados En carga, Salida de finca, En camino, Llegada y Cierre-Completado.
+
+**Criterio para revisar el modelo:** El tablero se deriva de los eventos del chofer y las cargas existentes. No persistir otra copia de los contadores. Una asignación puede ser visible antes de tener carga real, por eso historial_chofer se vincula a coordinación y admite carga aún nula.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`historial_chofer`](#tabla-historial_chofer) | Consulta | Registra cada evento En carga, Salida, En camino, Llegada o Cierre con fecha y responsable. El estado resumido se consulta desde el último evento. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `cliente_negocio_campana`.
+
+**Tablas propuestas para revisar:** `contrato_venta`, `entrega_programada`, `coordinacion_entrega`, `carga`, `historial_chofer`.
+
+```mermaid
+erDiagram
+    campana ||..o{ cliente_negocio_campana : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    coordinacion_entrega ||..o{ historial_chofer : propuesta
+    carga o|..o{ historial_chofer : propuesta
+```
+
+**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-historial_chofer"></a>
+
+**Diccionario de `historial_chofer` — tabla propuesta.**
+
+**Clave primaria:** `historial_chofer_id`. Eventos ordenados del despacho; el estado vigente se deriva del último evento.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `historial_chofer_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `coordinacion_entrega_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `coordinacion_entrega.coordinacion_entrega_id`; FK a `carga.carga_id,coordinacion_entrega_id`. |
+| `carga_id` | **TABLA NUEVA** | `integer` | Atributo propuesto para cubrir el flujo de la vista. FK a `carga.carga_id`; FK a `carga.carga_id,coordinacion_entrega_id`. |
+| `id_chofer_transporte_externo` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `chofer_transporte_externo.id_chofer_transporte_externo`. |
+| `estado` | **TABLA NUEVA** | `varchar(25) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_hora` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Atributo propuesto para cubrir el flujo de la vista. |
+| `observacion` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (coordinacion_entrega_id, estado)`; `CHECK (estado IN ('EN_CARGA','SALIDA','EN_CAMINO','LLEGADA','CIERRE'))`.
+
+## Cargas de campaña (Administrador > Logística y Despacho > Campaña > Cargas)
+
+**Referencia de revisión:** V39 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Campaña de Logística → filtrar estado → Ver entrega por código.
+
+**Observado en la aplicación de referencia:** Listado con código de despacho, cliente/destino, unidad/chofer, kilos, estado y último reporte.
+
+**Criterio para revisar el modelo:** El último reporte puede consultarse desde v_estado_despacho. trazabilidad_transporte y sus estados actuales se conservan mientras se define el paso al historial de eventos propuesto. No cambiar los registros antiguos para hacerlos coincidir con un tablero de demostración.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`historial_chofer`](#tabla-historial_chofer) | Consulta | Registra cada evento En carga, Salida, En camino, Llegada o Cierre con fecha y responsable. El estado resumido se consulta desde el último evento. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`destino_cliente_negocio`](#tabla-destino_cliente_negocio) | Consulta | Propuesta de puntos de llegada reutilizables de un cliente. La pantalla muestra destinos, pero no se observó un padrón independiente que obligue a esta tabla. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `cliente_negocio_campana`, `cliente_negocio`, `vehiculo_externo`, `chofer_transporte_externo`.
+
+**Tablas propuestas para revisar:** `carga`, `coordinacion_entrega`, `historial_chofer`, `entrega_programada`, `contrato_venta`, `destino_cliente_negocio`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    cliente_negocio ||..o{ destino_cliente_negocio : propuesta
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    destino_cliente_negocio ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    coordinacion_entrega ||..o{ historial_chofer : propuesta
+    carga o|..o{ historial_chofer : propuesta
+    chofer_transporte_externo ||..o{ historial_chofer : propuesta
+    vehiculo_externo ||..o{ coordinacion_entrega : propuesta
+```
+
+**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`historial_chofer`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`destino_cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Consulta de entrega (Administrador > Logística y Despacho > Campaña > Cargas > Entrega)
+
+**Referencia de revisión:** V40 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Cargas de Logística → Ver entrega DEMO-FACTURAR-001 → historial, viaje, carga, checklist y recepción en consulta.
+
+**Observado en la aplicación de referencia:** Consulta de DEMO-FACTURAR-001: 580 kg de origen y 570 kg en planta; el historial y resumen no siempre coinciden en los datos demo.
+
+**Criterio para revisar el modelo:** Se documentan peso de origen, peso recibido, descarte y respaldo por carga. La diferencia entre balanzas no se clasifica automáticamente como descarte. Comprobar recepción completa antes de facturar es parte del servicio posterior; no se inventan reportes a partir de facturas.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`origen_entrega`](#tabla-origen_entrega) | Consulta | Selecciona cada finca de los proveedores de la entrega. finca_id identifica el punto físico; cxp_id acredita la participación en campaña. | Tabla propuesta, sin implementar |
+| [`finca`](#tabla-finca) | Consulta | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`proveedor_carga`](#tabla-proveedor_carga) | Consulta | Desglosa kilos reales, variedad, bultos y precio aplicado por proveedor. No distribuye automáticamente kilos entre las fincas de ese proveedor. | Tabla propuesta, sin implementar |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`gasto_carga`](#tabla-gasto_carga) | Consulta | Desglosa costos como cuadrilla o anotadores de esa carga. No equivale al flete ni a los desembolsos de transporte. | Tabla propuesta, sin implementar |
+| [`historial_chofer`](#tabla-historial_chofer) | Consulta | Registra cada evento En carga, Salida, En camino, Llegada o Cierre con fecha y responsable. El estado resumido se consulta desde el último evento. | Tabla propuesta, sin implementar |
+| [`recepcion_planta`](#tabla-recepcion_planta) | Consulta | Consultar peso recibido y descarte de la misma carga, sin inferirlos de una factura. No se observó un editor administrativo en la pantalla visitada. | Tabla propuesta, sin implementar |
+| [`guia_remision`](#tabla-guia_remision) | Consulta | Representa el documento estructurado del traslado, con datos históricos de partida, llegada, transportista y conductor. Permanece aunque archivo se difiera. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `finca`, `cliente_negocio_campana`, `cliente_negocio`, `empresa_transporte_externo`, `vehiculo_externo`, `chofer_transporte_externo`, `proveedor`, `fruta_derivada`.
+
+**Tablas propuestas para revisar:** `coordinacion_entrega`, `origen_entrega`, `entrega_programada`, `contrato_venta`, `carga`, `proveedor_carga`, `gasto_carga`, `historial_chofer`, `recepcion_planta`, `guia_remision`.
+
+```mermaid
+erDiagram
+    empresa_transporte_externo ||..o{ chofer_transporte_externo : actual
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    proveedor ||..o{ finca : actual
+    empresa_transporte_externo ||..o{ vehiculo_externo : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    empresa_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o{ origen_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o{ proveedor_carga : propuesta
+    fruta_derivada ||..o{ proveedor_carga : propuesta
+    carga ||..o{ gasto_carga : propuesta
+    carga ||..o{ guia_remision : propuesta
+    finca ||..o{ guia_remision : propuesta
+    coordinacion_entrega ||..o{ historial_chofer : propuesta
+    carga o|..o{ historial_chofer : propuesta
+    chofer_transporte_externo ||..o{ historial_chofer : propuesta
+    carga ||..o| recepcion_planta : propuesta
+    chofer_transporte_externo ||..o{ recepcion_planta : propuesta
+    vehiculo_externo ||..o{ coordinacion_entrega : propuesta
+    fruta_derivada o|..o{ finca : propuesta
+    finca ||..o{ origen_entrega : propuesta
+```
+
+**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`origen_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`finca`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`gasto_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`historial_chofer`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`recepcion_planta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`guia_remision`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Facturación y cobros — Campañas (Administrador > Facturación y cobros > Campañas)
+
+**Referencia de revisión:** V41 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Módulos → Facturación y cobros → campaña → Ver clientes.
+
+**Observado en la aplicación de referencia:** Campañas con cargas, incluidas finalizadas; navegación a clientes de cada campaña.
+
+**Criterio para revisar el modelo:** Es una consulta, sin nueva tabla financiera por campaña. Acceso a campaña cerrada debe ser de consulta.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `cliente_negocio_campana`.
+
+**Tablas propuestas para revisar:** `carga`, `coordinacion_entrega`, `entrega_programada`, `contrato_venta`.
+
+```mermaid
+erDiagram
+    campana ||..o{ cliente_negocio_campana : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+```
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Clientes de campaña (Administrador > Facturación y cobros > Campaña > Clientes)
+
+**Referencia de revisión:** V42 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Campaña → clientes con cargas → Facturar → cargas registradas del cliente.
+
+**Observado en la aplicación de referencia:** Resumen facturado/cobrado/saldo y tabla de kilos e importes contratados, que no deben mezclarse con facturación.
+
+**Criterio para revisar el modelo:** Separar contratado, preparado y facturado. Sumar por moneda del documento; la UI muestra totales USD, pero hay contratos PEN en la misma campaña. Un resumen único mezclado sería incorrecto.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`factura_venta`](#tabla-factura_venta) | Consulta | Guarda la preparación y registro de la factura externa por carga, con kilos facturados, precio y moneda. No implica emisión fiscal desde la app. | Tabla propuesta, sin implementar |
+| [`cobro_venta`](#tabla-cobro_venta) | Consulta | Registra uno o varios ingresos contra una factura, en la moneda de esta. Los cobros no alteran el peso recibido. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `cliente_negocio`, `cliente_negocio_campana`.
+
+**Tablas propuestas para revisar:** `contrato_venta`, `entrega_programada`, `coordinacion_entrega`, `carga`, `factura_venta`, `cobro_venta`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    factura_venta ||..o{ cobro_venta : propuesta
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o| factura_venta : propuesta
+```
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-factura_venta"></a>
+
+**Diccionario de `factura_venta` — tabla propuesta.**
+
+**Clave primaria:** `factura_venta_id`. Preparación y factura externa en una fila; preserva peso, precio y moneda facturados.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `factura_venta_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `carga_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `carga.carga_id`. |
+| `referencia_preparacion` | **TABLA NUEVA** | `varchar(40) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_preparacion` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `estado` | **TABLA NUEVA** | `varchar(25) NOT NULL DEFAULT 'PREPARADA'` | Atributo propuesto para cubrir el flujo de la vista. |
+| `numero_factura` | **TABLA NUEVA** | `varchar(80)` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_emision` | **TABLA NUEVA** | `date` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha_vencimiento` | **TABLA NUEVA** | `date` | Atributo propuesto para cubrir el flujo de la vista. |
+| `kilos_facturados` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `precio_kg_aplicado` | **TABLA NUEVA** | `numeric(14,4) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `moneda` | **TABLA NUEVA** | `varchar(3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `importe_venta` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `archivo_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (carga_id)`; `UNIQUE (referencia_preparacion)`; `UNIQUE (numero_factura)`; `CHECK (kilos_facturados > 0)`; `CHECK (precio_kg_aplicado > 0)`; `CHECK (importe_venta = round(kilos_facturados * precio_kg_aplicado, 2))`; `CHECK (estado IN ('PREPARADA','EMITIDA'))`; `CHECK (moneda IN ('PEN','USD','EUR'))`; `CHECK (fecha_vencimiento >= fecha_emision)`; `CHECK (estado <> 'EMITIDA' OR (numero_factura IS NOT NULL AND fecha_emision IS NOT NULL))`.
+
+<a id="tabla-cobro_venta"></a>
+
+**Diccionario de `cobro_venta` — tabla propuesta.**
+
+**Clave primaria:** `cobro_venta_id`. Cobros parciales en la moneda de la factura.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `cobro_venta_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `factura_venta_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `factura_venta.factura_venta_id`. |
+| `fecha` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `monto` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `medio` | **TABLA NUEVA** | `varchar(30) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `referencia` | **TABLA NUEVA** | `varchar(100) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `comprobante_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `registrado_por_usuario_id` | **TABLA NUEVA** | `integer` | Atributo propuesto para cubrir el flujo de la vista. FK a `usuario.usuario_id`. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (factura_venta_id, referencia)`; `CHECK (monto > 0)`.
+
+## Cargas registradas del cliente (Administrador > Facturación y cobros > Campaña > Cliente > Cargas)
+
+**Referencia de revisión:** V43 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Cliente → desplegar Carga 5 DEMO-FACTURAR-001 → Ver factura, Registrar cobro o Historial de cobros.
+
+**Observado en la aplicación de referencia:** DEMO-FACTURAR-001 muestra 580 kg cargados, 570 recibidos/facturados, USD 1,368 total y USD 500 cobrado.
+
+**Criterio para revisar el modelo:** La factura propuesta conserva kilos facturados, precio, moneda e importe. Las restricciones locales comprueban importe y datos mínimos de emisión; el servicio debe validar el origen de peso/precio frente a recepción y contrato, impedir cambios posteriores y distinguir preparación de factura externa emitida.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`factura_venta`](#tabla-factura_venta) | Escritura esperada | Preparar y después registrar factura externa de la carga, usando peso recibido y precio aplicado. El adjunto se difiere, aunque el mockup lo solicite. | Tabla propuesta, sin implementar |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`proveedor_carga`](#tabla-proveedor_carga) | Consulta | Desglosa kilos reales, variedad, bultos y precio aplicado por proveedor. No distribuye automáticamente kilos entre las fincas de ese proveedor. | Tabla propuesta, sin implementar |
+| [`recepcion_planta`](#tabla-recepcion_planta) | Consulta | Mantiene una recepción por carga, peso de planta, descarte y cierres previstos. Recepción y descarte son pasos distintos sobre la misma fila. | Tabla propuesta, sin implementar |
+| [`cobro_venta`](#tabla-cobro_venta) | Consulta | Registra uno o varios ingresos contra una factura, en la moneda de esta. Los cobros no alteran el peso recibido. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `cliente_negocio`, `cliente_negocio_campana`.
+
+**Tablas propuestas para revisar:** `factura_venta`, `contrato_venta`, `entrega_programada`, `coordinacion_entrega`, `carga`, `proveedor_carga`, `recepcion_planta`, `cobro_venta`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    factura_venta ||..o{ cobro_venta : propuesta
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o{ proveedor_carga : propuesta
+    carga ||..o| recepcion_planta : propuesta
+    carga ||..o| factura_venta : propuesta
+```
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`factura_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`recepcion_planta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cobro_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Historial de cobros (Administrador > Facturación y cobros > Cliente > Factura > Cobros)
+
+**Referencia de revisión:** V44 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Carga facturada → Historial de cobros → movimientos y saldos → Registrar cobro.
+
+**Observado en la aplicación de referencia:** Historial de un cobro parcial con fecha, medio, referencia y evidencia. Cambia el saldo, no el contrato ni el peso.
+
+**Criterio para revisar el modelo:** Una factura puede tener varios cobros en su moneda. El SQL exige montos positivos y referencia única por factura; la comprobación de saldo, factura emitida, permisos e inmutabilidad debe implementarse como proceso transaccional. Los reversos requieren un flujo explícito.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`cobro_venta`](#tabla-cobro_venta) | Escritura esperada | Registra uno o varios ingresos contra una factura, en la moneda de esta. Los cobros no alteran el peso recibido. | Tabla propuesta, sin implementar |
+| [`factura_venta`](#tabla-factura_venta) | Consulta | Guarda la preparación y registro de la factura externa por carga, con kilos facturados, precio y moneda. No implica emisión fiscal desde la app. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `cliente_negocio_campana`, `cliente_negocio`.
+
+**Tablas propuestas para revisar:** `cobro_venta`, `factura_venta`, `carga`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    factura_venta ||..o{ cobro_venta : propuesta
+    carga ||..o| factura_venta : propuesta
+```
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`cobro_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`factura_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Liquidación de compra — Campañas (Administrador > Liquidación de Compra > Campañas)
+
+**Referencia de revisión:** V45 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Módulos → Liquidación de Compra → campaña → Ver cargas; acceso global a proveedores y límites UIT.
+
+**Observado en la aplicación de referencia:** Listado de campañas con cargas, acceso a pagados y control global UIT.
+
+**Criterio para revisar el modelo:** El módulo reúne compras y transporte; no debe transformarse en una tabla liquidacion_campania que duplique todos los documentos.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`liquidacion_proveedor`](#tabla-liquidacion_proveedor) | Consulta | Guarda el documento de compra por carga/proveedor y la persona destinataria, con importes históricos. Liquidar no significa pagar. | Tabla propuesta, sin implementar |
+| [`pago_proveedor`](#tabla-pago_proveedor) | Consulta | Registra cada desembolso parcial o total de una liquidación de compra. Sus sumas determinan el saldo. | Tabla propuesta, sin implementar |
+| [`liquidacion_transporte`](#tabla-liquidacion_transporte) | Consulta | Guarda el documento del servicio por carga, flete y moneda. No debe crear un pago solo por elegir modalidad completa. | Tabla propuesta, sin implementar |
+| [`pago_transporte`](#tabla-pago_transporte) | Consulta | Registra desembolsos de una liquidación de transporte, separados de adelantos y sus aplicaciones. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `cliente_negocio_campana`.
+
+**Tablas propuestas para revisar:** `carga`, `coordinacion_entrega`, `entrega_programada`, `contrato_venta`, `liquidacion_proveedor`, `pago_proveedor`, `liquidacion_transporte`, `pago_transporte`.
+
+```mermaid
+erDiagram
+    campana ||..o{ cliente_negocio_campana : actual
+    liquidacion_proveedor ||..o{ pago_proveedor : propuesta
+    liquidacion_transporte ||..o{ pago_transporte : propuesta
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o{ liquidacion_proveedor : propuesta
+    carga ||..o| liquidacion_transporte : propuesta
+```
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-liquidacion_proveedor"></a>
+
+**Diccionario de `liquidacion_proveedor` — tabla propuesta.**
+
+**Clave primaria:** `liquidacion_proveedor_id`. Documento por carga y proveedor, con persona receptora e importe histórico.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `liquidacion_proveedor_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `carga_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `carga.carga_id`. |
+| `proveedor_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `proveedor.proveedor_id`; FK a `proveedor_x_persona.proveedor_id,persona_id`. |
+| `persona_liquidacion_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `proveedor_x_persona.proveedor_id,persona_id`. |
+| `numero` | **TABLA NUEVA** | `varchar(40) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `importe_compra` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `valor_uit_aplicado` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `registrado_por_usuario_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `usuario.usuario_id`. |
+| `archivo_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `observaciones` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (carga_id, proveedor_id)`; `UNIQUE (numero)`; `CHECK (importe_compra > 0)`; `CHECK (valor_uit_aplicado > 0)`.
+
+<a id="tabla-pago_proveedor"></a>
+
+**Diccionario de `pago_proveedor` — tabla propuesta.**
+
+**Clave primaria:** `pago_proveedor_id`. Pagos parciales de compras en PEN.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `pago_proveedor_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `liquidacion_proveedor_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `liquidacion_proveedor.liquidacion_proveedor_id`. |
+| `fecha` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `monto` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `medio` | **TABLA NUEVA** | `varchar(30) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `referencia` | **TABLA NUEVA** | `varchar(100) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `comprobante_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `registrado_por_usuario_id` | **TABLA NUEVA** | `integer` | Atributo propuesto para cubrir el flujo de la vista. FK a `usuario.usuario_id`. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (liquidacion_proveedor_id, referencia)`; `CHECK (monto > 0)`.
+
+<a id="tabla-liquidacion_transporte"></a>
+
+**Diccionario de `liquidacion_transporte` — tabla propuesta.**
+
+**Clave primaria:** `liquidacion_transporte_id`. Documento por carga; flete ingresado al liquidar y gastos separados.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `liquidacion_transporte_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `carga_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `carga.carga_id`. |
+| `numero` | **TABLA NUEVA** | `varchar(40) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `fecha` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `flete` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `registrado_por_usuario_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `usuario.usuario_id`. |
+| `archivo_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (carga_id)`; `UNIQUE (numero)`; `CHECK (flete >= 0)`.
+
+<a id="tabla-pago_transporte"></a>
+
+**Diccionario de `pago_transporte` — tabla propuesta.**
+
+**Clave primaria:** `pago_transporte_id`. Desembolsos de transporte, distintos de aplicar adelantos.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `pago_transporte_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `liquidacion_transporte_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `liquidacion_transporte.liquidacion_transporte_id`. |
+| `fecha` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `monto` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `medio` | **TABLA NUEVA** | `varchar(30) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `referencia` | **TABLA NUEVA** | `varchar(100) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `comprobante_id` | **TABLA NUEVA** | `integer` | PENDIENTE DE RELACIÓN: referencia documental reservada, opcional y sin FK. No usar identificadores de archivo hasta definir la integración. |
+| `registrado_por_usuario_id` | **TABLA NUEVA** | `integer` | Atributo propuesto para cubrir el flujo de la vista. FK a `usuario.usuario_id`. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (liquidacion_transporte_id, referencia)`; `CHECK (monto > 0)`.
+
+## Liquidaciones por carga (Administrador > Liquidación de Compra > Campaña > Cargas)
+
+**Referencia de revisión:** V46 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Campaña → Ver cargas → Proveedor o Transportista por cada carga; Control UIT por proveedor.
+
+**Observado en la aplicación de referencia:** Cada carga presenta liquidaciones de proveedores y de transporte por separado.
+
+**Criterio para revisar el modelo:** Una liquidación por carga/proveedor; una de transporte por carga. Un proveedor con varias variedades se liquida sumando sus líneas de esa carga.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`proveedor_carga`](#tabla-proveedor_carga) | Consulta | Desglosa kilos reales, variedad, bultos y precio aplicado por proveedor. No distribuye automáticamente kilos entre las fincas de ese proveedor. | Tabla propuesta, sin implementar |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`liquidacion_proveedor`](#tabla-liquidacion_proveedor) | Consulta | Guarda el documento de compra por carga/proveedor y la persona destinataria, con importes históricos. Liquidar no significa pagar. | Tabla propuesta, sin implementar |
+| [`liquidacion_transporte`](#tabla-liquidacion_transporte) | Consulta | Guarda el documento del servicio por carga, flete y moneda. No debe crear un pago solo por elegir modalidad completa. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `proveedor`, `empresa_transporte_externo`, `vehiculo_externo`, `chofer_transporte_externo`, `cliente_negocio_campana`, `cliente_negocio`.
+
+**Tablas propuestas para revisar:** `carga`, `proveedor_carga`, `liquidacion_proveedor`, `liquidacion_transporte`, `coordinacion_entrega`, `entrega_programada`, `contrato_venta`.
+
+```mermaid
+erDiagram
+    empresa_transporte_externo ||..o{ chofer_transporte_externo : actual
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    empresa_transporte_externo ||..o{ vehiculo_externo : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    empresa_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o{ proveedor_carga : propuesta
+    carga ||..o{ liquidacion_proveedor : propuesta
+    proveedor ||..o{ liquidacion_proveedor : propuesta
+    carga ||..o| liquidacion_transporte : propuesta
+    vehiculo_externo ||..o{ coordinacion_entrega : propuesta
+```
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`liquidacion_proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`liquidacion_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Proveedor — Por liquidar, Por pagar y Pagados (Administrador > Liquidación de Compra > Campaña > Carga > Proveedor)
+
+**Referencia de revisión:** V47 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Carga → Proveedor → Por liquidar / Por pagar / Pagados → documento e historial de pagos.
+
+**Observado en la aplicación de referencia:** Pestañas Por liquidar, Por pagar y Pagados; carga consultada con tres proveedores pagados y documentos propios.
+
+**Criterio para revisar el modelo:** El estado se deriva de existencia de documento y saldo. El importe se calcula de kilos×precio aplicado de cada detalle del proveedor. La persona receptora debe pertenecer a proveedor_x_persona; no cambiar al principal ni el historial para repartir el acumulado anual entre personas. La validación de autorización de esa elección corresponde al proceso de negocio.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`liquidacion_proveedor`](#tabla-liquidacion_proveedor) | Escritura esperada | Guarda el documento de compra por carga/proveedor y la persona destinataria, con importes históricos. Liquidar no significa pagar. | Tabla propuesta, sin implementar |
+| [`pago_proveedor`](#tabla-pago_proveedor) | Escritura esperada | Registra cada desembolso parcial o total de una liquidación de compra. Sus sumas determinan el saldo. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`proveedor_carga`](#tabla-proveedor_carga) | Consulta | Desglosa kilos reales, variedad, bultos y precio aplicado por proveedor. No distribuye automáticamente kilos entre las fincas de ese proveedor. | Tabla propuesta, sin implementar |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`persona`](#tabla-persona) | Consulta | Identifica a una persona natural para cuentas o destinatarios de compras; su reutilización no crea otro proveedor ni autoriza por sí sola a cobrar. | Tabla propuesta, sin implementar |
+| [`proveedor_x_persona`](#tabla-proveedor_x_persona) | Consulta | Vincula al proveedor con personas principal/vinculadas que pueden figurar como destinatarias; no reparte ni transfiere compras históricas. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `proveedor`, `fruta_derivada`.
+
+**Tablas propuestas para revisar:** `liquidacion_proveedor`, `pago_proveedor`, `carga`, `proveedor_carga`, `persona`, `proveedor_x_persona`.
+
+```mermaid
+erDiagram
+    liquidacion_proveedor ||..o{ pago_proveedor : propuesta
+    proveedor ||..o{ proveedor_x_persona : propuesta
+    persona ||..o{ proveedor_x_persona : propuesta
+    carga ||..o{ proveedor_carga : propuesta
+    fruta_derivada ||..o{ proveedor_carga : propuesta
+    carga ||..o{ liquidacion_proveedor : propuesta
+    proveedor ||..o{ liquidacion_proveedor : propuesta
+    proveedor_x_persona ||..o{ liquidacion_proveedor : propuesta
+    persona o|..o{ proveedor : propuesta
+```
+
+**D10 — Condiciones de compra (Por discutir):** acuerdo_compra permitiría precios por proveedor/variedad/vigencia, pero no tiene editor observado en Entrevista. Decidir si se administra allí o si basta el precio histórico capturado al liquidar.
+
+**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+
+**`liquidacion_proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`pago_proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`persona`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_x_persona`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Liquidación de compra — Documento (Administrador > Liquidación de Compra > Campaña > Carga > Proveedor > Liquidación)
+
+**Referencia de revisión:** V48 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Proveedor → Pagados → Ver LC-000004 → modal de liquidación de compra.
+
+**Observado en la aplicación de referencia:** Modal LC-000004 con proveedor, campaña, fecha, kilos, precio, importe, pagado, saldo y documento adjunto.
+
+**Criterio para revisar el modelo:** El documento de compra debe conservar persona, carga, importe y evidencia. El servicio debe calcularlo desde los kilos/precios aplicados y protegerlo después de registrar movimientos. Esta revisión estructural todavía no implementa ese cálculo ni el flujo de rectificación.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`liquidacion_proveedor`](#tabla-liquidacion_proveedor) | Consulta | Mostrar el documento ya existente y su persona, peso e importe históricos; abrir el modal no crea una segunda liquidación. | Tabla propuesta, sin implementar |
+| [`pago_proveedor`](#tabla-pago_proveedor) | Consulta | Registra cada desembolso parcial o total de una liquidación de compra. Sus sumas determinan el saldo. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`proveedor_carga`](#tabla-proveedor_carga) | Consulta | Desglosa kilos reales, variedad, bultos y precio aplicado por proveedor. No distribuye automáticamente kilos entre las fincas de ese proveedor. | Tabla propuesta, sin implementar |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`persona`](#tabla-persona) | Consulta | Identifica a una persona natural para cuentas o destinatarios de compras; su reutilización no crea otro proveedor ni autoriza por sí sola a cobrar. | Tabla propuesta, sin implementar |
+| [`proveedor_x_persona`](#tabla-proveedor_x_persona) | Consulta | Vincula al proveedor con personas principal/vinculadas que pueden figurar como destinatarias; no reparte ni transfiere compras históricas. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `proveedor`.
+
+**Tablas propuestas para revisar:** `liquidacion_proveedor`, `pago_proveedor`, `carga`, `proveedor_carga`, `persona`, `proveedor_x_persona`.
+
+```mermaid
+erDiagram
+    liquidacion_proveedor ||..o{ pago_proveedor : propuesta
+    proveedor ||..o{ proveedor_x_persona : propuesta
+    persona ||..o{ proveedor_x_persona : propuesta
+    carga ||..o{ proveedor_carga : propuesta
+    carga ||..o{ liquidacion_proveedor : propuesta
+    proveedor ||..o{ liquidacion_proveedor : propuesta
+    proveedor_x_persona ||..o{ liquidacion_proveedor : propuesta
+    persona o|..o{ proveedor : propuesta
+```
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`liquidacion_proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`pago_proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`persona`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_x_persona`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Control UIT por proveedor (Administrador > Liquidación de Compra > Campaña > Control UIT por proveedor)
+
+**Referencia de revisión:** V49 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Liquidación → Control UIT por proveedor → año → personas vinculadas / detalle anual.
+
+**Observado en la aplicación de referencia:** Control por año y persona, principal y vinculadas; incluye todas las campañas y declara que pagos no cambian el acumulado.
+
+**Criterio para revisar el modelo:** El acumulado propuesto se consulta por persona y año desde los documentos de compra. No se precargan valores tributarios: parametro_uit es configuración para revisar. v_control_uit deja disponible nulo si falta el parámetro anual. No se mezclan compras registradas con dinero ya pagado.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`parametro_uit`](#tabla-parametro_uit) | Consulta | Guarda los parámetros del control anual como configuración a revisar; los valores del mockup no se toman como norma tributaria verificada. | Tabla propuesta, sin implementar |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`proveedor_x_persona`](#tabla-proveedor_x_persona) | Consulta | Vincula al proveedor con personas principal/vinculadas que pueden figurar como destinatarias; no reparte ni transfiere compras históricas. | Tabla propuesta, sin implementar |
+| [`persona`](#tabla-persona) | Consulta | Identifica a una persona natural para cuentas o destinatarios de compras; su reutilización no crea otro proveedor ni autoriza por sí sola a cobrar. | Tabla propuesta, sin implementar |
+| [`liquidacion_proveedor`](#tabla-liquidacion_proveedor) | Consulta | Sumar documentos por persona y año entre campañas. Los pagos se excluyen de la base del acumulado. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `proveedor`.
+
+**Tablas propuestas para revisar:** `parametro_uit`, `proveedor_x_persona`, `persona`, `liquidacion_proveedor`, `carga`.
+
+```mermaid
+erDiagram
+    proveedor ||..o{ proveedor_x_persona : propuesta
+    persona ||..o{ proveedor_x_persona : propuesta
+    carga ||..o{ liquidacion_proveedor : propuesta
+    proveedor ||..o{ liquidacion_proveedor : propuesta
+    proveedor_x_persona ||..o{ liquidacion_proveedor : propuesta
+    persona o|..o{ proveedor : propuesta
+    parametro_uit
+```
+
+**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+
+<a id="tabla-parametro_uit"></a>
+
+**Diccionario de `parametro_uit` — tabla propuesta.**
+
+**Clave primaria:** `parametro_uit_id`. Parámetros anuales configurables del prototipo, sin afirmar vigencia tributaria.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `parametro_uit_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `anio` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `valor` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `limite_uit` | **TABLA NUEVA** | `numeric(10,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `umbral_alerta` | **TABLA NUEVA** | `numeric(5,4) NOT NULL DEFAULT 0.90` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (anio)`; `CHECK (valor > 0)`; `CHECK (limite_uit > 0)`; `CHECK (umbral_alerta > 0 AND umbral_alerta <= 1)`.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_x_persona`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`persona`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`liquidacion_proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Transportista — Liquidación y pagos (Administrador > Liquidación de Compra > Campaña > Carga > Transportista)
+
+**Referencia de revisión:** V50 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Carga → Transportista → documento LT, Historial de pagos y paneles de acuerdo/saldo.
+
+**Observado en la aplicación de referencia:** Transporte de la carga con flete, viáticos, total, documento LT y pagos; acuerdo de empresa se consulta en otro panel.
+
+**Criterio para revisar el modelo:** Flete más gastos incluidos, menos pagos y aplicaciones de adelanto. Los viáticos presupuestados de carga y sus gastos reales no se suman dos veces: crear solo la fila aplicable por concepto. Los gastos de cuadrilla/anotador pertenecen a gasto_carga y no se trasladan automáticamente a transporte. Liquidar no registra desembolso.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`liquidacion_transporte`](#tabla-liquidacion_transporte) | Escritura esperada | Guarda el documento del servicio por carga, flete y moneda. No debe crear un pago solo por elegir modalidad completa. | Tabla propuesta, sin implementar |
+| [`gasto_transporte`](#tabla-gasto_transporte) | Escritura esperada | Registra viáticos y gastos reales del transporte que se incluirán una sola vez en su liquidación. | Tabla propuesta, sin implementar |
+| [`pago_transporte`](#tabla-pago_transporte) | Escritura esperada | Registrar dinero entregado contra la liquidación solo en la acción de pago; ni abrir el documento ni liquidar crea el desembolso. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`acuerdo_transporte`](#tabla-acuerdo_transporte) | Consulta | Representa vinculación de transportista/campaña y condiciones comerciales. Debe definirse si puede existir como borrador antes de registrar el acuerdo. | Tabla propuesta, sin implementar |
+| [`adelanto_transporte`](#tabla-adelanto_transporte) | Consulta | Registra el dinero efectivamente entregado por adelantado; el monto prometido en el acuerdo no acredita desembolso. | Tabla propuesta, sin implementar |
+| [`aplicacion_adelanto`](#tabla-aplicacion_adelanto) | Consulta | Imputa parte de un adelanto existente a una liquidación. No registra un segundo pago ni otro dinero entregado. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `empresa_transporte_externo`, `vehiculo_externo`, `chofer_transporte_externo`.
+
+**Tablas propuestas para revisar:** `liquidacion_transporte`, `gasto_transporte`, `pago_transporte`, `carga`, `coordinacion_entrega`, `acuerdo_transporte`, `adelanto_transporte`, `aplicacion_adelanto`.
+
+```mermaid
+erDiagram
+    empresa_transporte_externo ||..o{ chofer_transporte_externo : actual
+    empresa_transporte_externo ||..o{ vehiculo_externo : actual
+    liquidacion_transporte ||..o{ pago_transporte : propuesta
+    empresa_transporte_externo ||..o{ acuerdo_transporte : propuesta
+    acuerdo_transporte ||..o{ coordinacion_entrega : propuesta
+    empresa_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o| liquidacion_transporte : propuesta
+    carga ||..o{ gasto_transporte : propuesta
+    acuerdo_transporte ||..o{ adelanto_transporte : propuesta
+    adelanto_transporte ||..o{ aplicacion_adelanto : propuesta
+    vehiculo_externo ||..o{ coordinacion_entrega : propuesta
+    liquidacion_transporte ||..o{ aplicacion_adelanto : propuesta
+```
+
+**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+
+**D06 — Vincular antes del acuerdo (Por discutir):** El mockup permite vincular transportista y registrar el acuerdo después. acuerdo_transporte exige condiciones completas en el SQL: evaluar estado borrador con atributos opcionales o un vínculo independiente. No se agrega otra tabla todavía.
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`liquidacion_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-gasto_transporte"></a>
+
+**Diccionario de `gasto_transporte` — tabla propuesta.**
+
+**Clave primaria:** `gasto_transporte_id`. Gastos reales o viáticos aplicados una sola vez a la liquidación.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `gasto_transporte_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `carga_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `carga.carga_id`. |
+| `concepto` | **TABLA NUEVA** | `varchar(150) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `monto` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `origen` | **TABLA NUEVA** | `varchar(20) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `incluido_en_liquidacion` | **TABLA NUEVA** | `boolean NOT NULL DEFAULT false` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (carga_id, concepto)`; `CHECK (monto >= 0)`; `CHECK (origen IN ('VIATICO','REAL'))`.
+
+**`pago_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`acuerdo_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`adelanto_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+<a id="tabla-aplicacion_adelanto"></a>
+
+**Diccionario de `aplicacion_adelanto` — tabla propuesta.**
+
+**Clave primaria:** `aplicacion_adelanto_id`. Aplicación de un adelanto existente; no representa otro desembolso.
+
+| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
+|---|---|---|---|
+| `aplicacion_adelanto_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
+| `adelanto_transporte_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `adelanto_transporte.adelanto_transporte_id`. |
+| `liquidacion_transporte_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `liquidacion_transporte.liquidacion_transporte_id`. |
+| `fecha` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `monto` | **TABLA NUEVA** | `numeric(14,2) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
+| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+
+**Restricciones propuestas para revisar:** `UNIQUE (adelanto_transporte_id, liquidacion_transporte_id)`; `CHECK (monto > 0)`.
+
+## Acuerdo de la empresa y saldo de campaña (Administrador > Liquidación de Compra > Transportista > Acuerdo y adelantos)
+
+**Referencia de revisión:** V51 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Transportista → desplegar Acuerdo de la empresa y saldo de campaña → adelanto, flete liquidado y saldo.
+
+**Observado en la aplicación de referencia:** Panel separa flete autorizado, adelanto entregado sin aplicar, flete liquidado y gastos. Liquidar no registra pago ni aplica adelanto.
+
+**Criterio para revisar el modelo:** El adelanto pertenece al acuerdo y se aplica a liquidaciones de ese mismo acuerdo. Dinero entregado y aplicación son hechos distintos. No descontar el mismo adelanto del flete autorizado y de la liquidación como si fueran dos pagos. El saldo del acuerdo requiere distinguir adelanto libre, flete ya liquidado y gastos aparte.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`acuerdo_transporte`](#tabla-acuerdo_transporte) | Consulta | Representa vinculación de transportista/campaña y condiciones comerciales. Debe definirse si puede existir como borrador antes de registrar el acuerdo. | Tabla propuesta, sin implementar |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+| [`adelanto_transporte`](#tabla-adelanto_transporte) | Consulta | Consultar dinero entregado y saldo sin aplicar; mantenerlo separado del monto de adelanto pactado en el acuerdo. | Tabla propuesta, sin implementar |
+| [`aplicacion_adelanto`](#tabla-aplicacion_adelanto) | Consulta | Imputa parte de un adelanto existente a una liquidación. No registra un segundo pago ni otro dinero entregado. | Tabla propuesta, sin implementar |
+| [`liquidacion_transporte`](#tabla-liquidacion_transporte) | Consulta | Guarda el documento del servicio por carga, flete y moneda. No debe crear un pago solo por elegir modalidad completa. | Tabla propuesta, sin implementar |
+| [`pago_transporte`](#tabla-pago_transporte) | Consulta | Registra desembolsos de una liquidación de transporte, separados de adelantos y sus aplicaciones. | Tabla propuesta, sin implementar |
+| [`gasto_transporte`](#tabla-gasto_transporte) | Consulta | Registra viáticos y gastos reales del transporte que se incluirán una sola vez en su liquidación. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `empresa_transporte_externo`, `campana`.
+
+**Tablas propuestas para revisar:** `acuerdo_transporte`, `adelanto_transporte`, `aplicacion_adelanto`, `liquidacion_transporte`, `pago_transporte`, `gasto_transporte`.
+
+```mermaid
+erDiagram
+    liquidacion_transporte ||..o{ pago_transporte : propuesta
+    campana ||..o{ acuerdo_transporte : propuesta
+    empresa_transporte_externo ||..o{ acuerdo_transporte : propuesta
+    acuerdo_transporte ||..o{ adelanto_transporte : propuesta
+    adelanto_transporte ||..o{ aplicacion_adelanto : propuesta
+    liquidacion_transporte ||..o{ aplicacion_adelanto : propuesta
+    gasto_transporte
+```
+
+**D06 — Vincular antes del acuerdo (Por discutir):** El mockup permite vincular transportista y registrar el acuerdo después. acuerdo_transporte exige condiciones completas en el SQL: evaluar estado borrador con atributos opcionales o un vínculo independiente. No se agrega otra tabla todavía.
+
+**`acuerdo_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`adelanto_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`aplicacion_adelanto`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`liquidacion_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`pago_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`gasto_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Revisar cierre de campaña (Administrador > Gestión de Campaña > Campaña > Cierre)
+
+**Referencia de revisión:** V52 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Detalle de campaña → Revisar cierre → grupos de pendientes y motivo; Confirmar permanecía bloqueado.
+
+**Observado en la aplicación de referencia:** Ocho grupos de pendientes para cerrar; confirmación bloqueada. Revisión visible de despachos, recepción, cosechas, finanzas y certificaciones.
+
+**Criterio para revisar el modelo:** Se documentan atributos de cierre en campana. El SQL conserva las reglas actuales y prepara las relaciones nuevas, pero no implementa un proceso completo de cierre financiero/documental. Definir y programar la comprobación transaccional de pendientes después de la revisión manual.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`campana`](#tabla-campana) | Escritura esperada | Actualizar cierre, responsable y motivo únicamente tras validar los pendientes de sus registros relacionados; no registrar pagos ni modificar pesos al cerrar. | Tabla actual incluida |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`historial_chofer`](#tabla-historial_chofer) | Consulta | Registra cada evento En carga, Salida, En camino, Llegada o Cierre con fecha y responsable. El estado resumido se consulta desde el último evento. | Tabla propuesta, sin implementar |
+| [`cosecha`](#tabla-cosecha) | Consulta | Representa la operación agrícola, sus estimados, cantidades y estado propios. No debe crearse artificialmente solo para permitir un análisis previo. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`recepcion_planta`](#tabla-recepcion_planta) | Consulta | Mantiene una recepción por carga, peso de planta, descarte y cierres previstos. Recepción y descarte son pasos distintos sobre la misma fila. | Tabla propuesta, sin implementar |
+| [`factura_venta`](#tabla-factura_venta) | Consulta | Guarda la preparación y registro de la factura externa por carga, con kilos facturados, precio y moneda. No implica emisión fiscal desde la app. | Tabla propuesta, sin implementar |
+| [`cobro_venta`](#tabla-cobro_venta) | Consulta | Registra uno o varios ingresos contra una factura, en la moneda de esta. Los cobros no alteran el peso recibido. | Tabla propuesta, sin implementar |
+| [`liquidacion_proveedor`](#tabla-liquidacion_proveedor) | Consulta | Guarda el documento de compra por carga/proveedor y la persona destinataria, con importes históricos. Liquidar no significa pagar. | Tabla propuesta, sin implementar |
+| [`pago_proveedor`](#tabla-pago_proveedor) | Consulta | Registra cada desembolso parcial o total de una liquidación de compra. Sus sumas determinan el saldo. | Tabla propuesta, sin implementar |
+| [`liquidacion_transporte`](#tabla-liquidacion_transporte) | Consulta | Guarda el documento del servicio por carga, flete y moneda. No debe crear un pago solo por elegir modalidad completa. | Tabla propuesta, sin implementar |
+| [`pago_transporte`](#tabla-pago_transporte) | Consulta | Registra desembolsos de una liquidación de transporte, separados de adelantos y sus aplicaciones. | Tabla propuesta, sin implementar |
+| [`acuerdo_transporte`](#tabla-acuerdo_transporte) | Consulta | Representa vinculación de transportista/campaña y condiciones comerciales. Debe definirse si puede existir como borrador antes de registrar el acuerdo. | Tabla propuesta, sin implementar |
+| [`adelanto_transporte`](#tabla-adelanto_transporte) | Consulta | Registra el dinero efectivamente entregado por adelantado; el monto prometido en el acuerdo no acredita desembolso. | Tabla propuesta, sin implementar |
+| [`aplicacion_adelanto`](#tabla-aplicacion_adelanto) | Consulta | Imputa parte de un adelanto existente a una liquidación. No registra un segundo pago ni otro dinero entregado. | Tabla propuesta, sin implementar |
+| [`certificado_campana`](#tabla-certificado_campana) | Consulta | Guarda el certificado de campaña, vigencia y costo. No guarda como pago el recibo ni reemplaza el certificado propio del proveedor. | Tabla actual incluida |
+| [`pago_certificado_campana`](#tabla-pago_certificado_campana) | Consulta | Registra desembolsos parciales del certificado en su moneda. El saldo se calcula con los pagos y no por una etiqueta de estado. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `campana`, `cliente_negocio_campana`, `certificado_campana`.
+
+**Tablas propuestas para revisar:** `contrato_venta`, `entrega_programada`, `coordinacion_entrega`, `historial_chofer`, `cosecha`, `carga`, `recepcion_planta`, `factura_venta`, `cobro_venta`, `liquidacion_proveedor`, `pago_proveedor`, `liquidacion_transporte`, `pago_transporte`, `acuerdo_transporte`, `adelanto_transporte`, `aplicacion_adelanto`, `pago_certificado_campana`.
+
+```mermaid
+erDiagram
+    campana ||..o{ certificado_campana : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    liquidacion_proveedor ||..o{ pago_proveedor : propuesta
+    liquidacion_transporte ||..o{ pago_transporte : propuesta
+    factura_venta ||..o{ cobro_venta : propuesta
+    certificado_campana ||..o{ pago_certificado_campana : propuesta
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    campana ||..o{ acuerdo_transporte : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    acuerdo_transporte ||..o{ coordinacion_entrega : propuesta
+    entrega_programada ||..o{ cosecha : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    coordinacion_entrega ||..o{ historial_chofer : propuesta
+    carga o|..o{ historial_chofer : propuesta
+    carga ||..o| recepcion_planta : propuesta
+    carga ||..o{ liquidacion_proveedor : propuesta
+    carga ||..o| liquidacion_transporte : propuesta
+    acuerdo_transporte ||..o{ adelanto_transporte : propuesta
+    adelanto_transporte ||..o{ aplicacion_adelanto : propuesta
+    carga ||..o| factura_venta : propuesta
+    liquidacion_transporte ||..o{ aplicacion_adelanto : propuesta
+```
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`historial_chofer`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cosecha`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`recepcion_planta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`factura_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cobro_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`liquidacion_proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`pago_proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`liquidacion_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`pago_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`acuerdo_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`adelanto_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`aplicacion_adelanto`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`certificado_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`pago_certificado_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Mis campañas (Chofer > Mis campañas)
+
+**Referencia de revisión:** V53 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Bienvenido → Chofer Miguel Torres o Elena Ruiz → Mis campañas filtradas por asignación.
+
+**Observado en la aplicación de referencia:** Miguel Torres ve campañas asignadas en proceso; Elena Ruiz ve una histórica Mango 2025 Cerrada. Filtrado por identidad del conductor.
+
+**Criterio para revisar el modelo:** La consulta filtra por el chofer vinculado a la identidad autenticada. No recibir libremente un chofer_id del navegador como autorización. La sesión persistente requiere la implementación de autenticación mencionada al inicio; los usuarios del selector son solo demostración.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`usuario`](#tabla-usuario) | Consulta | Relaciona la cuenta autenticada con la identidad y, cuando corresponde, con el chofer. El selector del demo todavía no constituye autenticación. | Tabla propuesta, sin implementar |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Consultar las entregas asignadas al chofer autenticado y obtener sus campañas por entrega/contrato/participación comercial; no crear otra tabla chofer_campaña. | Tabla propuesta, sin implementar |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `chofer_transporte_externo`, `empresa_transporte_externo`, `cliente_negocio_campana`, `campana`.
+
+**Tablas propuestas para revisar:** `usuario`, `coordinacion_entrega`, `entrega_programada`, `contrato_venta`.
+
+```mermaid
+erDiagram
+    empresa_transporte_externo ||..o{ chofer_transporte_externo : actual
+    campana ||..o{ cliente_negocio_campana : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    empresa_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    usuario o|..o{ campana : propuesta
+    usuario o|..o{ chofer_transporte_externo : propuesta
+```
+
+**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+
+**D11 — Personas y autenticación (Por discutir):** persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.
+
+**`usuario`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`empresa_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Mis cargas (Chofer > Mis campañas > Campaña > Mis cargas)
+
+**Referencia de revisión:** V54 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Mis campañas → campaña → tarjetas de Mis cargas, con datos programados y estado del despacho.
+
+**Observado en la aplicación de referencia:** Tarjetas distinguen canal, preparación/estado, cliente, varias fincas, destino, unidad y kilos programados.
+
+**Criterio para revisar el modelo:** Debe mostrar coordinación antes de carga real. El dato de la tarjeta puede ser programado y diferir del detalle real; etiquetar ambos claramente. No crear chofer_campanias ni chofer_cargas duplicadas: esas asociaciones se obtienen del viaje asignado.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`origen_entrega`](#tabla-origen_entrega) | Consulta | Selecciona cada finca de los proveedores de la entrega. finca_id identifica el punto físico; cxp_id acredita la participación en campaña. | Tabla propuesta, sin implementar |
+| [`finca`](#tabla-finca) | Consulta | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+| [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`historial_chofer`](#tabla-historial_chofer) | Consulta | Registra cada evento En carga, Salida, En camino, Llegada o Cierre con fecha y responsable. El estado resumido se consulta desde el último evento. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `chofer_transporte_externo`, `finca`, `proveedor`, `cliente_negocio_campana`, `cliente_negocio`, `vehiculo_externo`.
+
+**Tablas propuestas para revisar:** `coordinacion_entrega`, `origen_entrega`, `entrega_programada`, `contrato_venta`, `carga`, `historial_chofer`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    proveedor ||..o{ finca : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o{ origen_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    coordinacion_entrega ||..o{ historial_chofer : propuesta
+    carga o|..o{ historial_chofer : propuesta
+    chofer_transporte_externo ||..o{ historial_chofer : propuesta
+    vehiculo_externo ||..o{ coordinacion_entrega : propuesta
+    finca ||..o{ origen_entrega : propuesta
+```
+
+**D02 — Fincas entrevistadas (Aprobado por el usuario):** El listado de fincas de una participación se obtiene desde entrevista_extencion. No se vuelve a agregar finca_id a campania_x_proveedores; los orígenes de entrega/carga seleccionan las fincas físicas de recojo.
+
+**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`origen_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`finca`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`historial_chofer`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Ubicación y ruta de recojo (Chofer > Mis cargas > Carga > Ubicación y ruta de recojo)
+
+**Referencia de revisión:** V55 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Mis cargas → Ver ubicación y ruta → selector de finca → mapa. No se activó Usar mi ubicación.
+
+**Observado en la aplicación de referencia:** Mapa con selector de finca, coordenadas y herramientas de ruta. No se usó ubicación personal ni se observó necesidad de guardar GPS.
+
+**Criterio para revisar el modelo:** Las coordenadas pertenecen a la finca; cada punto es una finca distinta. No se observó persistencia del trazado ni de la posición actual del chofer: no crear tabla de tracking ni guardar ubicaciones personales a partir de esta pantalla. Una futura trazabilidad GPS necesitaría alcance explícito.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`origen_entrega`](#tabla-origen_entrega) | Consulta | Selecciona cada finca de los proveedores de la entrega. finca_id identifica el punto físico; cxp_id acredita la participación en campaña. | Tabla propuesta, sin implementar |
+| [`finca`](#tabla-finca) | Consulta | Leer coordenadas del punto seleccionado. El cálculo de ruta no implica persistir GPS personal ni crear una tabla de seguimiento. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `finca`, `proveedor`.
+
+**Tablas propuestas para revisar:** `origen_entrega`, `coordinacion_entrega`.
+
+```mermaid
+erDiagram
+    proveedor ||..o{ finca : actual
+    coordinacion_entrega ||..o{ origen_entrega : propuesta
+    finca ||..o{ origen_entrega : propuesta
+```
+
+**D02 — Fincas entrevistadas (Aprobado por el usuario):** El listado de fincas de una participación se obtiene desde entrevista_extencion. No se vuelve a agregar finca_id a campania_x_proveedores; los orígenes de entrega/carga seleccionan las fincas físicas de recojo.
+
+**D04 — Una variedad por finca (Aprobado por el usuario):** Se conserva finca.fruta_derivada_id y se obtiene fruta por fruta_derivada.fruta_id. No se agrega una tabla de varios cultivos por finca. El vínculo permanece opcional para datos históricos; completar variedad antes de operar cuando la vista la requiere.
+
+**`origen_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`finca`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Completar carga (Chofer > Mis cargas > Carga > Completar carga)
+
+**Referencia de revisión:** V56 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Mis cargas → tarjeta Exportación Por completar → Completar carga → Llenar datos de carga.
+
+**Observado en la aplicación de referencia:** Exportación Por completar abre En carga y Llenar datos; no se crea otra entrega desde este paso.
+
+**Criterio para revisar el modelo:** La asignación ya existe; completar crea la carga física de esa coordinación. No crear una nueva entrega ni replicar contrato y cliente.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
+| [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
+| [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `chofer_transporte_externo`, `cliente_negocio_campana`, `cliente_negocio`.
+
+**Tablas propuestas para revisar:** `coordinacion_entrega`, `carga`, `entrega_programada`, `contrato_venta`.
+
+```mermaid
+erDiagram
+    cliente_negocio ||..o{ cliente_negocio_campana : actual
+    cliente_negocio_campana ||..o{ contrato_venta : propuesta
+    contrato_venta ||..o{ entrega_programada : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+```
+
+**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`contrato_venta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Registrar datos de carga (Chofer > Mis cargas > Carga > Datos de carga)
+
+**Referencia de revisión:** V57 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Completar carga → Llenar datos → formulario de peso, variedad, bultos, responsable y gastos por proveedor.
+
+**Observado en la aplicación de referencia:** Formulario por proveedor con una variedad, kilos y jabas/bines/mallas cargados/vacíos; viáticos y gastos de cuadrilla/anotadores.
+
+**Criterio para revisar el modelo:** Los kg se registran por proveedor/variedad, no por cada finca. No distribuirlos a partes iguales para satisfacer una FK. origen_carga conserva las fincas seleccionadas y permite kilos aún desconocidos; una guía que requiera reparto por punto físico debe medirlo antes. La suma de líneas es el peso de origen de la carga.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`carga`](#tabla-carga) | Escritura esperada | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`proveedor_carga`](#tabla-proveedor_carga) | Escritura esperada | Guardar kilos, variedad y bultos por proveedor. No repartir kilos entre fincas por igual ni deducir precio de compra del precio de venta. | Tabla propuesta, sin implementar |
+| [`origen_carga`](#tabla-origen_carga) | Escritura esperada | Conservar las fincas elegidas como origen real de cada proveedor; kilos_origen puede quedar sin medición, sin perder el punto de recojo. | Tabla propuesta, sin implementar |
+| [`gasto_carga`](#tabla-gasto_carga) | Escritura esperada | Desglosa costos como cuadrilla o anotadores de esa carga. No equivale al flete ni a los desembolsos de transporte. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`origen_entrega`](#tabla-origen_entrega) | Consulta | Selecciona cada finca de los proveedores de la entrega. finca_id identifica el punto físico; cxp_id acredita la participación en campaña. | Tabla propuesta, sin implementar |
+| [`finca`](#tabla-finca) | Consulta | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Es la participación del proveedor en una campaña y el punto de agrupación de entrevistas, evaluación y cantidades. Se conserva obligatoriamente y no selecciona finca. | Tabla actual incluida |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
+| [`acuerdo_compra`](#tabla-acuerdo_compra) | Por discutir | Propuesta para condiciones de precio y vigencia por proveedor/variedad. No se observó un editor propio de acuerdos en entrevistas; el precio aplicado existe al liquidar. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `finca`, `campania_x_proveedores`, `proveedor`, `fruta_derivada`.
+
+**Tablas propuestas para revisar:** `carga`, `proveedor_carga`, `origen_carga`, `gasto_carga`, `coordinacion_entrega`, `origen_entrega`, `entrega_programada`, `acuerdo_compra`.
+
+```mermaid
+erDiagram
+    proveedor ||..o{ campania_x_proveedores : actual
+    proveedor ||..o{ finca : actual
+    campania_x_proveedores ||..o{ acuerdo_compra : propuesta
+    fruta_derivada ||..o{ acuerdo_compra : propuesta
+    entrega_programada ||..o| coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o{ origen_entrega : propuesta
+    campania_x_proveedores ||..o{ origen_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o{ proveedor_carga : propuesta
+    fruta_derivada ||..o{ proveedor_carga : propuesta
+    proveedor_carga ||..o{ origen_carga : propuesta
+    campania_x_proveedores ||..o{ origen_carga : propuesta
+    carga ||..o{ gasto_carga : propuesta
+    fruta_derivada o|..o{ finca : propuesta
+    finca ||..o{ origen_entrega : propuesta
+    finca ||..o{ origen_carga : propuesta
+```
+
+**D02 — Fincas entrevistadas (Aprobado por el usuario):** El listado de fincas de una participación se obtiene desde entrevista_extencion. No se vuelve a agregar finca_id a campania_x_proveedores; los orígenes de entrega/carga seleccionan las fincas físicas de recojo.
+
+**D04 — Una variedad por finca (Aprobado por el usuario):** Se conserva finca.fruta_derivada_id y se obtiene fruta por fruta_derivada.fruta_id. No se agrega una tabla de varios cultivos por finca. El vínculo permanece opcional para datos históricos; completar variedad antes de operar cuando la vista la requiere.
+
+**D10 — Condiciones de compra (Por discutir):** acuerdo_compra permitiría precios por proveedor/variedad/vigencia, pero no tiene editor observado en Entrevista. Decidir si se administra allí o si basta el precio histórico capturado al liquidar.
+
+**D14 — Una carga por entrega (Por discutir):** La UI declara una sola carga por entrega, pero en1 aparece repetida en el demo. Se mantiene la unicidad de la propuesta; permitir viajes parciales requeriría definir un viaje independiente y el reparto de kilos antes de cambiarla.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`origen_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`gasto_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`origen_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`finca`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`campania_x_proveedores`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`acuerdo_compra`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Mi despacho (Chofer > Mis cargas > Carga > Mi despacho)
+
+**Referencia de revisión:** V58 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Mis cargas → tarjeta de Industria con carga real → Mi despacho → pasos, checklist e historial.
+
+**Observado en la aplicación de referencia:** Llegada muestra carga, proveedores, checklist, guía de salida e historial de eventos. La guía adjunta es distinta de la guía de remisión estructurada.
+
+**Criterio para revisar el modelo:** El historial propuesto permite separar los eventos del chofer del estado resumido de trazabilidad_transporte. La transición entre estados, el permiso del chofer asignado y el cierre del checklist requieren implementación de servicio; no se deducen de una actualización manual del estado.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`historial_chofer`](#tabla-historial_chofer) | Escritura esperada | Agregar eventos al avanzar el despacho. La identidad del chofer debe autorizar cada evento y no venir libremente del formulario. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`proveedor_carga`](#tabla-proveedor_carga) | Consulta | Desglosa kilos reales, variedad, bultos y precio aplicado por proveedor. No distribuye automáticamente kilos entre las fincas de ese proveedor. | Tabla propuesta, sin implementar |
+| [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
+| [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`recepcion_planta`](#tabla-recepcion_planta) | Consulta | Mantiene una recepción por carga, peso de planta, descarte y cierres previstos. Recepción y descarte son pasos distintos sobre la misma fila. | Tabla propuesta, sin implementar |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `proveedor`, `fruta_derivada`, `chofer_transporte_externo`.
+
+**Tablas propuestas para revisar:** `historial_chofer`, `carga`, `proveedor_carga`, `coordinacion_entrega`, `recepcion_planta`.
+
+```mermaid
+erDiagram
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    carga ||..o{ proveedor_carga : propuesta
+    fruta_derivada ||..o{ proveedor_carga : propuesta
+    coordinacion_entrega ||..o{ historial_chofer : propuesta
+    carga o|..o{ historial_chofer : propuesta
+    chofer_transporte_externo ||..o{ historial_chofer : propuesta
+    carga ||..o| recepcion_planta : propuesta
+    chofer_transporte_externo ||..o{ recepcion_planta : propuesta
+    proveedor
+```
+
+**D05 — Autoridad de transporte (Por discutir):** chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`historial_chofer`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor_carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`recepcion_planta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Registrar recepción (Chofer > Mi despacho > Checklist de entrega > Recepción en planta)
+
+**Referencia de revisión:** V59 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Mi despacho en Llegada → Recepción en planta → modal de peso recibido → Cancelar o Guardar paso.
+
+**Observado en la aplicación de referencia:** Modal de peso recibido; texto explícito: la diferencia de peso no se registra como descarte.
+
+**Criterio para revisar el modelo:** Recepción y descarte se completan sobre una misma recepción por carga. El formulario del chofer solo solicita el peso de planta. Resultado, descarga, reporte y cierres administrativos previstos requieren precisar su acción y responsable en el flujo administrativo; no se presentan como campos observados en este modal. La integración del reporte documental sigue pendiente.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`recepcion_planta`](#tabla-recepcion_planta) | Escritura esperada | Crear o completar la misma recepción de la carga con el peso en planta; no obliga a duplicar la recepción para informar después el descarte. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`historial_chofer`](#tabla-historial_chofer) | Consulta | Registra cada evento En carga, Salida, En camino, Llegada o Cierre con fecha y responsable. El estado resumido se consulta desde el último evento. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas propuestas para revisar:** `recepcion_planta`, `carga`, `coordinacion_entrega`, `historial_chofer`.
+
+```mermaid
+erDiagram
+    coordinacion_entrega ||..o| carga : propuesta
+    coordinacion_entrega ||..o{ historial_chofer : propuesta
+    carga o|..o{ historial_chofer : propuesta
+    carga ||..o| recepcion_planta : propuesta
+```
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`recepcion_planta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`historial_chofer`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Registrar descarte (Chofer > Mi despacho > Checklist de entrega > Descarte informado)
+
+**Referencia de revisión:** V60 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Mi despacho → Descarte informado → Sí/No; Sí muestra kilos, porcentaje calculado y evidencia.
+
+**Observado en la aplicación de referencia:** Descarte exige informar Sí/No; Sí muestra kilos y porcentaje calculado sobre origen, más evidencia en la UI.
+
+**Criterio para revisar el modelo:** Nulo significa no informado; false indica informado sin descarte. El SQL conserva las reglas de kilos. La evidencia documental queda pendiente de integración: no hay tabla archivo ni FK a ella, y no se exige un identificador documental. La comparación con peso de origen y los permisos necesitan implementación del servicio.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`recepcion_planta`](#tabla-recepcion_planta) | Escritura esperada | Actualizar hubo_descarte y descarte_kg en la misma recepción. No informado, sin descarte y con descarte son estados distintos; el porcentaje se calcula. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`historial_chofer`](#tabla-historial_chofer) | Consulta | Registra cada evento En carga, Salida, En camino, Llegada o Cierre con fecha y responsable. El estado resumido se consulta desde el último evento. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas propuestas para revisar:** `recepcion_planta`, `carga`, `coordinacion_entrega`, `historial_chofer`.
+
+```mermaid
+erDiagram
+    coordinacion_entrega ||..o| carga : propuesta
+    coordinacion_entrega ||..o{ historial_chofer : propuesta
+    carga o|..o{ historial_chofer : propuesta
+    carga ||..o| recepcion_planta : propuesta
+```
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`recepcion_planta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`historial_chofer`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Guía de salida del vehículo (Chofer > Mi despacho > Guía de salida del vehículo)
+
+**Referencia de revisión:** V61 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Mi despacho → Guía de salida del vehículo → adjunto y Guardar documento. En el objetivo se difiere archivo.
+
+**Observado en la aplicación de referencia:** Adjunto independiente de salida del vehículo; en el esquema vigente su integración documental sigue pendiente por decisión del usuario.
+
+**Criterio para revisar el modelo:** El adjunto de salida queda pendiente de la integración documental. Se conserva la fecha de registro como dato opcional, sin exigir un identificador de archivo ni afirmar un historial de almacenamiento implementado. Las guías de remisión estructuradas conservan su entidad propia.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`carga`](#tabla-carga) | Escritura esperada | Reservar referencia y fecha de la guía de salida, con relación documental pendiente. No confundir este adjunto con una fila de guia_remision ni exigir un identificador inventado. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`historial_chofer`](#tabla-historial_chofer) | Consulta | Registra cada evento En carga, Salida, En camino, Llegada o Cierre con fecha y responsable. El estado resumido se consulta desde el último evento. | Tabla propuesta, sin implementar |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas propuestas para revisar:** `carga`, `coordinacion_entrega`, `historial_chofer`.
+
+```mermaid
+erDiagram
+    coordinacion_entrega ||..o| carga : propuesta
+    coordinacion_entrega ||..o{ historial_chofer : propuesta
+    carga o|..o{ historial_chofer : propuesta
+```
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`historial_chofer`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+## Cerrar despacho (Chofer > Mi despacho > Cierre)
+
+**Referencia de revisión:** V62 · Recorrido del 27/10/2026.
+
+**Entrada, acciones y salida:** Mi despacho → Cerrar despacho, habilitado solo tras requisitos. No se ejecutó una transición de cierre.
+
+**Observado en la aplicación de referencia:** Cerrar despacho bloqueado mientras falta recepción; no se ejecutó cierre. La campaña histórica también conserva inconsistencias de checklist, sin rellenarlas.
+
+**Criterio para revisar el modelo:** Antes de cerrar deberá comprobarse llegada, recepción, descarte informado y documento de salida. Esa transición y sus permisos todavía necesitan servicio; historial_chofer aporta los datos para conservar eventos. La devolución de jabas no se vuelve obligatoria sin confirmar su uso en las vistas.
+
+**Funcionalidad esperada de cada tabla en esta vista:**
+
+| Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
+|---|---|---|---|
+| [`historial_chofer`](#tabla-historial_chofer) | Escritura esperada | Registrar el evento CIERRE tras validar checklist y condiciones que finalmente se acuerden para adjuntos pendientes; no cerrar la campaña completa desde el teléfono. | Tabla propuesta, sin implementar |
+| [`recepcion_planta`](#tabla-recepcion_planta) | Consulta | Mantiene una recepción por carga, peso de planta, descarte y cierres previstos. Recepción y descarte son pasos distintos sobre la misma fila. | Tabla propuesta, sin implementar |
+| [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
+| [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
+| [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
+
+**Esquema de relaciones utilizado por esta vista:**
+
+**Tablas actuales que se conservan:** `chofer_transporte_externo`.
+
+**Tablas propuestas para revisar:** `historial_chofer`, `recepcion_planta`, `carga`, `coordinacion_entrega`.
+
+```mermaid
+erDiagram
+    chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
+    coordinacion_entrega ||..o| carga : propuesta
+    coordinacion_entrega ||..o{ historial_chofer : propuesta
+    carga o|..o{ historial_chofer : propuesta
+    chofer_transporte_externo ||..o{ historial_chofer : propuesta
+    carga ||..o| recepcion_planta : propuesta
+    chofer_transporte_externo ||..o{ recepcion_planta : propuesta
+```
+
+**D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
+
+**`historial_chofer`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`recepcion_planta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`carga`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**Verificación de este SQL revisado:** instalación en una base PostgreSQL temporal PGlite con btree_gist; 19 comprobaciones de estructura y compatibilidad. No se ejecutó sobre una instancia del usuario. No verifica los procesos nuevos de liquidación/cobro/cierre, que siguen pendientes.
+
+| Comprobación | Resultado |
+|---|---|
+| Se conservan 173 columnas actuales; archivo queda excluida y se retira finca_id de la participación | correcto |
+| Se conservan restricciones actuales salvo las relaciones excluidas a finca/archivo; se adapta la unicidad de participación | correcto |
+| Se crean seis vistas de consulta para saldos, control anual, despacho y programación | correcto |
+| 66 tablas y todos sus atributos documentados existen en el SQL | correcto |
+| Las 137 FK se crean; no hay FK a archivo | correcto |
+| Las 28 referencias documentales quedan opcionales, sin FK y pendientes de integración | correcto |
+| Inserción del modelo revisado sin finca en participación y con finca en entrevista | correcto |
+| Año de aplicación 2026 y cuatro aplicaciones al año se conservan como datos distintos | correcto |
+| Varios certificados de campaña, dimensiones del vehículo y SCTR siguen admitidos | correcto |
+| Segunda campaña activa por fruta | rechazado como se esperaba |
+| Asignación solapada del chofer | rechazado como se esperaba |
+| Código FVV duplicado | rechazado como se esperaba |
+| Modificar a acopio una asignación con entrevista | rechazado como se esperaba |
+| Capacidad adicional negativa | rechazado como se esperaba |
+| Participación duplicada de proveedor en campaña | rechazado como se esperaba |
+| Una participación admite entrevistas de distintas fincas del mismo proveedor | correcto |
+| Entrevistar finca de otro proveedor | rechazado como se esperaba |
+| Cambiar proveedor de participación con entrevistas incompatibles | rechazado como se esperaba |
+| El análisis puede registrarse por participación y finca antes de existir cosecha, con cosecha_id nulo | correcto |
+
+**Antes de aplicar cambios a tu base:** revisar vista por vista los atributos marcados AGREGAR y las tablas nuevas; decidir cuáles se implementan primero; preparar migraciones TypeORM aditivas con backfill validado. Este archivo SQL total es una referencia de instalación nueva, no una migración de tus registros.
