@@ -1,0 +1,496 @@
+{
+  "schema_version": 1,
+  "diagram_type": "erd",
+  "meta": {
+    "title": "V21 · Gestión de proveedores",
+    "locale": "es",
+    "output": "views/v21.html",
+    "quality_profile": "standard"
+  },
+  "layout": {
+    "mode": "grid",
+    "gapX": 46,
+    "gapY": 26,
+    "entityW": 230
+  },
+  "entities": [
+    {
+      "id": "proveedor",
+      "label": "proveedor",
+      "sublabel": "Propuesta",
+      "tag": "Proveedores y abastecimiento",
+      "row": 0,
+      "col": 0,
+      "attributes": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone"
+        },
+        {
+          "name": "proveedor_id",
+          "type": "serial",
+          "key": [
+            "pk"
+          ]
+        },
+        {
+          "name": "nombres",
+          "type": "varchar(150)"
+        },
+        {
+          "name": "apellido",
+          "type": "varchar(150)"
+        },
+        {
+          "name": "tipo_documento",
+          "type": "\"proveedor_tipo_documento_enum\""
+        },
+        {
+          "name": "nmr_documento",
+          "type": "varchar(30)"
+        },
+        {
+          "name": "identidad_doc_url",
+          "type": "text"
+        },
+        {
+          "name": "zona",
+          "type": "text"
+        },
+        {
+          "name": "telefono",
+          "type": "varchar(30)"
+        },
+        {
+          "name": "email",
+          "type": "varchar(320)"
+        },
+        {
+          "name": "codigo_lugar_produccion",
+          "type": "varchar(60)"
+        },
+        {
+          "name": "nombre_agronomico",
+          "type": "varchar(255)"
+        },
+        {
+          "name": "densidad_plantacion",
+          "type": "numeric(12,3)"
+        },
+        {
+          "name": "distanciamiento",
+          "type": "numeric(12,3)"
+        },
+        {
+          "name": "frecuencia_riego",
+          "type": "integer"
+        },
+        {
+          "name": "nombre_aplicacion",
+          "type": "varchar(255)"
+        },
+        {
+          "name": "aplicaciones_al_ano",
+          "type": "integer"
+        },
+        {
+          "name": "estado_examen_sanidad_agraria",
+          "type": "varchar(100)"
+        },
+        {
+          "name": "persona_id",
+          "type": "integer",
+          "key": [
+            "fk"
+          ],
+          "references": "persona.persona_id"
+        },
+        {
+          "name": "activo",
+          "type": "boolean"
+        },
+        {
+          "name": "documento_archivo_id",
+          "type": "integer"
+        },
+        {
+          "name": "fecha_registro",
+          "type": "date"
+        }
+      ],
+      "width": 354
+    },
+    {
+      "id": "proveedor_x_fruta",
+      "label": "proveedor_x_fruta",
+      "sublabel": "Propuesta",
+      "tag": "Proveedores y abastecimiento",
+      "row": 1,
+      "col": 0,
+      "attributes": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone"
+        },
+        {
+          "name": "pxf_id",
+          "type": "serial",
+          "key": [
+            "pk"
+          ]
+        },
+        {
+          "name": "proveedor_id",
+          "type": "integer",
+          "key": [
+            "fk"
+          ],
+          "references": "proveedor.proveedor_id"
+        },
+        {
+          "name": "fruta_id",
+          "type": "integer",
+          "key": [
+            "fk"
+          ],
+          "references": "fruta.fruta_id"
+        }
+      ],
+      "width": 284
+    },
+    {
+      "id": "proveedor_x_fruta_derivada",
+      "label": "proveedor_x_fruta_derivada",
+      "sublabel": "Propuesta",
+      "tag": "Proveedores y abastecimiento",
+      "row": 2,
+      "col": 0,
+      "attributes": [
+        {
+          "name": "proveedor_x_fruta_derivada_id",
+          "type": "integer",
+          "key": [
+            "pk"
+          ]
+        },
+        {
+          "name": "proveedor_id",
+          "type": "integer",
+          "key": [
+            "fk",
+            "uk"
+          ],
+          "references": "proveedor.proveedor_id"
+        },
+        {
+          "name": "fruta_derivada_id",
+          "type": "integer",
+          "key": [
+            "fk",
+            "uk"
+          ],
+          "references": "fruta_derivada.fruta_derivada_id"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz"
+        }
+      ],
+      "width": 322
+    },
+    {
+      "id": "proveedor_x_persona",
+      "label": "proveedor_x_persona",
+      "sublabel": "Propuesta",
+      "tag": "Proveedores y abastecimiento",
+      "row": 3,
+      "col": 0,
+      "attributes": [
+        {
+          "name": "proveedor_x_persona_id",
+          "type": "integer",
+          "key": [
+            "pk"
+          ]
+        },
+        {
+          "name": "proveedor_id",
+          "type": "integer",
+          "key": [
+            "fk",
+            "uk"
+          ],
+          "references": "proveedor.proveedor_id"
+        },
+        {
+          "name": "persona_id",
+          "type": "integer",
+          "key": [
+            "fk",
+            "uk"
+          ],
+          "references": "persona.persona_id"
+        },
+        {
+          "name": "vinculo",
+          "type": "varchar(60)"
+        },
+        {
+          "name": "activo",
+          "type": "boolean"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz"
+        }
+      ],
+      "width": 276
+    },
+    {
+      "id": "fruta",
+      "label": "fruta",
+      "sublabel": "Propuesta",
+      "tag": "Identidad y catálogos",
+      "row": 0,
+      "col": 1,
+      "attributes": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone"
+        },
+        {
+          "name": "fruta_id",
+          "type": "serial",
+          "key": [
+            "pk"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "varchar(150)"
+        }
+      ],
+      "width": 284
+    },
+    {
+      "id": "fruta_derivada",
+      "label": "fruta_derivada",
+      "sublabel": "Propuesta",
+      "tag": "Identidad y catálogos",
+      "row": 1,
+      "col": 1,
+      "attributes": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone"
+        },
+        {
+          "name": "fruta_derivada_id",
+          "type": "serial",
+          "key": [
+            "pk"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "varchar(150)"
+        },
+        {
+          "name": "fruta_id",
+          "type": "integer",
+          "key": [
+            "fk"
+          ],
+          "references": "fruta.fruta_id"
+        }
+      ],
+      "width": 284
+    },
+    {
+      "id": "persona",
+      "label": "persona",
+      "sublabel": "Propuesta",
+      "tag": "Identidad y catálogos",
+      "row": 2,
+      "col": 1,
+      "attributes": [
+        {
+          "name": "persona_id",
+          "type": "integer",
+          "key": [
+            "pk"
+          ]
+        },
+        {
+          "name": "tipo_documento",
+          "type": "varchar(20)",
+          "key": [
+            "uk"
+          ]
+        },
+        {
+          "name": "numero_documento",
+          "type": "varchar(30)",
+          "key": [
+            "uk"
+          ]
+        },
+        {
+          "name": "nombres",
+          "type": "varchar(120)"
+        },
+        {
+          "name": "apellidos",
+          "type": "varchar(120)"
+        },
+        {
+          "name": "telefono",
+          "type": "varchar(30)"
+        },
+        {
+          "name": "correo",
+          "type": "varchar(180)"
+        },
+        {
+          "name": "documento_archivo_id",
+          "type": "integer"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz"
+        }
+      ],
+      "width": 243
+    }
+  ],
+  "relationships": [
+    {
+      "id": "fk_eb7b4cc85ee0796f06cc8efdba6",
+      "from": "fruta_derivada",
+      "to": "fruta",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "fromOptional": false,
+      "identifying": false,
+      "variant": "dashed"
+    },
+    {
+      "id": "fk_47ce26fca664cc2d6fe9e7460c2",
+      "from": "proveedor_x_fruta",
+      "to": "proveedor",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "fromOptional": false,
+      "identifying": false,
+      "variant": "dashed"
+    },
+    {
+      "id": "fk_22a07009136d9e8d0c1cb3547ae",
+      "from": "proveedor_x_fruta",
+      "to": "fruta",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "fromOptional": false,
+      "identifying": false,
+      "variant": "dashed"
+    },
+    {
+      "id": "fk_revision_30",
+      "from": "proveedor_x_persona",
+      "to": "proveedor",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "fromOptional": false,
+      "identifying": false,
+      "variant": "dashed"
+    },
+    {
+      "id": "fk_revision_31",
+      "from": "proveedor_x_persona",
+      "to": "persona",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "fromOptional": false,
+      "identifying": false,
+      "variant": "dashed"
+    },
+    {
+      "id": "fk_revision_32",
+      "from": "proveedor_x_fruta_derivada",
+      "to": "proveedor",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "fromOptional": false,
+      "identifying": false,
+      "variant": "dashed"
+    },
+    {
+      "id": "fk_revision_33",
+      "from": "proveedor_x_fruta_derivada",
+      "to": "fruta_derivada",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "fromOptional": false,
+      "identifying": false,
+      "variant": "dashed"
+    },
+    {
+      "id": "fk_revision_120",
+      "from": "proveedor",
+      "to": "persona",
+      "fromCardinality": "many",
+      "toCardinality": "one",
+      "fromOptional": true,
+      "identifying": false,
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Lectura del diagrama",
+      "items": [
+        "PK identifica cada fila; FK muestra la tabla referenciada; UK señala unicidad declarada.",
+        "El nombre de tabla conserva la escritura física del SQL.",
+        "Actual indica entidad existente ampliada; Propuesta identifica tabla incorporada al objetivo."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Alcance SQL",
+      "items": [
+        "66 tablas y 137 relaciones FK, distribuidas por dominio funcional.",
+        "La tabla archivo se excluye; sus referencias documentales no tienen FK.",
+        "El SQL es instalación nueva para revisión, no migración sobre una base desplegada."
+      ]
+    }
+  ]
+}

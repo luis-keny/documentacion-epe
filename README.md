@@ -10,6 +10,8 @@ Este repositorio contiene la documentación discutida y el SQL de revisión. El 
 - [Respuestas del usuario y alcance limitado al prototipo](agro-schema/01_reporte_especifico.md#respuestas-y-alcance-limitado-al-prototipo): estado vigente del cuestionario, explicación de la duplicidad, reglas encontradas y diferencias por consultar. Los negocios adicionales solo se reportan y quedan fuera del alcance.
 - [Esquema general y relaciones Mermaid por vista](agro-schema/02_tablas_y_relaciones.md): mapa de las 66 tablas, flujo funcional y recortes por vista.
 - [SQL total de revisión](agro-schema/03_schema_total.sql): instalación nueva en el esquema PostgreSQL `agro`; no es una migración sobre la base existente.
+- [Esquema global y relaciones por vista (HTML)](agro-schema/diagramas/esquema-agro-vistas.html): mapa de 66 tablas y diagramas derivados del Mermaid de las vistas V01–V62, con etiquetas de tablas usadas por pantalla/formulario. V02 es navegación sin tablas propias.
+- [Resumen Archify (HTML)](agro-schema/diagramas/esquema-agro.html): explicación del modelo con ERD global y recortes de clientes, proveedores y fincas.
 - [Auditoría del backend frente al modelo previsto](agro-schema/auditoria-bd-actual-vs-planificada.md): comparación, decisiones confirmadas y pendientes. Se incorpora desde la documentación del backend para que también quede en este historial.
 - [DBML inicial aportado](agro-schema/referencias/AGRO_SIMPLIFICADO.dbml): referencia original sin modificar; no representa el modelo objetivo corregido.
 
