@@ -1,16 +1,36 @@
 {
   "motor": "PGlite PostgreSQL temporal con btree_gist",
-  "schema_sha256": "b0da0d5446b97deaa318132b0675ccc9f5333b6be0444c778b2f837d9b9c00b5",
-  "tablas": 66,
+  "schema_sha256": "5094ec9efdab160dcf7adafd5b29858c9cbe2caedc44796412ed3e79a9ea8963",
+  "tablas": 60,
   "tablas_actuales": 19,
-  "tablas_propuestas": 47,
+  "tablas_propuestas": 41,
   "columnas_actuales_conservadas_por_nombre": 173,
-  "atributos_adicionales": 73,
+  "atributos_adicionales": 74,
   "columnas_modificadas": 44,
-  "foreignKeys": 137,
+  "foreignKeys": 124,
   "pruebas": [
     {
       "prueba": "Instalación completa en PostgreSQL temporal",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Catálogos iniciales: 2 perfiles, 5 normas, 5 frutas y 17 variedades",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Parámetros anuales iniciales y umbral",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Seed reejecutable sin duplicar catálogos",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Normas no preasignadas a guías",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Cinco propuestas retiradas, incluidas sesiones, sin cabecera duplicada",
       "resultado": "correcto"
     },
     {
@@ -23,6 +43,18 @@
     },
     {
       "prueba": "Altas, participación sin MTD, contrato pendiente y vínculo de transporte sin acuerdo completo",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Destino libre de entrega sin catálogo",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Entrega con destino vacío",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Catálogo de destinos excluido",
       "resultado": "correcto"
     },
     {
@@ -174,7 +206,19 @@
       "resultado": "correcto"
     },
     {
-      "prueba": "Guía recupera contenido y fincas seleccionadas",
+      "prueba": "Guía guarda únicamente las normas elegidas",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Guía no duplica una norma elegida",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Carga no admite participación inexistente",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Guía recupera contenido, fincas y destino histórico",
       "resultado": "correcto"
     },
     {
@@ -184,6 +228,22 @@
     {
       "prueba": "Sobrepago de certificación",
       "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Tipo de certificado fijo conserva dato distinto del nombre",
+      "resultado": "correcto"
+    },
+    {
+      "prueba": "Tipo de certificado desconocido",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Cobertura no mezcla participación y otro proveedor",
+      "resultado": "rechazado como se esperaba"
+    },
+    {
+      "prueba": "Cobertura referencia la participación consolidada",
+      "resultado": "correcto"
     }
   ]
 }

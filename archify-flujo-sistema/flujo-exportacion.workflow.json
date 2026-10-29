@@ -1,0 +1,154 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Controles de Exportación antes de generar la guía",
+    "output": "flujo-exportacion.html",
+    "quality_profile": "showcase",
+    "locale": "es",
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "frontend": {
+          "label": "Vista o captura"
+        },
+        "backend": {
+          "label": "Actividad del negocio"
+        },
+        "security": {
+          "label": "Control o condición"
+        },
+        "external": {
+          "label": "Acción fuera del sistema"
+        }
+      }
+    }
+  },
+  "nodes": [
+    {
+      "id": "analisis",
+      "label": "Análisis y MTD",
+      "type": "backend",
+      "width": 131,
+      "lane": "control",
+      "col": 0
+    },
+    {
+      "id": "apta",
+      "label": "¿Revisión completa?",
+      "type": "security",
+      "width": 164,
+      "icon": "decision",
+      "lane": "control",
+      "col": 1
+    },
+    {
+      "id": "pendiente",
+      "label": "Completar o corregir",
+      "type": "frontend",
+      "width": 170,
+      "lane": "control",
+      "col": 2
+    },
+    {
+      "id": "preparar",
+      "label": "Preparar cosecha",
+      "type": "backend",
+      "width": 144,
+      "lane": "ejecucion",
+      "col": 0
+    },
+    {
+      "id": "registrar",
+      "label": "Registrar avances",
+      "type": "backend",
+      "width": 151,
+      "lane": "ejecucion",
+      "col": 1
+    },
+    {
+      "id": "datos-carga",
+      "label": "Conciliar carga",
+      "type": "backend",
+      "width": 137,
+      "lane": "ejecucion",
+      "col": 2
+    },
+    {
+      "id": "cerrar-cosecha",
+      "label": "Cerrar cosecha",
+      "type": "backend",
+      "width": 131,
+      "lane": "salida",
+      "col": 0
+    },
+    {
+      "id": "guia",
+      "label": "Preparar guía",
+      "type": "backend",
+      "width": 124,
+      "lane": "salida",
+      "col": 1
+    }
+  ],
+  "lanes": [
+    {
+      "id": "control",
+      "label": "Revisar orígenes"
+    },
+    {
+      "id": "ejecucion",
+      "label": "Ejecutar cosecha y carga"
+    },
+    {
+      "id": "salida",
+      "label": "Preparar salida"
+    }
+  ],
+  "edges": [
+    {
+      "id": "analisis-to-apta-1",
+      "from": "analisis",
+      "to": "apta",
+      "label": "por finca"
+    },
+    {
+      "id": "apta-to-preparar-1",
+      "from": "apta",
+      "to": "preparar",
+      "label": "sí",
+      "variant": "emphasis"
+    },
+    {
+      "id": "apta-to-pendiente-1",
+      "from": "apta",
+      "to": "pendiente",
+      "label": "no",
+      "variant": "security"
+    },
+    {
+      "id": "preparar-to-registrar-1",
+      "from": "preparar",
+      "to": "registrar",
+      "label": "organización"
+    },
+    {
+      "id": "registrar-to-datos-carga-1",
+      "from": "registrar",
+      "to": "datos-carga",
+      "label": "peso real"
+    },
+    {
+      "id": "datos-carga-to-cerrar-cosecha-1",
+      "from": "datos-carga",
+      "to": "cerrar-cosecha",
+      "label": "kilos coinciden"
+    },
+    {
+      "id": "cerrar-cosecha-to-guia-1",
+      "from": "cerrar-cosecha",
+      "to": "guia",
+      "label": "revisión vigente"
+    }
+  ]
+}

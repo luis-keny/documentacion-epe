@@ -1,0 +1,150 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Avance informado por el chofer",
+    "output": "flujo-chofer.html",
+    "quality_profile": "showcase",
+    "locale": "es",
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "frontend": {
+          "label": "Vista o captura"
+        },
+        "backend": {
+          "label": "Actividad del negocio"
+        },
+        "security": {
+          "label": "Control o condición"
+        },
+        "external": {
+          "label": "Acción fuera del sistema"
+        }
+      }
+    }
+  },
+  "nodes": [
+    {
+      "id": "mis-cargas",
+      "label": "Elegir carga",
+      "type": "frontend",
+      "width": 118,
+      "lane": "asignado",
+      "col": 0
+    },
+    {
+      "id": "en-carga",
+      "label": "En carga",
+      "type": "backend",
+      "lane": "asignado",
+      "col": 1
+    },
+    {
+      "id": "salida",
+      "label": "Salida",
+      "type": "backend",
+      "lane": "viaje",
+      "col": 0
+    },
+    {
+      "id": "camino",
+      "label": "En camino",
+      "type": "backend",
+      "width": 98,
+      "lane": "viaje",
+      "col": 1
+    },
+    {
+      "id": "llegada",
+      "label": "Llegada",
+      "type": "backend",
+      "lane": "destino",
+      "col": 0
+    },
+    {
+      "id": "checklist",
+      "label": "¿Checklist completo?",
+      "type": "security",
+      "width": 170,
+      "icon": "decision",
+      "lane": "destino",
+      "col": 1
+    },
+    {
+      "id": "corregir",
+      "label": "Completar recepción",
+      "type": "frontend",
+      "width": 164,
+      "lane": "destino",
+      "col": 2
+    },
+    {
+      "id": "cierre-chofer",
+      "label": "Cierre",
+      "type": "backend",
+      "lane": "destino",
+      "col": 3
+    }
+  ],
+  "lanes": [
+    {
+      "id": "asignado",
+      "label": "Carga asignada"
+    },
+    {
+      "id": "viaje",
+      "label": "Reportar viaje"
+    },
+    {
+      "id": "destino",
+      "label": "Confirmar recepción"
+    }
+  ],
+  "edges": [
+    {
+      "id": "mis-cargas-to-en-carga-1",
+      "from": "mis-cargas",
+      "to": "en-carga",
+      "label": "registro"
+    },
+    {
+      "id": "en-carga-to-salida-1",
+      "from": "en-carga",
+      "to": "salida",
+      "label": "confirmar"
+    },
+    {
+      "id": "salida-to-camino-1",
+      "from": "salida",
+      "to": "camino",
+      "label": "confirmar"
+    },
+    {
+      "id": "camino-to-llegada-1",
+      "from": "camino",
+      "to": "llegada",
+      "label": "confirmar"
+    },
+    {
+      "id": "llegada-to-checklist-1",
+      "from": "llegada",
+      "to": "checklist",
+      "label": "peso y descarte"
+    },
+    {
+      "id": "checklist-to-cierre-chofer-1",
+      "from": "checklist",
+      "to": "cierre-chofer",
+      "label": "sí",
+      "variant": "emphasis"
+    },
+    {
+      "id": "checklist-to-corregir-1",
+      "from": "checklist",
+      "to": "corregir",
+      "label": "no",
+      "variant": "security"
+    }
+  ]
+}

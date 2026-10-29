@@ -1,0 +1,154 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Venta preparada, factura registrada y cobro",
+    "output": "flujo-financiero.html",
+    "quality_profile": "showcase",
+    "locale": "es",
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "frontend": {
+          "label": "Vista o captura"
+        },
+        "backend": {
+          "label": "Actividad del negocio"
+        },
+        "security": {
+          "label": "Control o condición"
+        },
+        "external": {
+          "label": "Acción fuera del sistema"
+        }
+      }
+    }
+  },
+  "nodes": [
+    {
+      "id": "carga-venta",
+      "label": "Elegir carga",
+      "type": "frontend",
+      "width": 118,
+      "lane": "origen",
+      "col": 0
+    },
+    {
+      "id": "valida-venta",
+      "label": "¿Origen completo?",
+      "type": "security",
+      "width": 151,
+      "icon": "decision",
+      "lane": "origen",
+      "col": 1
+    },
+    {
+      "id": "reparar-venta",
+      "label": "Completar pendiente",
+      "type": "frontend",
+      "width": 164,
+      "lane": "origen",
+      "col": 2
+    },
+    {
+      "id": "preparar-venta",
+      "label": "Preparar factura",
+      "type": "backend",
+      "width": 144,
+      "lane": "documento",
+      "col": 0
+    },
+    {
+      "id": "emitir-fuera",
+      "label": "Emitir fuera",
+      "type": "external",
+      "width": 118,
+      "lane": "documento",
+      "col": 1
+    },
+    {
+      "id": "factura-real",
+      "label": "Registrar factura",
+      "type": "backend",
+      "width": 151,
+      "lane": "documento",
+      "col": 2
+    },
+    {
+      "id": "cobrar",
+      "label": "Registrar cobro",
+      "type": "backend",
+      "width": 137,
+      "lane": "cobro",
+      "col": 0
+    },
+    {
+      "id": "saldar",
+      "label": "Conciliar saldo",
+      "type": "backend",
+      "width": 137,
+      "lane": "cobro",
+      "col": 1
+    }
+  ],
+  "lanes": [
+    {
+      "id": "origen",
+      "label": "Revisar origen de la venta"
+    },
+    {
+      "id": "documento",
+      "label": "Documentar la obligación"
+    },
+    {
+      "id": "cobro",
+      "label": "Registrar el ingreso"
+    }
+  ],
+  "edges": [
+    {
+      "id": "carga-venta-to-valida-venta-1",
+      "from": "carga-venta",
+      "to": "valida-venta",
+      "label": "revisar"
+    },
+    {
+      "id": "valida-venta-to-preparar-venta-1",
+      "from": "valida-venta",
+      "to": "preparar-venta",
+      "label": "sí",
+      "variant": "emphasis"
+    },
+    {
+      "id": "valida-venta-to-reparar-venta-1",
+      "from": "valida-venta",
+      "to": "reparar-venta",
+      "label": "no",
+      "variant": "security"
+    },
+    {
+      "id": "preparar-venta-to-emitir-fuera-1",
+      "from": "preparar-venta",
+      "to": "emitir-fuera",
+      "label": "verificar"
+    },
+    {
+      "id": "emitir-fuera-to-factura-real-1",
+      "from": "emitir-fuera",
+      "to": "factura-real",
+      "label": "comprobante"
+    },
+    {
+      "id": "factura-real-to-cobrar-1",
+      "from": "factura-real",
+      "to": "cobrar",
+      "label": "factura válida"
+    },
+    {
+      "id": "cobrar-to-saldar-1",
+      "from": "cobrar",
+      "to": "saldar",
+      "label": "uno o varios"
+    }
+  ]
+}

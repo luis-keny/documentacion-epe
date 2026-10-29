@@ -17,7 +17,7 @@
     {
       "id": "finca",
       "label": "finca",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Proveedores y abastecimiento",
       "row": 0,
       "col": 0,
@@ -110,12 +110,12 @@
           "type": "numeric(6,2)"
         }
       ],
-      "width": 288
+      "width": 340
     },
     {
       "id": "proveedor",
       "label": "proveedor",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Proveedores y abastecimiento",
       "row": 1,
       "col": 0,
@@ -220,12 +220,12 @@
           "type": "date"
         }
       ],
-      "width": 354
+      "width": 384
     },
     {
       "id": "fruta",
       "label": "fruta",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Identidad y catálogos",
       "row": 0,
       "col": 1,
@@ -250,12 +250,12 @@
           "type": "varchar(150)"
         }
       ],
-      "width": 284
+      "width": 340
     },
     {
       "id": "fruta_derivada",
       "label": "fruta_derivada",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Identidad y catálogos",
       "row": 1,
       "col": 1,
@@ -288,15 +288,15 @@
           "references": "fruta.fruta_id"
         }
       ],
-      "width": 284
+      "width": 340
     },
     {
       "id": "persona",
       "label": "persona",
       "sublabel": "Propuesta",
       "tag": "Identidad",
-      "row": 0,
-      "col": 2,
+      "row": 3,
+      "col": 0,
       "attributes": [
         {
           "name": "persona_id",
@@ -348,7 +348,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 245
+      "width": 340
     }
   ],
   "relationships": [
@@ -407,7 +407,7 @@
       "dot": "amber",
       "title": "Alcance SQL",
       "items": [
-        "66 tablas y 137 relaciones FK, distribuidas por dominio funcional.",
+        "60 tablas y 124 relaciones FK, distribuidas por dominio funcional.",
         "La tabla archivo se excluye; sus referencias documentales no tienen FK.",
         "El SQL es instalación nueva para revisión, no migración sobre una base desplegada."
       ]

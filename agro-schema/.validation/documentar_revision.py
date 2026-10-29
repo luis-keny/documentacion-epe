@@ -10,7 +10,7 @@ rename=json.loads((R/'.validation/renombres_tablas.json').read_text(encoding='ut
 results=json.loads((R/'.validation/resultado_revision.json').read_text(encoding='utf8'))
 views=[]
 revised_rules={
-'Gestión Comercial — Clientes':'Se reutiliza cliente_negocio y se propone destino_cliente_negocio como hijo. Al programar una entrega, el servicio debe comprobar que el destino elegido pertenece al cliente del contrato; las FK simples no comprueban por sí solas esa coincidencia.',
+'Gestión Comercial — Clientes':'Se reutiliza cliente_negocio. El prototipo no tiene CRUD independiente de destinos; la entrega conserva destino como texto y la guía su dirección de llegada histórica (D08, 29/10/2026).',
 'Entregas programadas':'Un contrato puede tener varias entregas. El servicio deberá controlar que sus kilos no superen el contrato y que la distribución por variedad sume la cabecera. El SQL declara las relaciones y cantidades positivas; esas sumas entre filas siguen pendientes de implementación transaccional.',
 'Pago de certificación':'Se proponen pagos parciales en la moneda del certificado. Comprobar el saldo antes de registrar un pago y conservar sus evidencias son reglas del servicio a implementar. El costo y recibo actuales se conservan sin convertir automáticamente un recibo en un pago.',
 'Transportistas por campaña':'acuerdo_transporte es una entidad nueva vinculada a la empresa y campaña actuales. Sus adelantos se registran aparte; no se infiere un pago por elegir una modalidad. Si se requiere guardar la vinculación sin acuerdo completo, revisar ese estado antes de implementar.',
@@ -21,7 +21,7 @@ revised_rules={
 'Cargas registradas del cliente':'La factura propuesta conserva kilos facturados, precio, moneda e importe. Las restricciones locales comprueban importe y datos mínimos de emisión; el servicio debe validar el origen de peso/precio frente a recepción y contrato, impedir cambios posteriores y distinguir preparación de factura externa emitida.',
 'Historial de cobros':'Una factura puede tener varios cobros en su moneda. El SQL exige montos positivos y referencia única por factura; la comprobación de saldo, factura emitida, permisos e inmutabilidad debe implementarse como proceso transaccional. Los reversos requieren un flujo explícito.',
 'Liquidación de compra — Documento':'El documento de compra debe conservar persona, carga, importe y evidencia. El servicio debe calcularlo desde los kilos/precios aplicados y protegerlo después de registrar movimientos. Esta revisión estructural todavía no implementa ese cálculo ni el flujo de rectificación.',
-'Control UIT por proveedor':'El acumulado propuesto se consulta por persona y año desde los documentos de compra. No se precargan valores tributarios: parametro_uit es configuración para revisar. v_control_uit deja disponible nulo si falta el parámetro anual. No se mezclan compras registradas con dinero ya pagado.',
+'Control UIT por proveedor':'El acumulado se consulta por persona y año desde documentos de compra. parametro_uit incluye los valores iniciales del prototipo, que deben revisarse antes de operación. v_control_uit deja disponible nulo si falta el parámetro anual. No se mezclan compras registradas con dinero ya pagado.',
 'Registrar descarte':'Nulo significa no informado; false significa informado sin descarte y cero kilos. El modelo propone evidencia obligatoria cuando hay descarte positivo. La comparación contra el peso de origen y el permiso de confirmar el checklist deberán validarse en el servicio.',
 'Cerrar despacho':'Antes de cerrar deberá comprobarse llegada, recepción, descarte informado y documento de salida. Esa transición y sus permisos todavía necesitan servicio; historial_chofer aporta los datos para conservar eventos. La devolución de jabas no se vuelve obligatoria sin confirmar su uso en las vistas.'}
 tree=ast.parse((R/'.validation/documentar.py').read_text(encoding='utf8'))
@@ -60,12 +60,12 @@ def S(i,e='',c='',d='',h=''):
     specs[i]={'E':e.split(),'C':c.split(),'D':d.split(),'H':h.split()}
 S(1,'','usuario rol persona','sesion_usuario')
 S(2)
-S(3,'cliente_negocio','','destino_cliente_negocio')
+S(3,'cliente_negocio')
 S(4,'','cliente_negocio cliente_negocio_campana campana contrato_venta')
 S(5,'cliente_negocio_campana cliente_negocio_campana_x_fruta_derivada','cliente_negocio campana fruta_derivada contrato_venta')
 S(6,'','cliente_negocio_campana cliente_negocio campana cliente_negocio_campana_x_fruta_derivada fruta_derivada contrato_venta entrega_programada coordinacion_entrega')
 S(7,'contrato_venta','cliente_negocio_campana cliente_negocio campana entrega_programada')
-S(8,'entrega_programada entrega_x_fruta_derivada','contrato_venta cliente_negocio_campana cliente_negocio fruta_derivada destino_cliente_negocio coordinacion_entrega carga')
+S(8,'entrega_programada entrega_x_fruta_derivada','contrato_venta cliente_negocio_campana cliente_negocio fruta_derivada coordinacion_entrega carga')
 S(9,'campana campana_x_fruta_derivada','fruta fruta_derivada usuario')
 S(10,'','campana fruta fruta_derivada campana_x_fruta_derivada usuario campania_x_proveedores examen_proveedor certificado_campana certificado_campana_x_proveedor ampliacion_certificado_campana cliente_negocio_campana contrato_venta entrega_programada coordinacion_entrega cosecha carga recepcion_planta')
 S(11,'campania_x_proveedores','proveedor campana proveedor_x_fruta proveedor_x_fruta_derivada fruta fruta_derivada entrevista_extencion finca examen_proveedor','participacion_proveedor_campana participacion_proveedor_x_fruta_derivada')
@@ -87,16 +87,16 @@ S(26,'empresa_transporte_externo','vehiculo_externo chofer_transporte_externo')
 S(27,'vehiculo_externo','empresa_transporte_externo')
 S(28,'chofer_transporte_externo','empresa_transporte_externo','persona usuario')
 S(29,'solicitud_transporte invitacion_transporte cotizacion_transporte','campana empresa_transporte_externo')
-S(30,'solicitud_transporte invitacion_transporte','campana empresa_transporte_externo')
+S(30,'solicitud_transporte invitacion_transporte cotizacion_transporte','campana empresa_transporte_externo')
 S(31,'','campana cliente_negocio cliente_negocio_campana contrato_venta entrega_programada cosecha carga','')
 S(32,'','campana fruta cosecha carga')
 S(33,'analisis_calidad medicion_mtd','campana campania_x_proveedores proveedor entrevista_extencion finca fruta_derivada cosecha')
 S(34,'carga proveedor_carga origen_carga gasto_carga','campana coordinacion_entrega entrega_programada contrato_venta cliente_negocio_campana cliente_negocio empresa_transporte_externo vehiculo_externo chofer_transporte_externo proveedor finca fruta_derivada cosecha analisis_calidad')
 S(35,'','cosecha carga coordinacion_entrega origen_entrega campania_x_proveedores proveedor finca fruta_derivada entrega_programada contrato_venta cliente_negocio_campana empresa_transporte_externo vehiculo_externo chofer_transporte_externo analisis_calidad medicion_mtd proveedor_carga origen_carga')
 S(36,'','carga proveedor_carga coordinacion_entrega entrega_programada contrato_venta cliente_negocio_campana cliente_negocio empresa_transporte_externo vehiculo_externo chofer_transporte_externo guia_remision proveedor_guia guia_x_norma norma')
-S(37,'guia_remision proveedor_guia guia_x_norma','carga proveedor_carga origen_carga origen_entrega finca proveedor fruta_derivada coordinacion_entrega empresa_transporte_externo vehiculo_externo chofer_transporte_externo entrega_programada contrato_venta cliente_negocio_campana cliente_negocio destino_cliente_negocio norma')
+S(37,'guia_remision proveedor_guia guia_x_norma','carga proveedor_carga origen_carga origen_entrega finca proveedor fruta_derivada coordinacion_entrega empresa_transporte_externo vehiculo_externo chofer_transporte_externo entrega_programada contrato_venta cliente_negocio_campana cliente_negocio norma')
 S(38,'','campana cliente_negocio_campana contrato_venta entrega_programada coordinacion_entrega carga historial_chofer')
-S(39,'','campana carga coordinacion_entrega historial_chofer entrega_programada contrato_venta cliente_negocio_campana cliente_negocio vehiculo_externo chofer_transporte_externo destino_cliente_negocio')
+S(39,'','campana carga coordinacion_entrega historial_chofer entrega_programada contrato_venta cliente_negocio_campana cliente_negocio vehiculo_externo chofer_transporte_externo')
 S(40,'','campana coordinacion_entrega origen_entrega finca entrega_programada contrato_venta cliente_negocio_campana cliente_negocio empresa_transporte_externo vehiculo_externo chofer_transporte_externo carga proveedor_carga proveedor fruta_derivada gasto_carga historial_chofer recepcion_planta guia_remision')
 S(41,'','campana carga coordinacion_entrega entrega_programada contrato_venta cliente_negocio_campana')
 S(42,'','campana cliente_negocio cliente_negocio_campana contrato_venta entrega_programada coordinacion_entrega carga factura_venta cobro_venta')
@@ -126,7 +126,7 @@ S(62,'historial_chofer','recepcion_planta carga coordinacion_entrega chofer_tran
 specs[25]['H']=['trazabilidad_transporte','chofer_vehiculo_externo','detalle_trazabilidad']
 assert set(specs)==set(range(1,63))
 for i,v in enumerate(views,1):
-    v['roles']={t:role for role,ts in specs[i].items() for t in ts}
+    v['roles']={t:role for role,ts in specs[i].items() for t in ts if t in T}
     v['tables']=list(v['roles'])
 assert {n for v in views for n in v['tables']}==set(T)
 
@@ -161,7 +161,6 @@ purpose={
 'cliente_negocio':'Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre.',
 'cliente_negocio_campana':'Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña.',
 'cliente_negocio_campana_x_fruta_derivada':'Conserva la selección múltiple de variedades solicitadas en el requerimiento comercial.',
-'destino_cliente_negocio':'Propuesta de puntos de llegada reutilizables de un cliente. La pantalla muestra destinos, pero no se observó un padrón independiente que obligue a esta tabla.',
 'contrato_venta':'Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado.',
 'entrega_programada':'Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física.',
 'entrega_x_fruta_derivada':'Desglosa los kilos programados por variedad para el calendario semanal; no es una segunda entrega.',
@@ -199,6 +198,9 @@ purpose={
 'pago_transporte':'Registra desembolsos de una liquidación de transporte, separados de adelantos y sus aplicaciones.',
 'factura_venta':'Guarda la preparación y registro de la factura externa por carga, con kilos facturados, precio y moneda. No implica emisión fiscal desde la app.',
 'cobro_venta':'Registra uno o varios ingresos contra una factura, en la moneda de esta. Los cobros no alteran el peso recibido.'}
+purpose={t:description for t,description in purpose.items() if t in T}
+for t in ['campania_x_proveedores','norma','guia_x_norma','rol','parametro_uit']:
+    purpose[t]=T[t]['description']
 assert set(purpose)==set(T)
 
 navigation={
@@ -347,7 +349,7 @@ decisions={
 'D05':('Por discutir','Autoridad de transporte','chofer_vehiculo_externo/trazabilidad_transporte conservan el modelo actual; coordinacion_entrega prepara el viaje multiproveedor. Definir cuál registra la asignación y cómo se sincroniza el otro; una FK opcional no evita dos fuentes contradictorias.'),
 'D06':('Por discutir','Vincular antes del acuerdo','El mockup permite vincular transportista y registrar el acuerdo después. acuerdo_transporte exige condiciones completas en el SQL: evaluar estado borrador con atributos opcionales o un vínculo independiente. No se agrega otra tabla todavía.'),
 'D07':('Por discutir','Incorporación de campaña a Calidad','Agregar campaña puede ser habilitación manual por canal o un filtro de las operaciones existentes. Solo si el negocio exige persistir esa habilitación tendría sentido una entidad específica; aún no se añade.'),
-'D08':('Por discutir','Destinos del cliente','destino_cliente_negocio permite reutilizar plantas y direcciones; no se encontró un editor propio en el recorrido. Decidir si es catálogo de negocio o basta capturar destino en cada programación/documento.'),
+'D08':('Confirmado e incorporado al SQL','Destino como texto','Decisión del 29/10/2026: se retira el catálogo sin CRUD propio. La entrega guarda destino textual y la guía sus datos de llegada históricos.'),
 'D09':('Por discutir','Cantidad de certificados','El editor dice uno por campaña; el backend y el resumen admiten varios. Se mantiene la capacidad actual hasta decidir si las normas requieren certificados distintos.'),
 'D10':('Por discutir','Condiciones de compra','acuerdo_compra permitiría precios por proveedor/variedad/vigencia, pero no tiene editor observado en Entrevista. Decidir si se administra allí o si basta el precio histórico capturado al liquidar.'),
 'D11':('Por discutir','Personas y autenticación','persona/proveedor_x_persona justifican destinatarios del control anual; no requieren que todo proveedor sea usuario. sesion_usuario depende de la estrategia de autenticación y no se exige para navegar el demo.'),
@@ -360,7 +362,7 @@ view_decisions={
 for i in [5,6,7]:view_decisions.setdefault(i,[]).append('D15')
 usage={
 (1,'usuario'):'Identificar al usuario en la futura autenticación; el selector actual permite entrar sin credenciales y no prueba que se persista una cuenta.',
-(10,'campania_x_proveedores'):'Consultar oferta estimada y estado de evaluación por participación; no sumar otra vez los campos equivalentes de participacion_proveedor_campana.',
+(10,'campania_x_proveedores'):'Consultar oferta y evaluación desde la única participación campania_x_proveedores, sin duplicar cantidades.',
 (11,'campania_x_proveedores'):'Crear o actualizar la participación del proveedor, su tipo, cantidad y evaluación en la campaña; es el identificador usado para agrupar sus entrevistas.',
 (11,'entrevista_extencion'):'Consultar las entrevistas de la participación y obtener sus fincas distintas para el detalle «Fincas vinculadas a la campaña», según decisión confirmada.',
 (11,'finca'):'Leer las fincas alcanzadas a través de entrevistas; no es una asociación directa de finca con la participación.',
@@ -441,8 +443,8 @@ for t,table in T.items():
     detail.append('| `'+t+'` | '+(', '.join('`'+c['name']+'`' for c in extra) if extra else 'Ninguno en esta revisión')+' | '+('Consultar la finalidad de cada columna en su diccionario por vista.' if extra else 'Se conserva el catálogo o asociación actual.')+' |')
 detail+=['']
 general=['# Tablas y relaciones por vista — modelo revisado','',
-'**Schema actualizado para cumplimiento — 27/10/2026.** Se incorporan JSONB de formularios y cambios de tipo/nulabilidad; el diccionario vigente distingue MODIFICAR de AGREGAR. Se permiten varios requerimientos cliente/campaña y varias facturas por carga según respuesta del usuario. Los diagramas reflejan las FK y unicidades actuales del SQL objetivo, incluido el vínculo directo persona–liquidación. No se modificó una base existente.','',
-'[Diccionario con atributos actuales y adicionales](01_reporte_especifico.md) · [SQL de revisión](03_schema_total.sql). Se incluyen 19 tablas actuales y 47 propuestas: 66 en total. archivo queda fuera del esquema, con sus relaciones pendientes. No se modificó la base desplegada.','',
+'**Schema actualizado para cumplimiento — 29/10/2026.** Se incorporan JSONB de formularios y cambios de tipo/nulabilidad; el diccionario vigente distingue MODIFICAR de AGREGAR. Se permiten varios requerimientos cliente/campaña y varias facturas por carga según respuesta del usuario. Los diagramas reflejan las FK y unicidades actuales del SQL objetivo, incluido el vínculo directo persona–liquidación. No se modificó una base existente.','',
+'[Diccionario con atributos actuales y adicionales](01_reporte_especifico.md) · [SQL de revisión](03_schema_total.sql). Se incluyen 19 tablas actuales y 41 propuestas: 60 en total. Participación consolidada y catálogos con datos iniciales SQL. archivo queda fuera del esquema, con sus relaciones pendientes. No se modificó la base desplegada.','',
 'Los nombres de las tablas actuales coinciden con las entidades TypeORM. Este documento no incluye atributos. Las tablas propuestas complementan el flujo; no sustituyen por nombre a las tablas actuales de transporte.','']
 legend='**Mermaid:** `||` = exactamente uno; `o|` = cero o uno; `o{` = cero o muchos. Cada caja es una tabla del esquema general. Las líneas son FK del SQL revisado: actual indica relación ya programada y propuesta indica una relación del diseño revisado, sin afirmar aprobación definitiva ni despliegue. Las FK compuestas del mismo par se agrupan. Una tabla aislada se consulta o participa en una decisión de diseño, sin FK directa en ese recorte. No se dibujan relaciones de navegación como si fueran FK.'
 overview=['campana','proveedor','finca','campania_x_proveedores','entrevista_extencion','cliente_negocio','cliente_negocio_campana','contrato_venta','entrega_programada','coordinacion_entrega','carga','proveedor_carga','recepcion_planta','trazabilidad_transporte','chofer_vehiculo_externo','detalle_trazabilidad','factura_venta','liquidacion_proveedor','liquidacion_transporte']
@@ -455,7 +457,7 @@ overview=list(T)
 image_note='**Entidades amarillas de las referencias incorporadas al mapa:** `fruta`, `fruta_derivada`, `proveedor_x_fruta`, `certificado_proveedor`, `examen_proveedor` y `certificado_campana`. Los rótulos históricos `Certificados` y `certificados_campana` se representan con `certificado_campana` para el certificado de campaña; `certificado_x_productor` se corresponde con la cobertura propuesta `certificado_campana_x_proveedor`, vinculada a proveedor y campaña. Esta equivalencia expresa su función; no afirma que todos los atributos del dibujo sean idénticos. `certificado_proveedor` permanece separado para documentos propios del proveedor. No se añade otra tabla genérica Certificados sin definir un ciclo de vida distinto. `proveedor_x_fruta` se conserva: la nota de la imagen que plantea trasladarlo a finca dice CONFIRMAR y no constituye una decisión aprobada. Las hectáreas están en `finca` (`ha_total_finca`, `ha_cultivo`) en el diccionario específico.'
 transport_note='**Gestión de empresas logísticas, choferes y unidades:** `empresa_transporte_externo` registra al proveedor logístico externo contratado por la agroexportadora; `chofer_transporte_externo` y `vehiculo_externo` registran sus choferes y unidades. `chofer_vehiculo_externo` asigna un chofer y una unidad a `trazabilidad_transporte`, con fechas de inicio y fin. Estas cuatro tablas ya existen y se conservan en el SQL. `acuerdo_transporte` es la tabla propuesta para vincular la empresa transportista con la campaña y sus condiciones comerciales. La empresa agroexportadora que opera el sistema no se representa con `empresa_transporte_externo`; este modelo todavía no define una entidad propia para gestionar varias agroexportadoras.'
 for doc in [detail,general]:doc += [legend,'','**Mapa de integración:** las tablas actuales se conservan junto al flujo adicional propuesto, incluyendo empresas transportistas, choferes, unidades y sus asignaciones.','']+diagram(overview,True)+[transport_note,'']
-for doc in [detail,general]:doc += [image_note,'', '**Trazabilidad de finca tras el cambio:** origen_entrega, origen_carga, analisis_calidad y medicion_mtd ahora identifican finca directamente; antes la obtenían de la participación. El servicio deberá comprobar que esa finca pertenece al proveedor de cxp_id. Los orígenes admiten varias fincas de un proveedor en la misma entrega o carga. acuerdo_compra mantiene condiciones por proveedor y variedad, sin inferir una finca.', '','**Decisión de negocio — 27/10/2026:** se elimina el vínculo directo finca–campania_x_proveedores del modelo objetivo. Se mantiene proveedor–finca y la entrevista relaciona campaña/proveedor con la finca visitada. El código actual todavía contiene el vínculo retirado; estos documentos y el SQL son la propuesta para revisión.','']
+for doc in [detail,general]:doc += [image_note,'', '**Trazabilidad de finca tras el cambio:** origen_entrega, origen_carga, analisis_calidad y medicion_mtd ahora identifican finca directamente; antes la obtenían de la participación. El servicio deberá comprobar que esa finca pertenece al proveedor de cxp_id. Los orígenes admiten varias fincas de un proveedor en la misma entrega o carga. El precio simple queda en campania_x_proveedores; no existe una cabecera adicional de acuerdo_compra.', '','**Decisión de negocio — 27/10/2026:** se elimina el vínculo directo finca–campania_x_proveedores del modelo objetivo. Se mantiene proveedor–finca y la entrevista relaciona campaña/proveedor con la finca visitada. El código actual todavía contiene el vínculo retirado; estos documentos y el SQL son la propuesta para revisión.','']
 for doc in [detail,general]:doc += ['**Relaciones documentales pendientes:** archivo queda excluida del SQL y de todos los diagramas. Las referencias de documentos, comprobantes, guías y evidencias se definirán en otra etapa. Las columnas reservadas quedan opcionales, sin FK ni obligación de asignarles un identificador. Las URL actuales se conservan.','']
 detail += ['**Inventario de relaciones pendientes a archivo (sin implementar):**','','| Tabla | Referencia reservada opcional, sin FK |','|---|---|']
 for f in M['pending_file_relations']:detail += ['| `'+f['child']+'` | '+', '.join('`'+n+'`' for n in f['cols'])+' |']

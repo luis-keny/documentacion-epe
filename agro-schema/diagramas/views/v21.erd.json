@@ -17,7 +17,7 @@
     {
       "id": "proveedor",
       "label": "proveedor",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Proveedores y abastecimiento",
       "row": 0,
       "col": 0,
@@ -122,12 +122,12 @@
           "type": "date"
         }
       ],
-      "width": 354
+      "width": 384
     },
     {
       "id": "proveedor_x_fruta",
       "label": "proveedor_x_fruta",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Proveedores y abastecimiento",
       "row": 1,
       "col": 0,
@@ -151,7 +151,8 @@
           "name": "proveedor_id",
           "type": "integer",
           "key": [
-            "fk"
+            "fk",
+            "uk"
           ],
           "references": "proveedor.proveedor_id"
         },
@@ -159,12 +160,13 @@
           "name": "fruta_id",
           "type": "integer",
           "key": [
-            "fk"
+            "fk",
+            "uk"
           ],
           "references": "fruta.fruta_id"
         }
       ],
-      "width": 284
+      "width": 340
     },
     {
       "id": "proveedor_x_fruta_derivada",
@@ -208,7 +210,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 322
+      "width": 345
     },
     {
       "id": "proveedor_x_persona",
@@ -260,12 +262,12 @@
           "type": "timestamptz"
         }
       ],
-      "width": 276
+      "width": 340
     },
     {
       "id": "fruta",
       "label": "fruta",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Identidad y catálogos",
       "row": 0,
       "col": 1,
@@ -290,12 +292,12 @@
           "type": "varchar(150)"
         }
       ],
-      "width": 284
+      "width": 340
     },
     {
       "id": "fruta_derivada",
       "label": "fruta_derivada",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Identidad y catálogos",
       "row": 1,
       "col": 1,
@@ -328,7 +330,7 @@
           "references": "fruta.fruta_id"
         }
       ],
-      "width": 284
+      "width": 340
     },
     {
       "id": "persona",
@@ -388,7 +390,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 243
+      "width": 340
     }
   ],
   "relationships": [
@@ -487,7 +489,7 @@
       "dot": "amber",
       "title": "Alcance SQL",
       "items": [
-        "66 tablas y 137 relaciones FK, distribuidas por dominio funcional.",
+        "60 tablas y 124 relaciones FK, distribuidas por dominio funcional.",
         "La tabla archivo se excluye; sus referencias documentales no tienen FK.",
         "El SQL es instalación nueva para revisión, no migración sobre una base desplegada."
       ]

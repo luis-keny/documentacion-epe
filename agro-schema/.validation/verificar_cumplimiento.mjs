@@ -10,6 +10,13 @@ async function reject(name,query,pattern){await db.exec('BEGIN');try{await db.ex
 async function check(name,query,predicate){const rows=(await db.query(query)).rows;if(!predicate(rows))throw Error(name+': '+JSON.stringify(rows));ok(name);}
 try{
 await db.exec(sql);ok('Instalación completa en PostgreSQL temporal');
+await check('Catálogos iniciales: 2 perfiles, 5 normas, 5 frutas y 17 variedades',"SELECT (SELECT count(*)::int FROM agro.rol) roles,(SELECT count(*)::int FROM agro.norma) normas,(SELECT count(*)::int FROM agro.fruta) frutas,(SELECT count(*)::int FROM agro.fruta_derivada) variedades",r=>r[0].roles===2&&r[0].normas===5&&r[0].frutas===5&&r[0].variedades===17);
+await check('Parámetros anuales iniciales y umbral',"SELECT anio,valor,umbral_alerta FROM agro.parametro_uit ORDER BY anio",r=>r.length===2&&Number(r[1].anio)===2026&&Number(r[1].valor)===5500&&Number(r[1].umbral_alerta)===0.9);
+await db.exec(readFileSync(new URL('../04_datos_iniciales.sql',import.meta.url),'utf8'));
+await check('Seed reejecutable sin duplicar catálogos',"SELECT (SELECT count(*)::int FROM agro.fruta) frutas,(SELECT count(*)::int FROM agro.fruta_derivada) variedades,(SELECT count(*)::int FROM agro.rol) roles,(SELECT count(*)::int FROM agro.norma) normas",r=>r[0].frutas===5&&r[0].variedades===17&&r[0].roles===2&&r[0].normas===5);
+await check('Normas no preasignadas a guías',"SELECT count(*)::int n FROM agro.guia_x_norma",r=>r[0].n===0);
+await check('Cinco propuestas retiradas, incluidas sesiones, sin cabecera duplicada',"SELECT count(*)::int n FROM information_schema.tables WHERE table_schema='agro' AND table_name IN ('campana_x_fruta_derivada','participacion_proveedor_x_fruta_derivada','participacion_proveedor_campana','acuerdo_compra','sesion_usuario')",r=>r[0].n===0);
+
 const cols=(await db.query("SELECT table_name,column_name FROM information_schema.columns WHERE table_schema='agro'")).rows;
 for(const [name,t] of Object.entries(model.tables))for(const c of t.columns)if(!cols.some(r=>r.table_name===name&&r.column_name===c.name))throw Error('Falta '+name+'.'+c.name);
 ok('Todas las columnas del modelo existen en el SQL ejecutado');
@@ -18,18 +25,13 @@ let preserved=0;
 for(const t of base){if(t.table==='archivo')continue;for(const c of t.columns){if(t.table==='campania_x_proveedores'&&c.name==='finca_id')continue;if(!cols.some(r=>r.table_name===t.table&&r.column_name===c.name))throw Error('Columna legacy perdida: '+t.table+'.'+c.name);preserved++;}}
 if(preserved!==173)throw Error('Inventario legacy distinto');ok('Se conservan los nombres de las 173 columnas legacy incluidas');
 await db.exec(`SET search_path=agro,public;
-INSERT INTO fruta(name) VALUES('Mango');
-INSERT INTO fruta_derivada(name,fruta_id) VALUES('Kent',1);
 INSERT INTO campana(nombre,fruta_id,fecha_inicio,fecha_fin,estado,requerimiento_comercial,calidad) VALUES('Mango',1,'2026-01-01','2026-12-31','en proceso',1000,'{"Exportación":{"estado":"Pendiente de revisión"}}');
 INSERT INTO proveedor(nombres,apellido,tipo_documento,nmr_documento,zona,telefono,codigo_lugar_produccion) VALUES('Principal','Uno','DNI','00123456','Piura','+51 987654321','LP-PIU-001'),('Segundo','Dos','DNI','00234567','Piura','+51 987654322',NULL);
 INSERT INTO persona(tipo_documento,numero_documento,nombres,apellidos) VALUES('DNI','00123456','Principal','Uno'),('DNI','00234567','Segundo','Dos'),('DNI','00345678','Vinculada','Tres');
 INSERT INTO proveedor_x_persona(proveedor_id,persona_id,vinculo) VALUES(1,3,'Familiar');
-INSERT INTO rol(nombre) VALUES('Administrador');
 INSERT INTO usuario(persona_id,rol_id,usuario,password_hash) VALUES(1,1,'admin-prueba','hash-prueba');
 INSERT INTO finca(proveedor_id,nombre_finca,departamento,provincia,distrito,latitud,longitud,ha_total_finca,ha_cultivo,fruta_derivada_id) VALUES(1,'Finca 1','Piura','Piura','Piura',-5,-80,4,3.5,1),(2,'Finca 2','Piura','Piura','Piura',-5,-80,5,4,1);
 INSERT INTO campania_x_proveedores(campania_id,proveedor_id,cantidad_proveedor,tipo_proveedor,precio_compra_kg) VALUES(1,1,600,'productor',2),(1,2,400,'productor',2);
-INSERT INTO participacion_proveedor_campana(campania_id,proveedor_id,rol_comercial,tipo_fruta,kilos_estimados) VALUES(1,1,'PRODUCTOR','ORGANICA',600),(1,2,'PRODUCTOR','ORGANICA',400);
-UPDATE campania_x_proveedores SET participacion_proveedor_campana_id=cxp_id;
 INSERT INTO entrevista_extencion(cam_x_prov_id,finca_id,codigo,distanciamiento_descripcion,frecuencia_riego_descripcion) VALUES(1,1,'FVV-AUTO-1','5 x 5','Cada 7 días');
 INSERT INTO examen_proveedor(fecha,tipo_examen,proveedor_id) VALUES('2026-10-27','Sanidad',1);
 INSERT INTO empresa_transporte_externo(nombre_completo,numero,tipo_transportista,tipo_documento,numero_documento) VALUES('Transportista privado','987654320','INDEPENDIENTE','DNI','00456789');
@@ -38,18 +40,20 @@ INSERT INTO chofer_transporte_externo(id_empresa_transporte_externo,nombre,telef
 INSERT INTO acuerdo_transporte(campania_id,id_empresa_transporte_externo,referencia_cotizacion) VALUES(1,1,'Cotización inicial');
 INSERT INTO cliente_negocio(nombre_empresa,nombre_contacto,telefono,ruc,ubicacion,tipo_cliente) VALUES('Cliente','Contacto','987654321','20100000001','Piura','exportador');
 INSERT INTO cliente_negocio_campana(cliente_negocio_id,campania_id,fecha_registro,kilos_acordados) VALUES(1,1,'2026-10-27',1000),(1,1,'2026-10-27',100);
-INSERT INTO destino_cliente_negocio(cliente_negocio_id,nombre) VALUES(1,'Planta');
 INSERT INTO contrato_venta(cliente_negocio_campana_id,canal,fecha,kilos_acordados,moneda,condiciones_entrega,observaciones) VALUES(1,'EXPORTACION','2026-10-27',1000,'PEN','Planta','Precio pendiente');
-INSERT INTO entrega_programada(contrato_venta_id,destino_id,fecha,kilos_programados) VALUES(1,1,'2026-10-27',1000);
+INSERT INTO entrega_programada(contrato_venta_id,destino,fecha,kilos_programados) VALUES(1,'Planta textual','2026-10-27',1000);
 INSERT INTO entrega_x_fruta_derivada(entrega_programada_id,fruta_derivada_id,kilos_programados) VALUES(1,1,1000);
 INSERT INTO coordinacion_entrega(entrega_programada_id,acuerdo_transporte_id,id_empresa_transporte_externo,id_vehiculo_externo,id_chofer_transporte_externo,inicio_programado,fin_programado,origen_descripcion,flete_asignado,observacion_flete) VALUES(1,1,1,1,1,'2026-10-27 08:00-05','2026-10-27 12:00-05','Fincas',100,'Flete antes de liquidar');
 INSERT INTO origen_entrega(coordinacion_entrega_id,cxp_id,finca_id) VALUES(1,1,1),(1,2,2);
 INSERT INTO carga(coordinacion_entrega_id,codigo,fecha_carga,anotador_nombre) VALUES(1,'CARGA-1','2026-10-27','Anotador');
-INSERT INTO proveedor_carga(carga_id,participacion_proveedor_campana_id,fruta_derivada_id,kilos_cargados,jabas_cargadas) VALUES(1,1,1,600,60),(1,2,1,400,40);
+INSERT INTO proveedor_carga(carga_id,cxp_id,fruta_derivada_id,kilos_cargados,jabas_cargadas) VALUES(1,1,1,600,60),(1,2,1,400,40);
 INSERT INTO cosecha(entrega_programada_id,codigo_lote,fecha_prevista,kilos_estimados,kilos_cosechados,organizacion,avances,cierre,industria) VALUES(1,'LOTE-1','2026-10-27',1000,1000,'{"crewLead":"Responsable","trainingCompleted":true}','[{"providerId":1,"fincaId":1,"kilos":600,"crates":60},{"providerId":2,"fincaId":2,"kilos":400,"crates":40}]','{"completed":true}','{"inspectionResult":"Cumple"}');
 INSERT INTO recepcion_planta(carga_id,id_chofer_transporte_externo,peso_planta_kg,compras,descarga_inicio_at,descarga_fin_at,logistica,checklist) VALUES(1,1,960,'[{"providerId":1,"recognizedQuantity":600,"reviewStatus":"Revisada"},{"providerId":2,"recognizedQuantity":360,"reviewStatus":"Revisada"}]','2026-10-27 12:00-05','2026-10-27 13:00-05','{"waitingReason":"Planta ocupada"}','{"crates":{"notApplicable":false}}');
 INSERT INTO certificado_campana(nombre,costo,estado,campania_id,vigencia_desde,historial_cobertura) VALUES('Certificado',200,'vigente',1,'2026-10-27','[{"fecha":"2026-10-27","kilos":1000,"producerIds":[1,2]}]');`);
 ok('Altas, participación sin MTD, contrato pendiente y vínculo de transporte sin acuerdo completo');
+await check('Destino libre de entrega sin catálogo',"SELECT destino FROM entrega_programada WHERE entrega_programada_id=1",r=>r[0].destino==='Planta textual');
+await reject('Entrega con destino vacío',"UPDATE entrega_programada SET destino='   ' WHERE entrega_programada_id=1",/check constraint/);
+await check('Catálogo de destinos excluido',"SELECT count(*)::integer AS n FROM information_schema.tables WHERE table_schema='agro' AND table_name='destino_cliente_negocio'",r=>r[0].n===0);
 await check('Texto y ceros iniciales conservados',"SELECT nmr_documento,telefono,codigo_lugar_produccion FROM proveedor WHERE proveedor_id=1",r=>r[0].nmr_documento==='00123456'&&r[0].telefono.startsWith('+51')&&r[0].codigo_lugar_produccion==='LP-PIU-001');
 await check('Hectáreas fraccionarias conservadas',"SELECT ha_cultivo FROM finca WHERE finca_id=1",r=>Number(r[0].ha_cultivo)===3.5);
 await check('Examen pendiente sin resultado',"SELECT resultado,estado_examen FROM examen_proveedor",r=>r[0].resultado===null&&r[0].estado_examen==='Pendiente');
@@ -99,15 +103,25 @@ INSERT INTO chofer_vehiculo_externo(id_vehiculo_externo,id_chofer_transporte_ext
 await reject('Viajes del chofer realmente solapados',"INSERT INTO chofer_vehiculo_externo(id_vehiculo_externo,id_chofer_transporte_externo,id_trazabilidad_transporte,fecha_asignacion_inicio,fecha_asignacion_final) VALUES(1,1,1,'2026-10-27 09:00-05','2026-10-27 11:00-05')",/EX_chofer/);
 await db.exec("INSERT INTO analisis_calidad(cxp_id,finca_id,tipo,fecha_muestreo) VALUES(1,1,'Maduración','2026-10-27')");
 await check('Análisis previo sin cosecha',"SELECT cosecha_id FROM analisis_calidad",r=>r[0].cosecha_id===null);
-await db.exec(`INSERT INTO guia_remision(carga_id,numero,fecha_inicio_traslado,peso_bruto_kg,numero_bultos,finca_partida_id,destino_id,ubigeo_partida_snapshot,direccion_partida_snapshot,establecimiento_partida_snapshot,ubigeo_llegada_snapshot,direccion_llegada_snapshot,establecimiento_llegada_snapshot,transportista_documento_snapshot,placa_snapshot,conductor_documento_snapshot,conductor_nombre_snapshot,conductor_licencia_snapshot,contenido) VALUES(1,'G-1','2026-10-27',1000,100,1,1,'200101','Finca','0000','200101','Planta','0000','00456789','ABC-001','00567890','Conductor','LIC-1','{"issueDate":"2026-10-27","description":"Mango Kent","standardText":"Texto histórico"}');
+await db.exec(`INSERT INTO guia_remision(carga_id,numero,fecha_inicio_traslado,peso_bruto_kg,numero_bultos,finca_partida_id,ubigeo_partida_snapshot,direccion_partida_snapshot,establecimiento_partida_snapshot,ubigeo_llegada_snapshot,direccion_llegada_snapshot,establecimiento_llegada_snapshot,transportista_documento_snapshot,placa_snapshot,conductor_documento_snapshot,conductor_nombre_snapshot,conductor_licencia_snapshot,contenido) VALUES(1,'G-1','2026-10-27',1000,100,1,'200101','Finca','0000','200101','Planta','0000','00456789','ABC-001','00567890','Conductor','LIC-1','{"issueDate":"2026-10-27","description":"Mango Kent","standardText":"Texto histórico"}');
 INSERT INTO proveedor_guia(guia_remision_id,carga_id,proveedor_carga_id,kilos_asignados,fincas_ids) VALUES(1,1,1,600,'[1]');
-INSERT INTO parametro_uit(anio,valor,limite_uit) VALUES(2026,9999,75);`);
-await check('Guía recupera contenido y fincas seleccionadas',"SELECT g.contenido,p.fincas_ids FROM guia_remision g JOIN proveedor_guia p USING(guia_remision_id)",r=>r[0].contenido.description==='Mango Kent'&&r[0].fincas_ids[0]===1);
+UPDATE parametro_uit SET valor=9999 WHERE anio=2026;`);
+await db.exec("INSERT INTO guia_x_norma(guia_remision_id,norma_id) SELECT 1,norma_id FROM norma WHERE codigo IN ('NOP','EU')");
+await check('Guía guarda únicamente las normas elegidas',"SELECT n.codigo FROM guia_x_norma g JOIN norma n USING(norma_id) WHERE guia_remision_id=1 ORDER BY n.codigo",r=>r.length===2&&r[0].codigo==='EU'&&r[1].codigo==='NOP');
+await reject('Guía no duplica una norma elegida',"INSERT INTO guia_x_norma(guia_remision_id,norma_id) SELECT 1,norma_id FROM norma WHERE codigo='NOP'",/unique constraint/);
+await reject('Carga no admite participación inexistente',"UPDATE proveedor_carga SET cxp_id=9999 WHERE proveedor_carga_id=1",/foreign key constraint/);
+await check('Guía recupera contenido, fincas y destino histórico',"SELECT g.contenido,g.direccion_llegada_snapshot,p.fincas_ids FROM guia_remision g JOIN proveedor_guia p USING(guia_remision_id)",r=>r[0].contenido.description==='Mango Kent'&&r[0].direccion_llegada_snapshot==='Planta'&&r[0].fincas_ids[0]===1);
 await check('Control anual usa UIT aplicada y no revaloriza el documento',"SELECT valor,acumulado FROM v_control_uit WHERE persona_liquidacion_id=1",r=>Number(r[0].valor)===5500&&Number(r[0].acumulado)===1200);
 await db.exec("INSERT INTO pago_certificado_campana(certificado_id,fecha,monto,referencia) VALUES(1,'2026-10-27',200,'CERT-1')");
 await reject('Sobrepago de certificación',"INSERT INTO pago_certificado_campana(certificado_id,fecha,monto,referencia) VALUES(1,'2026-10-27',1,'CERT-2')",/supera el saldo/);
+await db.exec("UPDATE certificado_campana SET tipo_certificacion='Orgánico USDA' WHERE certificado_id=1");
+await check('Tipo de certificado fijo conserva dato distinto del nombre',"SELECT tipo_certificacion,nombre FROM certificado_campana WHERE certificado_id=1",r=>r[0].tipo_certificacion==='Orgánico USDA'&&r[0].nombre!==r[0].tipo_certificacion);
+await reject('Tipo de certificado desconocido',"UPDATE certificado_campana SET tipo_certificacion='Inventado' WHERE certificado_id=1",/check constraint/);
+await reject('Cobertura no mezcla participación y otro proveedor',"INSERT INTO certificado_campana_x_proveedor(certificado_id,campania_id,cxp_id,proveedor_id,kilos_autorizados) VALUES(1,1,1,2,600)",/foreign key constraint/);
+await db.exec("INSERT INTO certificado_campana_x_proveedor(certificado_id,campania_id,cxp_id,proveedor_id,kilos_autorizados) VALUES(1,1,1,1,600)");
+await check('Cobertura referencia la participación consolidada',"SELECT p.proveedor_id FROM certificado_campana_x_proveedor c JOIN campania_x_proveedores p USING(cxp_id)",r=>r.length===1&&r[0].proveedor_id===1);
 const fks=(await db.query("SELECT count(*)::int n FROM pg_constraint k JOIN pg_namespace n ON n.oid=k.connamespace WHERE n.nspname='agro' AND k.contype='f'")).rows[0].n;
-const res={motor:'PGlite PostgreSQL temporal con btree_gist',schema_sha256:createHash('sha256').update(sql).digest('hex'),tablas:66,tablas_actuales:19,tablas_propuestas:47,columnas_actuales_conservadas_por_nombre:173,atributos_adicionales:model.additional_columns,columnas_modificadas:model.modified_columns.length,foreignKeys:fks,pruebas:tests};
+const res={motor:'PGlite PostgreSQL temporal con btree_gist',schema_sha256:createHash('sha256').update(sql).digest('hex'),tablas:Object.keys(model.tables).length,tablas_actuales:model.existing_count,tablas_propuestas:model.new_count,columnas_actuales_conservadas_por_nombre:173,atributos_adicionales:model.additional_columns,columnas_modificadas:model.modified_columns.length,foreignKeys:fks,pruebas:tests};
 writeFileSync(new URL('./resultado_revision.json',import.meta.url),JSON.stringify(res,null,2)+'\n');
-console.log(JSON.stringify({tablas:66,fk:fks,pruebas:tests.length,resultado:'correcto'}));
+console.log(JSON.stringify({tablas:Object.keys(model.tables).length,fk:fks,pruebas:tests.length,resultado:'correcto'}));
 }finally{await db.close();}

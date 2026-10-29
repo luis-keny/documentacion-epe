@@ -1,0 +1,2901 @@
+{
+  "date": "2026-10-29",
+  "method": "Auditoría estática del código local, contrastada con las fichas V01–V62. No prueba ejecución ni persistencia normalizada del backend.",
+  "scope": "46 propuestas revisadas originalmente: cinco retiradas/consolidadas y 41 vigentes; 19 tablas actuales conservadas.",
+  "applied": true,
+  "reviewed_total": 46,
+  "removed_tables": [
+    {
+      "table": "sesion_usuario",
+      "outcome": "Retirada del objetivo",
+      "finding": "El prototipo no demuestra que se necesite persistir token_hash en una tabla propia.",
+      "evidence": [
+        "acceso"
+      ]
+    },
+    {
+      "table": "campana_x_fruta_derivada",
+      "outcome": "Retirada del objetivo",
+      "finding": "CampaignModal calcula derivadas desde FRUIT_CATALOG para las frutas seleccionadas; no administra filas de esta relación.",
+      "evidence": [
+        "campana",
+        "frutas"
+      ]
+    },
+    {
+      "table": "participacion_proveedor_campana",
+      "outcome": "Consolidada en campania_x_proveedores",
+      "finding": "El formulario guarda un CampaignProvider. El modelo mantiene además campania_x_proveedores para la misma participación lógica.",
+      "evidence": [
+        "participacion"
+      ]
+    },
+    {
+      "table": "participacion_proveedor_x_fruta_derivada",
+      "outcome": "Retirada del objetivo",
+      "finding": "El alta de participación guarda fruta/variedad en un único payload; no hay mantenimiento de filas de este puente adicional.",
+      "evidence": [
+        "participacion"
+      ]
+    },
+    {
+      "table": "acuerdo_compra",
+      "outcome": "Retirada del objetivo",
+      "finding": "El prototipo no presenta contrato/versiones de compra separados de la participación; el precio simple ya vive en ella.",
+      "evidence": [
+        "participacion"
+      ]
+    }
+  ],
+  "sql_sha256": "5094ec9efdab160dcf7adafd5b29858c9cbe2caedc44796412ed3e79a9ea8963",
+  "schema_tables": 60,
+  "counts": {
+    "conservar": 37,
+    "configurar": 3,
+    "tecnica": 1
+  },
+  "labels": {
+    "simplificar": "Simplificar o consolidar",
+    "configurar": "Conservar con seed/configuración",
+    "tecnica": "Conservar por función técnica",
+    "diferir": "Resolver con la autenticación",
+    "conservar": "Conservar por función visible"
+  },
+  "evidence": {
+    "menu": {
+      "file": "App.tsx",
+      "line": 18,
+      "needle": "key: 'comercial'",
+      "excerpt": "{ key: 'comercial', label: 'Gestión Comercial', icon: '📊' },",
+      "sha256": "3fe3b0eb7d7f368af34e58725c03263e2c06bb1a2c434ce613b97a25cde82fb9"
+    },
+    "acceso": {
+      "file": "App.tsx",
+      "line": 196,
+      "needle": "account.role === 'driver'",
+      "excerpt": ") : account.role === 'driver' ? (",
+      "sha256": "3fe3b0eb7d7f368af34e58725c03263e2c06bb1a2c434ce613b97a25cde82fb9"
+    },
+    "personas": {
+      "file": "settlement-person-picker.tsx",
+      "line": 24,
+      "needle": "Agregar persona vinculada",
+      "excerpt": "{adding&&<Modal open title=\"Agregar persona vinculada\" onClose={()=>setAdding(false)} footer={<><Button variant=\"outline\" onClick={()=>setAdding(false)}>Cancelar</Button><Button onClick={save}>Guardar persona</Button></>}><div className=\"grid gap-4 sm:grid-cols-2\"><Field label=\"Nombres\"><Input value={form.nombres} onChange={e=>set('nombres',e.target.value)}/",
+      "sha256": "f0f8f774d8b9e37706c679cb8c7db32979063cb535ec2cf884c926cc7e3f5f69"
+    },
+    "uit": {
+      "file": "purchase-uit.ts",
+      "line": 6,
+      "needle": "export const UIT_VALUES",
+      "excerpt": "export const UIT_VALUES:Record<number,number>={2025:5350,2026:5500}",
+      "sha256": "4d373f3407ea749467b31b6d471a5f9c3612a6abe1fccd91d67c0f4e5f1e2fa9"
+    },
+    "campana": {
+      "file": "modules.tsx",
+      "line": 155,
+      "needle": "const derivadas = Array.from",
+      "excerpt": "const derivadas = Array.from(new Set(frutas.flatMap((fruit) => FRUIT_CATALOG[fruit] ?? [])))",
+      "sha256": "132fc1d07bf7a7717e0b2aad5f1a79b95ea2baadc6eb2e6954dd7181da1fcaf3"
+    },
+    "proveedor": {
+      "file": "modules.tsx",
+      "line": 1137,
+      "needle": "function ProviderModal",
+      "excerpt": "function ProviderModal({ mode, data, onClose }: { mode: 'new' | 'edit'; data?: Provider; onClose: () => void }) {",
+      "sha256": "132fc1d07bf7a7717e0b2aad5f1a79b95ea2baadc6eb2e6954dd7181da1fcaf3"
+    },
+    "participacion": {
+      "file": "modules.tsx",
+      "line": 541,
+      "needle": "function CampaignProviderModal",
+      "excerpt": "function CampaignProviderModal({ campaign, participation, onClose }: { campaign: Campaign; participation?: CampaignProvider; onClose: () => void }) {",
+      "sha256": "132fc1d07bf7a7717e0b2aad5f1a79b95ea2baadc6eb2e6954dd7181da1fcaf3"
+    },
+    "certificacion": {
+      "file": "modules.tsx",
+      "line": 693,
+      "needle": "function CertificationModal",
+      "excerpt": "function CertificationModal({ campaign, certification, onClose }: { campaign: Campaign; certification?: Certification; onClose: () => void }) {",
+      "sha256": "132fc1d07bf7a7717e0b2aad5f1a79b95ea2baadc6eb2e6954dd7181da1fcaf3"
+    },
+    "ampliacion": {
+      "file": "modules.tsx",
+      "line": 753,
+      "needle": "function CertificationExpansionModal",
+      "excerpt": "function CertificationExpansionModal({ certificationId, onClose }: { certificationId: string; onClose: () => void }) {",
+      "sha256": "132fc1d07bf7a7717e0b2aad5f1a79b95ea2baadc6eb2e6954dd7181da1fcaf3"
+    },
+    "pago_certificacion": {
+      "file": "modules.tsx",
+      "line": 737,
+      "needle": "function CertificationPaymentModal",
+      "excerpt": "function CertificationPaymentModal({ certificationId, onClose }: { certificationId: string; onClose: () => void }) {",
+      "sha256": "132fc1d07bf7a7717e0b2aad5f1a79b95ea2baadc6eb2e6954dd7181da1fcaf3"
+    },
+    "requerimiento": {
+      "file": "modules.tsx",
+      "line": 1324,
+      "needle": "function CommercialParticipationModal",
+      "excerpt": "function CommercialParticipationModal({ selectedClientId, fixedCampaignId, requirement, onClose, onSaved, onOpenExisting }: { selectedClientId?: string; fixedCampaignId?: string; requirement?: ReturnType<typeof useStore>['requirements'][number]; onClose: () => void; onSaved: (id: string) => void; onOpenExisting: (id: string) => void }) {",
+      "sha256": "132fc1d07bf7a7717e0b2aad5f1a79b95ea2baadc6eb2e6954dd7181da1fcaf3"
+    },
+    "contrato": {
+      "file": "modules.tsx",
+      "line": 1467,
+      "needle": "export function CommercialContractModal",
+      "excerpt": "export function CommercialContractModal({ requirementId, contractId, onClose, asPage = false }: { requirementId: string; contractId?: string; onClose: () => void; asPage?: boolean }) {",
+      "sha256": "132fc1d07bf7a7717e0b2aad5f1a79b95ea2baadc6eb2e6954dd7181da1fcaf3"
+    },
+    "entrega": {
+      "file": "modules.tsx",
+      "line": 1516,
+      "needle": "function CommercialDeliveriesModal",
+      "excerpt": "function CommercialDeliveriesModal({ requirementId, contractId, onClose, asPage = false, backLabel = '← Volver a contratos', execution = false, deliveryId }: { requirementId: string; contractId?: string; onClose: () => void; asPage?: boolean; backLabel?: string; execution?: boolean; deliveryId?:string }) {",
+      "sha256": "132fc1d07bf7a7717e0b2aad5f1a79b95ea2baadc6eb2e6954dd7181da1fcaf3"
+    },
+    "variedades_entrega": {
+      "file": "modules.tsx",
+      "line": 1591,
+      "needle": "Kilos por variedad",
+      "excerpt": "{!execution&&varieties.length>1&&<fieldset className=\"rounded-xl border border-line p-4 sm:col-span-2\"><legend className=\"px-1 text-xs font-semibold uppercase text-ink-soft\">Kilos por variedad</legend><p className=\"mb-3 text-xs text-ink-soft\">Distribuye los kilos programados para ver cada variedad en el programa semanal. Si dejas todos en cero, quedarán por ",
+      "sha256": "132fc1d07bf7a7717e0b2aad5f1a79b95ea2baadc6eb2e6954dd7181da1fcaf3"
+    },
+    "solicitud": {
+      "file": "modules.tsx",
+      "line": 1706,
+      "needle": "function TransportRequestModal",
+      "excerpt": "function TransportRequestModal({ companyIds, onClose, onSend }: { companyIds: string[]; onClose: () => void; onSend: (request: TransportRequest) => void }) {",
+      "sha256": "132fc1d07bf7a7717e0b2aad5f1a79b95ea2baadc6eb2e6954dd7181da1fcaf3"
+    },
+    "cotizacion": {
+      "file": "modules.tsx",
+      "line": 1735,
+      "needle": "function TransportQuoteModal",
+      "excerpt": "function TransportQuoteModal({ companyIds, onClose, onSave }: { companyIds: string[]; onClose: () => void; onSave: (quote: TransportQuote) => void }) {",
+      "sha256": "132fc1d07bf7a7717e0b2aad5f1a79b95ea2baadc6eb2e6954dd7181da1fcaf3"
+    },
+    "acuerdo_transporte": {
+      "file": "modules.tsx",
+      "line": 279,
+      "needle": "function TransportPaymentAgreementModal",
+      "excerpt": "function TransportPaymentAgreementModal({ linkId, onClose }: { linkId: string; onClose: () => void }) {",
+      "sha256": "132fc1d07bf7a7717e0b2aad5f1a79b95ea2baadc6eb2e6954dd7181da1fcaf3"
+    },
+    "cosecha": {
+      "file": "export-harvest.tsx",
+      "line": 58,
+      "needle": "export function ExportHarvestFlow",
+      "excerpt": "export function ExportHarvestFlow({ operation, section }: { operation: QualityOperation; section: string }) {",
+      "sha256": "0d49659b74f0ec54f8c3970ca46f4b6ed2b48ab0a7a09e3d2f4210b5feef43ec"
+    },
+    "analisis": {
+      "file": "export-harvest.tsx",
+      "line": 75,
+      "needle": "function ExportAnalysisEditor",
+      "excerpt": "function ExportAnalysisEditor({ operation, analysisId, onClose }: { operation: QualityOperation; analysisId: string; onClose: () => void }) {",
+      "sha256": "0d49659b74f0ec54f8c3970ca46f4b6ed2b48ab0a7a09e3d2f4210b5feef43ec"
+    },
+    "mtd": {
+      "file": "store.tsx",
+      "line": 824,
+      "needle": "saveExportMtd: (record) =>",
+      "excerpt": "saveExportMtd: (record) => {",
+      "sha256": "ab929a3c7f5d67bd2c2ebc4f9fec39b44eaadea39bea7e4badd8778699c6e8d0"
+    },
+    "carga": {
+      "file": "load-registration.tsx",
+      "line": 24,
+      "needle": "export function LoadRegistrationModal",
+      "excerpt": "export function LoadRegistrationModal({operationId,campaignId,initialViaticos,route='Industria',linkId,item,initialSource:sourceProp,registration,onSubmit,onReject,reviewSource,onClose}:{operationId?:string;campaignId?:string;initialViaticos?:QualityOperation['viaticos'];route?:QualityRoute;linkId?:string;item?:CampaignTransportService;initialSource?:Quality",
+      "sha256": "35865b105c96845f673ad7da780b1abe3fc6cd1c7f392bb57751ada7f96eaba1"
+    },
+    "viaticos": {
+      "file": "load-expenses.tsx",
+      "line": 10,
+      "needle": "export function LoadTravelExpensesEditor",
+      "excerpt": "export function LoadTravelExpensesEditor({value,onChange}:{value:TravelExpenseDraft;onChange:(value:TravelExpenseDraft)=>void}) {",
+      "sha256": "856a92ccfdeb2d81ea86af08f863b138ca96d694fd8400392eec56a93039cb19"
+    },
+    "guia": {
+      "file": "remission-editor.tsx",
+      "line": 19,
+      "needle": "export function RemissionGuideEditor",
+      "excerpt": "export function RemissionGuideEditor({linkId,serviceId,guideId,onClose}:{linkId:string;serviceId:string;guideId:string;onClose:()=>void}) {",
+      "sha256": "76e4ebfb0e35e96c1d95813c829a0aea1b21245c5367b4140db77f2b90bc6711"
+    },
+    "normas": {
+      "file": "remission-model.ts",
+      "line": 5,
+      "needle": "export const GUIDE_STANDARDS",
+      "excerpt": "export const GUIDE_STANDARDS = [",
+      "sha256": "6f0cdb142529f5388a0ce72a8294c3d673ad436440d9ea337acc0facf6444e2a"
+    },
+    "despacho": {
+      "file": "dispatch-model.ts",
+      "line": 9,
+      "needle": "export function dispatchHistory",
+      "excerpt": "export function dispatchHistory(service?: CampaignTransportService): DispatchReport[] {",
+      "sha256": "3982c609f9fa276e83395ac0dc37db955c17069eb5a933107a21d5ed9765c0fe"
+    },
+    "recepcion": {
+      "file": "driver-receipt.tsx",
+      "line": 15,
+      "needle": "function DriverReceiptForm",
+      "excerpt": "function DriverReceiptForm({step,delivery:d,service,onSave,onCancel}:{step:Exclude<DriverChecklistStep,'exitGuide'>;delivery:LogisticsDelivery;service:CampaignTransportService;onSave:(input:DriverReceiptInput)=>string;onCancel:()=>void}){",
+      "sha256": "b933c555bd1e518b7444f30d868df60be8eb83ab93d3d083cfc81bb176769f96"
+    },
+    "liquidacion_proveedor": {
+      "file": "finance.tsx",
+      "line": 125,
+      "needle": "function SourceLiquidationModal",
+      "excerpt": "export function SourceLiquidationModal({kind,document,initialKey,onCurrency,onClose}:{kind:Kind;document?:Document;initialKey?:string;onCurrency:(currency:string)=>void;onClose:()=>void}){",
+      "sha256": "30aa157e274c55bf81fe48b949a7693e457e3a1328a527674e2854d2fcb6e801"
+    },
+    "liquidacion_transporte": {
+      "file": "finance.tsx",
+      "line": 224,
+      "needle": "function TransportSettlementModal",
+      "excerpt": "function TransportSettlementModal({settlement,onClose,onCurrency}:{settlement?:PurchaseSettlement;onClose:()=>void;onCurrency?:(currency:string)=>void}) {",
+      "sha256": "30aa157e274c55bf81fe48b949a7693e457e3a1328a527674e2854d2fcb6e801"
+    },
+    "adelanto": {
+      "file": "transport-advance-ui.tsx",
+      "line": 34,
+      "needle": "function TransportAdvancePaymentModal",
+      "excerpt": "function TransportAdvancePaymentModal({linkId,onClose}:{linkId:string;onClose:()=>void}){",
+      "sha256": "5cd13cb327a1cf512d57f3525a91867ae5b74e8288a84ef19a73fbabec95270e"
+    },
+    "aplicacion": {
+      "file": "transport-advance-ui.tsx",
+      "line": 20,
+      "needle": "export function ApplyTransportAdvanceModal",
+      "excerpt": "export function ApplyTransportAdvanceModal({documentId,onClose}:{documentId:string;onClose:()=>void}){",
+      "sha256": "5cd13cb327a1cf512d57f3525a91867ae5b74e8288a84ef19a73fbabec95270e"
+    },
+    "factura": {
+      "file": "sales-billing.ts",
+      "line": 10,
+      "needle": "export function invoiceBillingIssue",
+      "excerpt": "export function invoiceBillingIssue(invoice: Invoice, invoices: Invoice[]): string {",
+      "sha256": "76a884448c8b42eab5a8d435f2f49b1219c68887a62ef8155e9f884efe3e214f"
+    },
+    "pago": {
+      "file": "settlement-payment-modal.tsx",
+      "line": 10,
+      "needle": "export function SettlementPaymentModal",
+      "excerpt": "export function SettlementPaymentModal({fixedId,transport,onClose}:{fixedId?:string;transport?:boolean;onClose:()=>void}){",
+      "sha256": "aaecae3e019c1543eab5ae33f478e00bbc50c25951f9e467bcb18e6b6cc700d8"
+    },
+    "cobro": {
+      "file": "finance.tsx",
+      "line": 197,
+      "needle": "function FinancialMovementForm",
+      "excerpt": "function FinancialMovementForm({ kind, fixedId, transport, onClose }: { kind: Kind; fixedId?: string; transport?: boolean; onClose: () => void }) {",
+      "sha256": "30aa157e274c55bf81fe48b949a7693e457e3a1328a527674e2854d2fcb6e801"
+    },
+    "frutas": {
+      "file": "store.tsx",
+      "line": 409,
+      "needle": "export const FRUIT_CATALOG",
+      "excerpt": "export const FRUIT_CATALOG: Record<string, string[]> = {",
+      "sha256": "ab929a3c7f5d67bd2c2ebc4f9fec39b44eaadea39bea7e4badd8778699c6e8d0"
+    }
+  },
+  "constants": [
+    {
+      "name": "Moneda",
+      "storage": "Campo moneda en cada transacción; no hay tabla moneda propuesta.",
+      "proposal": "Opciones fijas por contexto. Compra y acuerdo de transporte: PEN según decisión vigente. Ventas/certificados conservan la moneda elegida entre las opciones permitidas. El prototipo aún ofrece otras monedas en transporte: alinear la UI y sus validaciones, sin cambiar solo la etiqueta de un importe.",
+      "evidence": [
+        "participacion",
+        "acuerdo_transporte",
+        "contrato",
+        "cotizacion"
+      ]
+    },
+    {
+      "name": "Perfiles",
+      "storage": "rol o enum; usuario mantiene el perfil real.",
+      "proposal": "Administrador y Chofer pueden ser seed. No se necesita CRUD de roles para este prototipo; la autorización sí debe comprobarse en backend.",
+      "evidence": [
+        "acceso"
+      ]
+    },
+    {
+      "name": "Normas y tipos de certificado",
+      "storage": "Códigos/tipos validados y snapshots del documento.",
+      "proposal": "norma permanece como tabla con cinco códigos iniciales. guia_x_norma guarda selecciones reales; tipo_certificacion es un campo validado con opciones fijas, independiente del catálogo de normas. Se conserva la frase emitida.",
+      "evidence": [
+        "normas",
+        "certificacion"
+      ]
+    },
+    {
+      "name": "Frutas y variedades",
+      "storage": "fruta/fruta_derivada son tablas actuales; relaciones de selección cuando corresponda.",
+      "proposal": "FRUIT_CATALOG puede alimentar seed de los catálogos existentes. No hardcodear IDs numéricos ni copiar todas las variedades a cada campaña. La UI multifruta contradice el acuerdo de una fruta por campaña.",
+      "evidence": [
+        "frutas",
+        "campana"
+      ]
+    },
+    {
+      "name": "UIT anual y umbral",
+      "storage": "Configuración por año y snapshot de los valores aplicados.",
+      "proposal": "Puede mantenerse seed/configuración controlada sin CRUD. No es una constante eterna ni se completa un año ausente con cero. Esta auditoría observa código; no valida vigencia normativa de sus importes.",
+      "evidence": [
+        "uit"
+      ]
+    },
+    {
+      "name": "Tipos de examen, etapas y estados",
+      "storage": "Código/enum/CHECK; resultados e historial por operación.",
+      "proposal": "Opciones fijas del prototipo sin una tabla de catálogo por selector. El estado inicial no sustituye un evento o resultado real.",
+      "evidence": [
+        "analisis",
+        "despacho"
+      ]
+    },
+    {
+      "name": "Métodos de pago y conceptos de viático",
+      "storage": "Código/texto validado en el movimiento o gasto.",
+      "proposal": "Listas fijas sin catálogos nuevos. Mantener importes, evidencias y aplicaciones: un concepto fijo no vuelve fijo al movimiento.",
+      "evidence": [
+        "pago",
+        "viaticos",
+        "adelanto"
+      ]
+    }
+  ],
+  "tables": [
+    {
+      "table": "persona",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Modal de personas vinculadas y selector de liquidación",
+      "finding": "Se crean identidades reales y se elige a quién corresponde liquidar.",
+      "proposal": "Conservar persona y selección; no convertirlas en una persona genérica.",
+      "defaults": "Tipo de documento puede iniciar en DNI; nombre, documento y persona elegida deben ser reales.",
+      "views": [],
+      "evidence": [
+        "personas"
+      ],
+      "columns": 10,
+      "inbound_fks": [
+        {
+          "child": "usuario",
+          "cols": [
+            "persona_id"
+          ],
+          "parent": "persona",
+          "targets": [
+            "persona_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor_x_persona",
+          "cols": [
+            "persona_id"
+          ],
+          "parent": "persona",
+          "targets": [
+            "persona_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "chofer_transporte_externo",
+          "cols": [
+            "persona_id"
+          ],
+          "parent": "persona",
+          "targets": [
+            "persona_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor",
+          "cols": [
+            "persona_id"
+          ],
+          "parent": "persona",
+          "targets": [
+            "persona_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "empresa_transporte_externo",
+          "cols": [
+            "persona_id"
+          ],
+          "parent": "persona",
+          "targets": [
+            "persona_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "liquidacion_proveedor",
+          "cols": [
+            "persona_liquidacion_id"
+          ],
+          "parent": "persona",
+          "targets": [
+            "persona_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": []
+    },
+    {
+      "table": "rol",
+      "decision": "configurar",
+      "label": "Conservar con seed/configuración",
+      "ui": "Acceso por perfil; sin administración de roles",
+      "finding": "Los perfiles Administrador y Chofer se cargan mediante SQL inicial; el catálogo permite más perfiles sin requerir CRUD ahora.",
+      "proposal": "Mantener tabla rol y sus dos registros iniciales SQL; no crear pantalla de catálogo por ahora.",
+      "defaults": "Resolver por código estable; nunca usar un rol administrador predeterminado para cualquier cuenta.",
+      "views": [],
+      "evidence": [
+        "acceso",
+        "menu"
+      ],
+      "columns": 4,
+      "inbound_fks": [
+        {
+          "child": "usuario",
+          "cols": [
+            "rol_id"
+          ],
+          "parent": "rol",
+          "targets": [
+            "rol_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": []
+    },
+    {
+      "table": "usuario",
+      "decision": "tecnica",
+      "label": "Conservar por función técnica",
+      "ui": "Identidad de acceso; sin CRUD de cuentas de negocio",
+      "finding": "La ausencia de una pantalla de usuarios no elimina la necesidad de identificar al actor de las operaciones.",
+      "proposal": "Conservar si la autenticación del backend usa esta entidad; mapear identidad autenticada y responsable.",
+      "defaults": "Responsable desde la sesión autenticada, no usuario_id=1 ni una cuenta demo compartida.",
+      "views": [],
+      "evidence": [
+        "acceso",
+        "menu"
+      ],
+      "columns": 8,
+      "inbound_fks": [
+        {
+          "child": "ampliacion_certificado_campana",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "pago_certificado_campana",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "medicion_mtd",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "liquidacion_proveedor",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "liquidacion_transporte",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "pago_proveedor",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "pago_transporte",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "cobro_venta",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "campana",
+          "cols": [
+            "responsable_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "campana",
+          "cols": [
+            "cerrada_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "chofer_transporte_externo",
+          "cols": [
+            "usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "entrevista_extencion",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "usuario",
+          "cols": [
+            "persona_id"
+          ],
+          "parent": "persona",
+          "targets": [
+            "persona_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "usuario",
+          "cols": [
+            "rol_id"
+          ],
+          "parent": "rol",
+          "targets": [
+            "rol_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "parametro_uit",
+      "decision": "configurar",
+      "label": "Conservar con seed/configuración",
+      "ui": "Panel de consulta anual; valores en constantes del código",
+      "finding": "Existe consulta por año y conversión de operaciones, pero no CRUD del parámetro anual.",
+      "proposal": "Conservar como tabla con datos iniciales SQL de 2025/2026 y umbral, ampliable por año sin CRUD; preservar snapshots aplicados.",
+      "defaults": "Seed por año conocido; umbral del prototipo 0.90. Año ausente debe requerir configuración, nunca asumir valor cero ni reutilizar otro año.",
+      "views": [],
+      "evidence": [
+        "uit"
+      ],
+      "columns": 7,
+      "inbound_fks": [],
+      "outbound_fks": []
+    },
+    {
+      "table": "proveedor_x_persona",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Agregar persona vinculada, vínculo y selección para liquidar",
+      "finding": "La relación representa personas vinculadas al proveedor y su vínculo, no un catálogo sin función.",
+      "proposal": "Conservar los vínculos registrados; el proveedor principal no necesita una vinculación ficticia consigo mismo.",
+      "defaults": "Sin filas automáticas; registrar solo personas realmente vinculadas. No inventar documento ni parentesco.",
+      "views": [],
+      "evidence": [
+        "personas"
+      ],
+      "columns": 7,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "proveedor_x_persona",
+          "cols": [
+            "proveedor_id"
+          ],
+          "parent": "proveedor",
+          "targets": [
+            "proveedor_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor_x_persona",
+          "cols": [
+            "persona_id"
+          ],
+          "parent": "persona",
+          "targets": [
+            "persona_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "proveedor_x_fruta_derivada",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Formulario del proveedor con variedades",
+      "finding": "El proveedor declara variedades que comercializa; es una selección distinta de las variedades calculadas de una campaña.",
+      "proposal": "Conservar selección múltiple y unicidad proveedor/variedad.",
+      "defaults": "Lista vacía hasta elegir; no asignar todas las variedades del catálogo.",
+      "views": [],
+      "evidence": [
+        "proveedor",
+        "frutas"
+      ],
+      "columns": 5,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "proveedor_x_fruta_derivada",
+          "cols": [
+            "proveedor_id"
+          ],
+          "parent": "proveedor",
+          "targets": [
+            "proveedor_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor_x_fruta_derivada",
+          "cols": [
+            "fruta_derivada_id"
+          ],
+          "parent": "fruta_derivada",
+          "targets": [
+            "fruta_derivada_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "norma",
+      "decision": "configurar",
+      "label": "Conservar con seed/configuración",
+      "ui": "Selectores fijos de certificación y códigos de guía",
+      "finding": "No existe CRUD de normas. Los tipos de certificado y GUIDE_STANDARDS son listas de código; no son necesariamente la misma taxonomía.",
+      "proposal": "Conservar norma con cinco códigos iniciales SQL y FK explícitas. tipo_certificacion guarda la opción fija del certificado por separado; norma_id solo si se elige una relación real.",
+      "defaults": "Lista fija versionada; sin fila genérica ni norma por defecto. Certificados deben conservar el tipo elegido.",
+      "views": [],
+      "evidence": [
+        "certificacion",
+        "normas"
+      ],
+      "columns": 5,
+      "inbound_fks": [
+        {
+          "child": "guia_x_norma",
+          "cols": [
+            "norma_id"
+          ],
+          "parent": "norma",
+          "targets": [
+            "norma_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "certificado_campana",
+          "cols": [
+            "norma_id"
+          ],
+          "parent": "norma",
+          "targets": [
+            "norma_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": []
+    },
+    {
+      "table": "certificado_campana_x_proveedor",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Selección de productores cubiertos en certificado",
+      "finding": "La cobertura por productor es real aunque se edite desde el modal de certificación y no tenga CRUD propio.",
+      "proposal": "Conservar cobertura y unicidad certificado/proveedor. La FK ya referencia cxp_id de campania_x_proveedores, incluida la coherencia compuesta de campaña/proveedor.",
+      "defaults": "Kilos autorizados deben derivarse de la cobertura real y guardarse como snapshot; no dividir el total por igual ni asignar cero para llenar el campo.",
+      "views": [],
+      "evidence": [
+        "certificacion"
+      ],
+      "columns": 8,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "certificado_campana_x_proveedor",
+          "cols": [
+            "certificado_id"
+          ],
+          "parent": "certificado_campana",
+          "targets": [
+            "certificado_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "certificado_campana_x_proveedor",
+          "cols": [
+            "campania_id"
+          ],
+          "parent": "campana",
+          "targets": [
+            "campania_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "certificado_campana_x_proveedor",
+          "cols": [
+            "cxp_id"
+          ],
+          "parent": "campania_x_proveedores",
+          "targets": [
+            "cxp_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "certificado_campana_x_proveedor",
+          "cols": [
+            "proveedor_id"
+          ],
+          "parent": "proveedor",
+          "targets": [
+            "proveedor_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "certificado_campana_x_proveedor",
+          "cols": [
+            "certificado_id",
+            "campania_id"
+          ],
+          "parent": "certificado_campana",
+          "targets": [
+            "certificado_id",
+            "campania_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "certificado_campana_x_proveedor",
+          "cols": [
+            "cxp_id",
+            "campania_id",
+            "proveedor_id"
+          ],
+          "parent": "campania_x_proveedores",
+          "targets": [
+            "cxp_id",
+            "campania_id",
+            "proveedor_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "ampliacion_certificado_campana",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Modal de ampliación del certificado",
+      "finding": "Hay registro de kilos adicionales, fecha y observaciones; el historial no se sustituye por un único total.",
+      "proposal": "Conservar una fila por ampliación confirmada.",
+      "defaults": "Kilos y fecha confirmada no se inventan. Ninguna ampliación se crea al abrir el modal ni requiere un estado adicional no observado.",
+      "views": [],
+      "evidence": [
+        "ampliacion"
+      ],
+      "columns": 8,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "ampliacion_certificado_campana",
+          "cols": [
+            "certificado_id"
+          ],
+          "parent": "certificado_campana",
+          "targets": [
+            "certificado_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "ampliacion_certificado_campana",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "pago_certificado_campana",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Modal de pago del certificado",
+      "finding": "Los pagos y su comprobante tienen registro propio en la interfaz.",
+      "proposal": "Conservar movimientos reales separados del monto del certificado.",
+      "defaults": "Fecha puede precargarse para confirmar; monto y moneda elegidos deben conservarse. No crear pago cero ni pago automático al emitir certificado.",
+      "views": [],
+      "evidence": [
+        "pago_certificacion"
+      ],
+      "columns": 9,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "pago_certificado_campana",
+          "cols": [
+            "certificado_id"
+          ],
+          "parent": "certificado_campana",
+          "targets": [
+            "certificado_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "pago_certificado_campana",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "cliente_negocio_campana_x_fruta_derivada",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Selección múltiple de variedades del requerimiento",
+      "finding": "El cliente selecciona variedades; aquí el puente representa datos elegidos y no un cálculo automático.",
+      "proposal": "Conservar la relación de variedades requeridas sin CRUD de catálogo adicional.",
+      "defaults": "No asignar todas las variedades por defecto; guardar las elegidas en el formulario.",
+      "views": [],
+      "evidence": [
+        "requerimiento"
+      ],
+      "columns": 5,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "cliente_negocio_campana_x_fruta_derivada",
+          "cols": [
+            "cliente_negocio_campana_id"
+          ],
+          "parent": "cliente_negocio_campana",
+          "targets": [
+            "cliente_negocio_campana_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "cliente_negocio_campana_x_fruta_derivada",
+          "cols": [
+            "fruta_derivada_id"
+          ],
+          "parent": "fruta_derivada",
+          "targets": [
+            "fruta_derivada_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "contrato_venta",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Formulario de contrato por requerimiento",
+      "finding": "Se crean contratos con precio, moneda y condiciones/documento.",
+      "proposal": "Conservar contrato y snapshots de lo acordado.",
+      "defaults": "Conservar el estado que guarda el contrato real; no añadir un ciclo de borrador no observado. Precio/moneda no se infieren del selector de filtro.",
+      "views": [],
+      "evidence": [
+        "contrato"
+      ],
+      "columns": 15,
+      "inbound_fks": [
+        {
+          "child": "entrega_programada",
+          "cols": [
+            "contrato_venta_id"
+          ],
+          "parent": "contrato_venta",
+          "targets": [
+            "contrato_venta_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "contrato_venta",
+          "cols": [
+            "cliente_negocio_campana_id"
+          ],
+          "parent": "cliente_negocio_campana",
+          "targets": [
+            "cliente_negocio_campana_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "entrega_programada",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Programación y edición de entrega",
+      "finding": "La entrega tiene cantidades, fecha, destino y coordinación propios.",
+      "proposal": "Conservar; destino permanece texto obligatorio por D08 y no vuelve a ser catálogo.",
+      "defaults": "El estado de entrega se obtiene del flujo, sin agregar otra columna por rutina. Fecha, kilos y destino son datos reales; no usar dirección ni fecha ficticias.",
+      "views": [],
+      "evidence": [
+        "entrega"
+      ],
+      "columns": 8,
+      "inbound_fks": [
+        {
+          "child": "entrega_x_fruta_derivada",
+          "cols": [
+            "entrega_programada_id"
+          ],
+          "parent": "entrega_programada",
+          "targets": [
+            "entrega_programada_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "coordinacion_entrega",
+          "cols": [
+            "entrega_programada_id"
+          ],
+          "parent": "entrega_programada",
+          "targets": [
+            "entrega_programada_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "cosecha",
+          "cols": [
+            "entrega_programada_id"
+          ],
+          "parent": "entrega_programada",
+          "targets": [
+            "entrega_programada_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "entrega_programada",
+          "cols": [
+            "contrato_venta_id"
+          ],
+          "parent": "contrato_venta",
+          "targets": [
+            "contrato_venta_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "entrega_x_fruta_derivada",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Campos Kilos por variedad cuando hay varias variedades",
+      "finding": "El código actual permite distribuir kilos y valida la suma; existe una función visible de esta tabla.",
+      "proposal": "Conservar filas para la distribución registrada. Este editor actual matiza la evidencia anterior del recorrido del 27/10.",
+      "defaults": "Con una sola variedad puede derivarse el total; con varias no repartir por igual ni inventar cantidades si no se informó distribución.",
+      "views": [],
+      "evidence": [
+        "variedades_entrega"
+      ],
+      "columns": 6,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "entrega_x_fruta_derivada",
+          "cols": [
+            "entrega_programada_id"
+          ],
+          "parent": "entrega_programada",
+          "targets": [
+            "entrega_programada_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "entrega_x_fruta_derivada",
+          "cols": [
+            "fruta_derivada_id"
+          ],
+          "parent": "fruta_derivada",
+          "targets": [
+            "fruta_derivada_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "solicitud_transporte",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Modal de solicitud y detalle de respuestas",
+      "finding": "La solicitud tiene ventana, ruta, condiciones, kilos y transportistas seleccionados.",
+      "proposal": "Conservar cabecera y datos de la convocatoria.",
+      "defaults": "Inicio BORRADOR; la UI indica envío simulado. No registrar envío real por abrir o guardar el formulario.",
+      "views": [],
+      "evidence": [
+        "solicitud"
+      ],
+      "columns": 16,
+      "inbound_fks": [
+        {
+          "child": "invitacion_transporte",
+          "cols": [
+            "solicitud_transporte_id"
+          ],
+          "parent": "solicitud_transporte",
+          "targets": [
+            "solicitud_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "solicitud_transporte",
+          "cols": [
+            "campania_id"
+          ],
+          "parent": "campana",
+          "targets": [
+            "campania_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "invitacion_transporte",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Empresas seleccionadas dentro de la solicitud",
+      "finding": "Cada destinatario permite relacionar sus respuestas y la empresa seleccionada; no necesita CRUD separado.",
+      "proposal": "Conservar una fila por empresa seleccionada y correo snapshot opcional. Aclarar que INVITADA es estado lógico mientras no haya integración de envío.",
+      "defaults": "Correo desde empresa si existe; NULL si falta. No inventar correo ni marcar correo ENVIADO sin confirmación de envío.",
+      "views": [],
+      "evidence": [
+        "solicitud",
+        "cotizacion"
+      ],
+      "columns": 7,
+      "inbound_fks": [
+        {
+          "child": "cotizacion_transporte",
+          "cols": [
+            "invitacion_transporte_id"
+          ],
+          "parent": "invitacion_transporte",
+          "targets": [
+            "invitacion_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "invitacion_transporte",
+          "cols": [
+            "solicitud_transporte_id"
+          ],
+          "parent": "solicitud_transporte",
+          "targets": [
+            "solicitud_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "invitacion_transporte",
+          "cols": [
+            "id_empresa_transporte_externo"
+          ],
+          "parent": "empresa_transporte_externo",
+          "targets": [
+            "id_empresa_transporte_externo"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "cotizacion_transporte",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Modal Registrar respuesta / TransportQuoteModal",
+      "finding": "El prototipo actual sí tiene editor de empresa, monto, moneda, disponibilidad, condiciones y archivo.",
+      "proposal": "Conservar. disponibilidad text ya conserva el campo del editor sin un catálogo adicional.",
+      "defaults": "fecha puede capturarse al registrar si no hay fecha documental distinta. RECIBIDA al guardar respuesta real; monto y moneda son los de esa respuesta.",
+      "views": [],
+      "evidence": [
+        "cotizacion"
+      ],
+      "columns": 11,
+      "inbound_fks": [
+        {
+          "child": "acuerdo_transporte",
+          "cols": [
+            "cotizacion_transporte_id"
+          ],
+          "parent": "cotizacion_transporte",
+          "targets": [
+            "cotizacion_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "cotizacion_transporte",
+          "cols": [
+            "invitacion_transporte_id"
+          ],
+          "parent": "invitacion_transporte",
+          "targets": [
+            "invitacion_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "acuerdo_transporte",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Modal de acuerdo, monto, adelanto y saldo",
+      "finding": "El acuerdo aceptado tiene función distinta de la cotización recibida y de la solicitud.",
+      "proposal": "Conservar confirmación y enlace con la empresa/campaña; fecha de acuerdo puede capturarse al confirmar.",
+      "defaults": "BORRADOR antes de confirmar. PEN según acuerdo vigente; corregir los selectores del prototipo que aún ofrecen otras monedas. No cambiar solo el código de una cotización USD sin conversión acordada.",
+      "views": [],
+      "evidence": [
+        "acuerdo_transporte"
+      ],
+      "columns": 15,
+      "inbound_fks": [
+        {
+          "child": "coordinacion_entrega",
+          "cols": [
+            "acuerdo_transporte_id"
+          ],
+          "parent": "acuerdo_transporte",
+          "targets": [
+            "acuerdo_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "adelanto_transporte",
+          "cols": [
+            "acuerdo_transporte_id"
+          ],
+          "parent": "acuerdo_transporte",
+          "targets": [
+            "acuerdo_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "coordinacion_entrega",
+          "cols": [
+            "acuerdo_transporte_id",
+            "id_empresa_transporte_externo"
+          ],
+          "parent": "acuerdo_transporte",
+          "targets": [
+            "acuerdo_transporte_id",
+            "id_empresa_transporte_externo"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "acuerdo_transporte",
+          "cols": [
+            "campania_id"
+          ],
+          "parent": "campana",
+          "targets": [
+            "campania_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "acuerdo_transporte",
+          "cols": [
+            "id_empresa_transporte_externo"
+          ],
+          "parent": "empresa_transporte_externo",
+          "targets": [
+            "id_empresa_transporte_externo"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "acuerdo_transporte",
+          "cols": [
+            "cotizacion_transporte_id"
+          ],
+          "parent": "cotizacion_transporte",
+          "targets": [
+            "cotizacion_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "coordinacion_entrega",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Coordinación de la entrega con transporte, chofer y ventana",
+      "finding": "La coordinación identifica el viaje y las reservas, no una tabla adicional solo para una pantalla.",
+      "proposal": "Conservar la coordinación; responsables y recursos provienen de las selecciones y asignaciones reales.",
+      "defaults": "Sin transportista/chofer/vehículo ficticio por defecto; ventanas desde la coordinación confirmada.",
+      "views": [],
+      "evidence": [
+        "entrega"
+      ],
+      "columns": 15,
+      "inbound_fks": [
+        {
+          "child": "origen_entrega",
+          "cols": [
+            "coordinacion_entrega_id"
+          ],
+          "parent": "coordinacion_entrega",
+          "targets": [
+            "coordinacion_entrega_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "carga",
+          "cols": [
+            "coordinacion_entrega_id"
+          ],
+          "parent": "coordinacion_entrega",
+          "targets": [
+            "coordinacion_entrega_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "historial_chofer",
+          "cols": [
+            "coordinacion_entrega_id"
+          ],
+          "parent": "coordinacion_entrega",
+          "targets": [
+            "coordinacion_entrega_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "chofer_vehiculo_externo",
+          "cols": [
+            "coordinacion_entrega_id"
+          ],
+          "parent": "coordinacion_entrega",
+          "targets": [
+            "coordinacion_entrega_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "trazabilidad_transporte",
+          "cols": [
+            "coordinacion_entrega_id"
+          ],
+          "parent": "coordinacion_entrega",
+          "targets": [
+            "coordinacion_entrega_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "coordinacion_entrega",
+          "cols": [
+            "entrega_programada_id"
+          ],
+          "parent": "entrega_programada",
+          "targets": [
+            "entrega_programada_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "coordinacion_entrega",
+          "cols": [
+            "acuerdo_transporte_id"
+          ],
+          "parent": "acuerdo_transporte",
+          "targets": [
+            "acuerdo_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "coordinacion_entrega",
+          "cols": [
+            "id_empresa_transporte_externo"
+          ],
+          "parent": "empresa_transporte_externo",
+          "targets": [
+            "id_empresa_transporte_externo"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "coordinacion_entrega",
+          "cols": [
+            "id_chofer_transporte_externo"
+          ],
+          "parent": "chofer_transporte_externo",
+          "targets": [
+            "id_chofer_transporte_externo"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "coordinacion_entrega",
+          "cols": [
+            "acuerdo_transporte_id",
+            "id_empresa_transporte_externo"
+          ],
+          "parent": "acuerdo_transporte",
+          "targets": [
+            "acuerdo_transporte_id",
+            "id_empresa_transporte_externo"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "coordinacion_entrega",
+          "cols": [
+            "id_vehiculo_externo",
+            "id_empresa_transporte_externo"
+          ],
+          "parent": "vehiculo_externo",
+          "targets": [
+            "id_vehiculo_externo",
+            "id_empresa_transporte_externo"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "coordinacion_entrega",
+          "cols": [
+            "id_chofer_transporte_externo",
+            "id_empresa_transporte_externo"
+          ],
+          "parent": "chofer_transporte_externo",
+          "targets": [
+            "id_chofer_transporte_externo",
+            "id_empresa_transporte_externo"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "origen_entrega",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Productores y fincas de recojo dentro de la entrega",
+      "finding": "Una entrega puede reunir varios orígenes; una finca mantiene una variedad según acuerdo vigente.",
+      "proposal": "Conservar el detalle de los orígenes seleccionados.",
+      "defaults": "No crear origen genérico. Kilos por origen solo si se informaron; no repartir el total automáticamente.",
+      "views": [],
+      "evidence": [
+        "entrega",
+        "carga"
+      ],
+      "columns": 6,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "origen_entrega",
+          "cols": [
+            "coordinacion_entrega_id"
+          ],
+          "parent": "coordinacion_entrega",
+          "targets": [
+            "coordinacion_entrega_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "origen_entrega",
+          "cols": [
+            "cxp_id"
+          ],
+          "parent": "campania_x_proveedores",
+          "targets": [
+            "cxp_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "origen_entrega",
+          "cols": [
+            "finca_id"
+          ],
+          "parent": "finca",
+          "targets": [
+            "finca_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "cosecha",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Flujo de cosecha, organización, avances y cierre",
+      "finding": "Existe una operación con ciclo y datos distintos de la programación de entrega.",
+      "proposal": "Conservar el estado de la cosecha y sus JSON de organización/avances/cierre; no crear tablas nuevas por cada pestaña.",
+      "defaults": "PENDIENTE y JSON vacíos son válidos al iniciar. Código de lote generado de forma única si no hay campo manual; pesos y cierre solo al registrarse.",
+      "views": [],
+      "evidence": [
+        "cosecha"
+      ],
+      "columns": 17,
+      "inbound_fks": [
+        {
+          "child": "analisis_calidad",
+          "cols": [
+            "cosecha_id"
+          ],
+          "parent": "cosecha",
+          "targets": [
+            "cosecha_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "cosecha",
+          "cols": [
+            "entrega_programada_id"
+          ],
+          "parent": "entrega_programada",
+          "targets": [
+            "entrega_programada_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "analisis_calidad",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Registrar/editar análisis por productor y finca",
+      "finding": "El análisis y su evidencia se registran; puede preceder a la cosecha.",
+      "proposal": "Conservar relación por participación/finca y vínculo de cosecha opcional.",
+      "defaults": "No asignar resultado APROBADO, fecha de examen ni medición cero por defecto. Cosecha NULL cuando el análisis es previo.",
+      "views": [],
+      "evidence": [
+        "analisis"
+      ],
+      "columns": 14,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "analisis_calidad",
+          "cols": [
+            "cosecha_id"
+          ],
+          "parent": "cosecha",
+          "targets": [
+            "cosecha_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "analisis_calidad",
+          "cols": [
+            "cxp_id"
+          ],
+          "parent": "campania_x_proveedores",
+          "targets": [
+            "cxp_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "analisis_calidad",
+          "cols": [
+            "finca_id"
+          ],
+          "parent": "finca",
+          "targets": [
+            "finca_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "medicion_mtd",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "MTD dentro del análisis y resumen compartido por finca",
+      "finding": "Se guarda una medición reutilizada por campaña/proveedor/finca y existe lógica de historial en el store.",
+      "proposal": "Conservar medición/evidencia compartidas; no exigir un CRUD nuevo ni duplicar una medición por cada pantalla que la consulta.",
+      "defaults": "No usar MTD=0 para significar pendiente. Fecha de registro técnica desde backend; valor y evidencia desde el examen real.",
+      "views": [],
+      "evidence": [
+        "analisis",
+        "mtd"
+      ],
+      "columns": 11,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "medicion_mtd",
+          "cols": [
+            "cxp_id"
+          ],
+          "parent": "campania_x_proveedores",
+          "targets": [
+            "cxp_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "medicion_mtd",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "medicion_mtd",
+          "cols": [
+            "finca_id"
+          ],
+          "parent": "finca",
+          "targets": [
+            "finca_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "carga",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Modal de registro de carga",
+      "finding": "Carga contiene fecha, responsable, kilos, bultos y registro de operación.",
+      "proposal": "Conservar una cabecera por carga y sus datos capturados.",
+      "defaults": "Código único generado y registrado_at=now() son seguros; kilos, fecha de carga y responsable no se inventan.",
+      "views": [],
+      "evidence": [
+        "carga"
+      ],
+      "columns": 13,
+      "inbound_fks": [
+        {
+          "child": "proveedor_carga",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "gasto_carga",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "guia_remision",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor_guia",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "historial_chofer",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "recepcion_planta",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "liquidacion_proveedor",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "liquidacion_transporte",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "gasto_transporte",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "factura_venta",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "historial_chofer",
+          "cols": [
+            "carga_id",
+            "coordinacion_entrega_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id",
+            "coordinacion_entrega_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "detalle_trazabilidad",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "trazabilidad_transporte",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "carga",
+          "cols": [
+            "coordinacion_entrega_id"
+          ],
+          "parent": "coordinacion_entrega",
+          "targets": [
+            "coordinacion_entrega_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "proveedor_carga",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Filas de proveedores con kilos y envases en carga",
+      "finding": "La UI permite múltiples proveedores con cantidades propias.",
+      "proposal": "Conservar detalle y envases de cada proveedor; su participación ya referencia cxp_id de campania_x_proveedores.",
+      "defaults": "No crear filas vacías para todos los participantes ni dividir cantidades sin registro.",
+      "views": [],
+      "evidence": [
+        "carga"
+      ],
+      "columns": 14,
+      "inbound_fks": [
+        {
+          "child": "origen_carga",
+          "cols": [
+            "proveedor_carga_id"
+          ],
+          "parent": "proveedor_carga",
+          "targets": [
+            "proveedor_carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor_guia",
+          "cols": [
+            "proveedor_carga_id"
+          ],
+          "parent": "proveedor_carga",
+          "targets": [
+            "proveedor_carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor_guia",
+          "cols": [
+            "proveedor_carga_id",
+            "carga_id"
+          ],
+          "parent": "proveedor_carga",
+          "targets": [
+            "proveedor_carga_id",
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "proveedor_carga",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor_carga",
+          "cols": [
+            "cxp_id"
+          ],
+          "parent": "campania_x_proveedores",
+          "targets": [
+            "cxp_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor_carga",
+          "cols": [
+            "fruta_derivada_id"
+          ],
+          "parent": "fruta_derivada",
+          "targets": [
+            "fruta_derivada_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "origen_carga",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Procedencia de la carga y sus fincas",
+      "finding": "El origen mantiene trazabilidad del recojo; el contexto puede heredarse de la entrega.",
+      "proposal": "Conservar orígenes efectivamente seleccionados o confirmados desde la entrega.",
+      "defaults": "Puede heredarse el origen real conocido; no elegir la primera finca arbitrariamente ni inventar kilos por finca.",
+      "views": [],
+      "evidence": [
+        "carga",
+        "entrega"
+      ],
+      "columns": 7,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "origen_carga",
+          "cols": [
+            "proveedor_carga_id"
+          ],
+          "parent": "proveedor_carga",
+          "targets": [
+            "proveedor_carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "origen_carga",
+          "cols": [
+            "cxp_id"
+          ],
+          "parent": "campania_x_proveedores",
+          "targets": [
+            "cxp_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "origen_carga",
+          "cols": [
+            "finca_id"
+          ],
+          "parent": "finca",
+          "targets": [
+            "finca_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "gasto_carga",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Gastos/cuadrilla dentro del registro de carga",
+      "finding": "Los gastos repetibles de la carga tienen datos propios aunque estén dentro del mismo modal.",
+      "proposal": "Conservar gastos registrados; conceptos pueden ser lista fija sin tabla de catálogo adicional.",
+      "defaults": "Sin gasto = ninguna fila. Cero solo como ausencia explícita de un concepto, no como comprobante/pago realizado.",
+      "views": [],
+      "evidence": [
+        "carga"
+      ],
+      "columns": 6,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "gasto_carga",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "guia_remision",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Editor de guía, documento y datos de transporte/llegada",
+      "finding": "La guía contiene datos históricos y documentos; no es una simple vista calculada.",
+      "proposal": "Conservar cabecera y snapshots de destino, normas y proveedores.",
+      "defaults": "Contenido JSON vacío en borrador; numeración real/generada única al emitir o permitir número pendiente en borrador. No usar número genérico ni dirección por defecto.",
+      "views": [],
+      "evidence": [
+        "guia"
+      ],
+      "columns": 27,
+      "inbound_fks": [
+        {
+          "child": "proveedor_guia",
+          "cols": [
+            "guia_remision_id"
+          ],
+          "parent": "guia_remision",
+          "targets": [
+            "guia_remision_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "guia_x_norma",
+          "cols": [
+            "guia_remision_id"
+          ],
+          "parent": "guia_remision",
+          "targets": [
+            "guia_remision_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor_guia",
+          "cols": [
+            "guia_remision_id",
+            "carga_id"
+          ],
+          "parent": "guia_remision",
+          "targets": [
+            "guia_remision_id",
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "detalle_trazabilidad",
+          "cols": [
+            "guia_remision_id"
+          ],
+          "parent": "guia_remision",
+          "targets": [
+            "guia_remision_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "guia_remision",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "guia_remision",
+          "cols": [
+            "finca_partida_id"
+          ],
+          "parent": "finca",
+          "targets": [
+            "finca_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "proveedor_guia",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Detalle de productores dentro de la guía",
+      "finding": "El documento incluye los proveedores/cantidades que realmente ampara.",
+      "proposal": "Conservar detalle/snapshot al emitir; origen puede precargarse desde la carga confirmada.",
+      "defaults": "No agregar todos los proveedores de campaña; incluir solo los de esta guía y cantidades reales.",
+      "views": [],
+      "evidence": [
+        "guia",
+        "carga"
+      ],
+      "columns": 8,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "proveedor_guia",
+          "cols": [
+            "guia_remision_id"
+          ],
+          "parent": "guia_remision",
+          "targets": [
+            "guia_remision_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor_guia",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor_guia",
+          "cols": [
+            "proveedor_carga_id"
+          ],
+          "parent": "proveedor_carga",
+          "targets": [
+            "proveedor_carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor_guia",
+          "cols": [
+            "guia_remision_id",
+            "carga_id"
+          ],
+          "parent": "guia_remision",
+          "targets": [
+            "guia_remision_id",
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "proveedor_guia",
+          "cols": [
+            "proveedor_carga_id",
+            "carga_id"
+          ],
+          "parent": "proveedor_carga",
+          "targets": [
+            "proveedor_carga_id",
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "guia_x_norma",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Selección de códigos fijos y texto generado en la guía",
+      "finding": "La selección múltiple existe, pero el prototipo ya guarda standardCodes y standardText dentro de los detalles del documento.",
+      "proposal": "Conservar el puente. Al guardar borrador, resolver los códigos seleccionados contra norma y sincronizar sus filas; preservar standardCodes y standardText como snapshot, sin precargar todas las normas.",
+      "defaults": "Sin normas elegidas: [] y texto vacío. No asignar todas las normas ni recalcular la frase de guías emitidas al cambiar el catálogo.",
+      "views": [],
+      "evidence": [
+        "normas",
+        "guia"
+      ],
+      "columns": 5,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "guia_x_norma",
+          "cols": [
+            "guia_remision_id"
+          ],
+          "parent": "guia_remision",
+          "targets": [
+            "guia_remision_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "guia_x_norma",
+          "cols": [
+            "norma_id"
+          ],
+          "parent": "norma",
+          "targets": [
+            "norma_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "historial_chofer",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Reportar etapa y consultar historial del despacho",
+      "finding": "Las etapas tienen actor y momento; una columna estado no conserva ese historial.",
+      "proposal": "Conservar un evento por reporte real y evitar duplicación del mismo reporte al reintentar.",
+      "defaults": "Fecha técnica al reportar; estado inicial no implica que ya se hayan reportado todas las etapas.",
+      "views": [],
+      "evidence": [
+        "despacho"
+      ],
+      "columns": 9,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "historial_chofer",
+          "cols": [
+            "coordinacion_entrega_id"
+          ],
+          "parent": "coordinacion_entrega",
+          "targets": [
+            "coordinacion_entrega_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "historial_chofer",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "historial_chofer",
+          "cols": [
+            "id_chofer_transporte_externo"
+          ],
+          "parent": "chofer_transporte_externo",
+          "targets": [
+            "id_chofer_transporte_externo"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "historial_chofer",
+          "cols": [
+            "carga_id",
+            "coordinacion_entrega_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id",
+            "coordinacion_entrega_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "recepcion_planta",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Checklist del chofer y consulta logística",
+      "finding": "Se registran peso recibido, descarte, jabas y documentos; las secciones de administración son en parte lectura.",
+      "proposal": "Conservar recepción/checklist sin exigir CRUD nuevo de recepción administrativa.",
+      "defaults": "Pendiente no es cero kg ni no hubo descarte. Campos de resultado y cierre permanecen NULL/no confirmados hasta la acción correspondiente.",
+      "views": [],
+      "evidence": [
+        "recepcion"
+      ],
+      "columns": 28,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "recepcion_planta",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "recepcion_planta",
+          "cols": [
+            "id_chofer_transporte_externo"
+          ],
+          "parent": "chofer_transporte_externo",
+          "targets": [
+            "id_chofer_transporte_externo"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "liquidacion_proveedor",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Formulario de liquidación de compra y selección de persona",
+      "finding": "La liquidación identifica documento, compra, peso/precio y persona; pago se registra por separado.",
+      "proposal": "Conservar documento y snapshots de identidad, moneda y UIT aplicada.",
+      "defaults": "PEN para compras según decisión vigente. Saldo/estado se obtienen de movimientos; sin pago ni persona ficticia por defecto.",
+      "views": [],
+      "evidence": [
+        "liquidacion_proveedor",
+        "personas"
+      ],
+      "columns": 20,
+      "inbound_fks": [
+        {
+          "child": "pago_proveedor",
+          "cols": [
+            "liquidacion_proveedor_id"
+          ],
+          "parent": "liquidacion_proveedor",
+          "targets": [
+            "liquidacion_proveedor_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "liquidacion_proveedor",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "liquidacion_proveedor",
+          "cols": [
+            "proveedor_id"
+          ],
+          "parent": "proveedor",
+          "targets": [
+            "proveedor_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "liquidacion_proveedor",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "liquidacion_proveedor",
+          "cols": [
+            "persona_liquidacion_id"
+          ],
+          "parent": "persona",
+          "targets": [
+            "persona_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "liquidacion_transporte",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Liquidación de transporte por carga",
+      "finding": "El flete, descuentos y saldo por carga son visibles; no equivalen al acuerdo de campaña.",
+      "proposal": "Conservar liquidación por carga y ajustes confirmados.",
+      "defaults": "Ajustes opcionales sin importe pueden iniciar en cero; total, flete y moneda desde el acuerdo real. No dar por pagado al liquidar.",
+      "views": [],
+      "evidence": [
+        "liquidacion_transporte"
+      ],
+      "columns": 12,
+      "inbound_fks": [
+        {
+          "child": "pago_transporte",
+          "cols": [
+            "liquidacion_transporte_id"
+          ],
+          "parent": "liquidacion_transporte",
+          "targets": [
+            "liquidacion_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "aplicacion_adelanto",
+          "cols": [
+            "liquidacion_transporte_id"
+          ],
+          "parent": "liquidacion_transporte",
+          "targets": [
+            "liquidacion_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "liquidacion_transporte",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "liquidacion_transporte",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "gasto_transporte",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Viáticos de movilidad e insumos asociados a la carga",
+      "finding": "Hay campos monetarios por concepto; los conceptos son fijos pero los importes son datos de cada carga.",
+      "proposal": "Conservar importes/conceptos, sin tabla tipo_gasto. Distinguirlos de gastos de cuadrilla y del pago del flete.",
+      "defaults": "El editor normaliza viáticos vacíos a cero y PEN. incluido_en_liquidacion=false hasta aplicarlos; no crear movimientos de pago por esos ceros.",
+      "views": [],
+      "evidence": [
+        "viaticos",
+        "liquidacion_transporte"
+      ],
+      "columns": 8,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "gasto_transporte",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "adelanto_transporte",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Modal Registrar adelanto entregado",
+      "finding": "El adelanto es un movimiento real por empresa/campaña, distinto del adelanto pactado en el acuerdo.",
+      "proposal": "Conservar monto, fecha, método y evidencia del movimiento entregado.",
+      "defaults": "No crear adelanto entregado al pactar su monto. Fecha precargada debe confirmarse; monto positivo y evidencia/método reales.",
+      "views": [],
+      "evidence": [
+        "adelanto"
+      ],
+      "columns": 8,
+      "inbound_fks": [
+        {
+          "child": "aplicacion_adelanto",
+          "cols": [
+            "adelanto_transporte_id"
+          ],
+          "parent": "adelanto_transporte",
+          "targets": [
+            "adelanto_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "adelanto_transporte",
+          "cols": [
+            "acuerdo_transporte_id"
+          ],
+          "parent": "acuerdo_transporte",
+          "targets": [
+            "acuerdo_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "aplicacion_adelanto",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Modal Aplicar adelanto a esta carga",
+      "finding": "La aplicación parcial afecta saldos de adelanto y de liquidación; existe acción independiente.",
+      "proposal": "Conservar cada aplicación y validar saldo/disponibilidad.",
+      "defaults": "Fecha al confirmar y monto elegido dentro del saldo; no aplicar automáticamente todo el saldo disponible.",
+      "views": [],
+      "evidence": [
+        "aplicacion"
+      ],
+      "columns": 7,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "aplicacion_adelanto",
+          "cols": [
+            "adelanto_transporte_id"
+          ],
+          "parent": "adelanto_transporte",
+          "targets": [
+            "adelanto_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "aplicacion_adelanto",
+          "cols": [
+            "liquidacion_transporte_id"
+          ],
+          "parent": "liquidacion_transporte",
+          "targets": [
+            "liquidacion_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "factura_venta",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Liquidación de venta, facturación y validación documental",
+      "finding": "Existe ciclo de documento y controles previos al cobro.",
+      "proposal": "Conservar documento, serie/número/moneda y estado de facturación.",
+      "defaults": "PREPARADA antes de facturar. Importe/moneda desde la venta real; no asumir USD por un filtro ni simular facturación al crear la fila.",
+      "views": [],
+      "evidence": [
+        "factura",
+        "cobro"
+      ],
+      "columns": 19,
+      "inbound_fks": [
+        {
+          "child": "cobro_venta",
+          "cols": [
+            "factura_venta_id"
+          ],
+          "parent": "factura_venta",
+          "targets": [
+            "factura_venta_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ],
+      "outbound_fks": [
+        {
+          "child": "factura_venta",
+          "cols": [
+            "carga_id"
+          ],
+          "parent": "carga",
+          "targets": [
+            "carga_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "pago_proveedor",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Modal Registrar pago al proveedor",
+      "finding": "Pago parcial/total se registra con fecha, método y comprobante; liquidar no equivale a pagar.",
+      "proposal": "Conservar cada movimiento contra su liquidación.",
+      "defaults": "Método puede precargarse Transferencia para confirmar; monto no se ejecuta por abrir el modal. Moneda heredada del documento.",
+      "views": [],
+      "evidence": [
+        "pago"
+      ],
+      "columns": 10,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "pago_proveedor",
+          "cols": [
+            "liquidacion_proveedor_id"
+          ],
+          "parent": "liquidacion_proveedor",
+          "targets": [
+            "liquidacion_proveedor_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "pago_proveedor",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "pago_transporte",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Modal Registrar pago al transportista",
+      "finding": "El mismo componente diferencia los pagos de transporte y compra.",
+      "proposal": "Conservar movimientos y relación con la liquidación de transporte.",
+      "defaults": "Moneda del documento, fecha confirmada y monto real; no descontar dos veces las aplicaciones de adelanto.",
+      "views": [],
+      "evidence": [
+        "pago",
+        "aplicacion"
+      ],
+      "columns": 10,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "pago_transporte",
+          "cols": [
+            "liquidacion_transporte_id"
+          ],
+          "parent": "liquidacion_transporte",
+          "targets": [
+            "liquidacion_transporte_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "pago_transporte",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    },
+    {
+      "table": "cobro_venta",
+      "decision": "conservar",
+      "label": "Conservar por función visible",
+      "ui": "Formulario de cobro de venta",
+      "finding": "Los cobros se registran por documento con método, fecha y evidencia.",
+      "proposal": "Conservar cobros y validaciones de documento/saldo.",
+      "defaults": "Moneda del documento y fecha confirmada; estado pendiente antes del movimiento. No cobrar automáticamente al facturar.",
+      "views": [],
+      "evidence": [
+        "cobro",
+        "factura"
+      ],
+      "columns": 10,
+      "inbound_fks": [],
+      "outbound_fks": [
+        {
+          "child": "cobro_venta",
+          "cols": [
+            "factura_venta_id"
+          ],
+          "parent": "factura_venta",
+          "targets": [
+            "factura_venta_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        },
+        {
+          "child": "cobro_venta",
+          "cols": [
+            "registrado_por_usuario_id"
+          ],
+          "parent": "usuario",
+          "targets": [
+            "usuario_id"
+          ],
+          "onDelete": "RESTRICT",
+          "status": "NUEVA"
+        }
+      ]
+    }
+  ]
+}

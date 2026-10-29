@@ -182,6 +182,10 @@ for name in list(enums):
 # Ajustes mínimos solicitados para cubrir los formularios y respuestas del usuario.
 from cumplimiento_modelo import aplicar
 modified_columns=aplicar(M,F,addcol,fk)
+from simplificacion_modelo import aplicar as simplificar, seed_sql, REMOVED
+simplificar(M,F,addcol)
+initial_sql, initial_counts=seed_sql(R)
+new=[t for t in new if t in M]
 
 # Las FK compuestas del plan necesitan claves compatibles sin alterar las PK existentes.
 for f in F:
@@ -198,11 +202,12 @@ for f in F:
     assert set(f['targets'])<={c['name'] for c in M[f['parent']]['columns']},f
 
 sql=['-- MODELO DOCUMENTADO PARA REVISION MANUAL. No modifica entidades TypeORM ni la base desplegada.',
+'-- D08 aprobado 2026-10-29: destino de entrega como texto; guía con dirección de llegada histórica; sin catálogo de destinos.',
 '-- Actualización funcional FC01-FC14: tipos/borradores, detalle JSON, recepción reconocida, ajustes y cardinalidades autorizadas.',
-'-- Instalación nueva en agro: incluye 19 tablas actuales y 47 propuestas; archivo queda excluida por decisión de negocio.',
+f'-- Instalación nueva en agro: incluye 19 tablas actuales y {len(new)} propuestas; catálogos iniciales incluidos; archivo queda excluida.',
 '-- Conserva los nombres de 173 columnas actuales y adapta tipos/nulabilidad para los formularios; retira archivo y campania_x_proveedores.finca_id. Referencias documentales opcionales, sin FK, pendientes de integración.',
 '-- Decisión aprobada 2026-10-27: análisis previo por participación/finca; analisis_calidad.cosecha_id es opcional. Una variedad por finca; fruta se obtiene de la variedad.',
-'-- Retira su FK e índices por finca; propone unicidad campaña/proveedor y adapta los triggers de entrevistas. Agrega atributos y 47 tablas propuestas.',
+f'-- Participación única campania_x_proveedores; retira puentes derivados y acuerdo_compra. Agrega atributos y {len(new)} tablas propuestas.',
 '-- Se modifican tipos y nulabilidad legacy documentados en modified_columns; no es una migración sobre datos existentes.',
 '-- No es una migración de producción. Si agro existe, se aborta. Requiere btree_gist para la exclusión actual de choferes.',
 'BEGIN;','CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public;','CREATE SCHEMA agro;','SET LOCAL search_path = agro, public;']
@@ -259,10 +264,11 @@ JOIN contrato_venta c ON c.contrato_venta_id=e.contrato_venta_id
 JOIN cliente_negocio_campana r ON r.cliente_negocio_campana_id=c.cliente_negocio_campana_id
 LEFT JOIN coordinacion_entrega co ON co.entrega_programada_id=e.entrega_programada_id;''']
 sql.append((R/'.validation/cumplimiento_reglas.sql').read_text(encoding='utf8'))
+sql.append(initial_sql)
 sql+=['-- Las reglas de transición, permisos y cierre completo requieren implementación de servicio; las protecciones financieras incluidas se prueban por separado.',
-'-- No se importan datos ni se calculan pagos/contratos automáticamente a partir de URLs o pesos históricos.',
+'-- Solo se cargan catálogos iniciales; no se importan históricos ni se calculan pagos/contratos desde URLs o pesos.',
 'REVOKE ALL ON SCHEMA agro FROM PUBLIC;','REVOKE ALL ON ALL TABLES IN SCHEMA agro FROM PUBLIC;','REVOKE ALL ON ALL FUNCTIONS IN SCHEMA agro FROM PUBLIC;','COMMIT;']
-model={'tables':M,'refs':F,'existing_count':19,'new_count':len(new),'existing_columns':173,'excluded_tables':['archivo'],'pending_file_relations':pending_files,'removed_columns':['campania_x_proveedores.finca_id'],'additional_columns':sum(c['status']=='AGREGAR' for t in M.values() for c in t['columns']),'modified_columns':modified_columns,'enums':enums}
+model={'tables':M,'refs':F,'existing_count':19,'new_count':len(new),'existing_columns':173,'excluded_tables':['archivo','destino_cliente_negocio']+REMOVED,'initial_data':initial_counts,'pending_file_relations':pending_files,'removed_columns':['campania_x_proveedores.finca_id','campania_x_proveedores.participacion_proveedor_campana_id'],'additional_columns':sum(c['status']=='AGREGAR' for t in M.values() for c in t['columns']),'modified_columns':modified_columns,'enums':enums}
 (R/'.validation/modelo_revision.json').write_text(json.dumps(model,ensure_ascii=False,indent=2),encoding='utf8')
 previous=R/'.validation/03_schema_total_pre_revision_atributos.sql'
 if not previous.exists():previous.write_text((R/'03_schema_total.sql').read_text(encoding='utf8'),encoding='utf8')

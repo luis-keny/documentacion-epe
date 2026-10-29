@@ -1,14 +1,21 @@
 # Auditoría de la base programada frente al esquema planificado
 
+**D17 — 29/10/2026:** sesion_usuario se retira con su FK; usuario y rol se mantienen. Gestión persistente de sesiones fuera del alcance.
+
+**Actualización confirmada — 29/10/2026:** el objetivo vigente tiene 60 tablas (19 actuales y 41 propuestas), 124 FK y seis vistas. Se consolidó la participación en campania_x_proveedores, se retiraron los dos puentes de variedades calculadas y acuerdo_compra. norma y guia_x_norma permanecen; el catálogo tiene datos iniciales SQL y las relaciones se guardan por selección de guía. [Dictamen aplicado y evidencias](auditoria-tablas-propuestas-vs-prototipo.md) · [Datos iniciales](04_datos_iniciales.sql). Los inventarios anteriores de este documento son antecedentes.
+
+
 ## Estado vigente: schema actualizado por cumplimiento
 
-**27/10/2026.** Se aplican al SQL de revisión los ajustes funcionales FC01–FC13; FC14 sigue diferido por acuerdo. Los [diccionarios por vista](01_reporte_especifico.md), [diagramas](02_tablas_y_relaciones.md) y [SQL total](03_schema_total.sql) se regeneran desde el mismo modelo. El [resumen actual](01_reporte_especifico.md#schema-actualizado-tras-la-auditoría-de-cumplimiento) detalla el contrato JSONB, columnas modificadas y trabajo restante.
+**29/10/2026.** Se aplican al SQL de revisión los ajustes funcionales FC01–FC13; FC14 sigue diferido por acuerdo. Los [diccionarios por vista](01_reporte_especifico.md), [diagramas](02_tablas_y_relaciones.md) y [SQL total](03_schema_total.sql) se regeneran desde el mismo modelo. El [resumen actual](01_reporte_especifico.md#schema-actualizado-tras-la-auditoría-de-cumplimiento) detalla el contrato JSONB, columnas modificadas y trabajo restante.
 
-Se mantienen 66 tablas (19 actuales ampliadas y 47 propuestas), 137 FK y seis vistas. Se conservan 173 nombres de columnas legacy incluidas, pero 35 definiciones actuales cambian y se agregan 73 columnas a tablas actuales. No se presenta esto como una migración compatible sin backfill/revisión de datos.
+Se mantienen 65 tablas (19 actuales ampliadas y 46 propuestas), 134 FK y seis vistas. Se conservan 173 nombres de columnas legacy incluidas, pero 35 definiciones actuales cambian y se agregan 73 columnas a tablas actuales. No se presenta esto como una migración compatible sin backfill/revisión de datos.
+
+**D08 — Destino como texto:** no hay CRUD de destinos en el prototipo. `modules.tsx` captura Destino solicitado y Destino de entrega con Input; `remission-editor.tsx` captura la dirección/ubigeo/establecimiento de llegada. Se retira el catálogo propuesto y sus tres FK; `entrega_programada.destino` queda como texto obligatorio. La guía conserva sus snapshots de llegada. Las tres nuevas comprobaciones verifican persistencia de texto libre, rechazo de destino vacío y ausencia del catálogo.
 
 **Incorporado:** maestros con texto/decimales y datos pendientes; precio de participación; examen y contrato por etapas; transporte BORRADOR/CONFIRMADO; reservas con hora; flete por entrega; Calidad/cosecha/Industria y logística en JSONB; recepción reconocida por proveedor; identidad histórica de liquidación principal/vinculada; factura con ajustes; varios requerimientos y facturas según respuestas explícitas. La FK que obligaba a liquidar mediante `proveedor_x_persona` se sustituye por persona directa y validación de titular/vínculo. Los diagramas reflejan esa relación y las cardinalidades nuevas.
 
-**Verificación ejecutada:** instalación del SQL en PGlite con btree_gist y **44 comprobaciones correctas**, incluidas altas por etapas, JSON recuperable, reconocidos, principales, múltiples documentos, descuentos, sobrepagos/cobros, adelantos y viajes consecutivos/solapados. Resultado/hash: `.validation/resultado_revision.json`. Se repitió también el inventario estático y el contraste de 10 ajustes con las fuentes del prototipo.
+**Verificación ejecutada:** instalación del SQL en PGlite con btree_gist y **47 comprobaciones correctas**, incluidas altas por etapas, JSON recuperable, reconocidos, principales, múltiples documentos, descuentos, sobrepagos/cobros, adelantos y viajes consecutivos/solapados. Resultado/hash: `.validation/resultado_revision.json`. Se repitió también el inventario estático y el contraste de 10 ajustes con las fuentes del prototipo.
 
 **Límites:** no se cambian entidades/DTO, migraciones TypeORM, web, prototipo ni una base desplegada. Los permisos, validación completa del contenido JSON, emisión documental, sumas restantes y cierre completo deben implementarse en servicios; no se verificó concurrencia de varias conexiones ni UI de extremo a extremo. Las diferencias del prototipo frente a respuestas explícitas pasan a ser trabajo de alineación de aplicación, no un bloqueo para preparar el SQL.
 

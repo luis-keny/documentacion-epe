@@ -1,14 +1,20 @@
 # Base de datos por vista — schema actualizado para cumplir la aplicación
 
-**Versión vigente — 27/10/2026.** Se incorporan los ajustes FC01–FC13 de la auditoría y las respuestas del usuario: compra sobre kilos reconocidos en planta, varios requerimientos por cliente/campaña y varias facturas por carga. No se modifica el prototipo, la web, el backend ni una base desplegada. [SQL completo de instalación nueva](03_schema_total.sql).
+**Versión vigente — 29/10/2026.** Se incorporan los ajustes FC01–FC13 de la auditoría y las respuestas del usuario: compra sobre kilos reconocidos en planta, varios requerimientos por cliente/campaña y varias facturas por carga. No se modifica el prototipo, la web, el backend ni una base desplegada. [SQL completo de instalación nueva](03_schema_total.sql).
 
-**Modelo:** 66 tablas (19 actuales ampliadas y 47 propuestas), 137 FK y seis vistas. Se conservan por nombre 173 columnas legacy incluidas; **35 definiciones de columnas actuales cambian** y se agregan 73 columnas a tablas actuales. No se afirma compatibilidad de tipos sin migración. Los detalles de formularios se conservan mediante JSONB en las tablas existentes, sin tablas nuevas por pantalla.
+**Modelo:** 60 tablas (19 actuales ampliadas y 41 propuestas), 124 FK y seis vistas. Se conservan por nombre 173 columnas legacy incluidas; **35 definiciones de columnas actuales cambian** y se agregan 74 columnas a tablas actuales. No se afirma compatibilidad de tipos sin migración. Los detalles de formularios se conservan mediante JSONB en las tablas existentes, sin tablas nuevas por pantalla.
+
+**D08 — Destino como texto (29/10/2026):** se retira el catálogo propuesto de destinos porque el prototipo no tiene CRUD propio. La entrega guarda `destino text NOT NULL`; la guía conserva su dirección/ubigeo/establecimiento de llegada como snapshots.
+
+**Simplificación confirmada — 29/10/2026:** una sola participación en `campania_x_proveedores`; se retiran la cabecera duplicada, los dos puentes de variedades calculadas y `acuerdo_compra`. Se conserva `norma` con datos iniciales y `guia_x_norma` para selecciones reales. [Datos iniciales reejecutables](04_datos_iniciales.sql): dos perfiles, cinco normas, cinco frutas, 17 variedades y parámetros de 2025/2026 tomados del prototipo. El SQL total ya incluye esa carga. No se crean usuarios ni movimientos ficticios.
+
+**D17 — Sesiones fuera del alcance:** se retira `sesion_usuario` (tokens, expiración y revocación). `usuario` y `rol` permanecen; la autenticación no deberá depender de una tabla de sesiones propia.
 
 **Convenciones:** ACTUAL conserva el campo del backend; MODIFICAR cambia su definición en el objetivo; AGREGAR amplía una tabla actual; TABLA NUEVA pertenece a una entidad propuesta. PK/FK y relaciones corresponden al SQL objetivo. El diccionario de cada tabla aparece en su primera ficha y las siguientes lo reutilizan.
 
 **Alcance:** no es una migración sobre datos existentes. Archivo sigue excluida y sus referencias son opcionales/sin FK. Los triggers nuevos validan recepción reconocida, persona de liquidación, facturación acumulada, sobrepagos y aplicaciones de adelantos; no sustituyen autenticación, permisos, validación completa del JSON, emisión documental ni el servicio de cierre de campaña.
 
-**Verificación nueva:** 44 comprobaciones ejecutadas en PGlite con btree_gist sobre este SQL; resultado y hash en `.validation/resultado_revision.json`. No son una prueba de navegador o de producción. Las auditorías anteriores se conservan al final como historial y describen el SQL anterior.
+**Verificación nueva:** 59 comprobaciones ejecutadas en PGlite con btree_gist sobre este SQL; resultado y hash en `.validation/resultado_revision.json`. No son una prueba de navegador o de producción. Las auditorías anteriores se conservan al final como historial y describen el SQL anterior.
 
 **Lectura por vistas:** se conserva el recorrido previo de 62 fichas; sus tablas, diccionarios y diagramas se regeneran desde el modelo actualizado. Las notas de observación del recorrido anterior no equivalen a una nueva prueba de la UI.
 
@@ -17,8 +23,8 @@
 | Tabla actual | Atributos para agregar | Para qué se añaden |
 |---|---|---|
 | `campana` | `temporada`, `responsable_usuario_id`, `lineamientos_archivo_id`, `observaciones`, `cerrada_at`, `cerrada_por_usuario_id`, `motivo_cierre`, `calidad` | Consultar la finalidad de cada columna en su diccionario por vista. |
-| `campania_x_proveedores` | `participacion_proveedor_campana_id`, `precio_compra_kg`, `moneda`, `disponibilidad_desde`, `disponibilidad_hasta`, `observaciones` | Consultar la finalidad de cada columna en su diccionario por vista. |
-| `certificado_campana` | `codigo`, `norma_id`, `organismo`, `fecha_emision`, `moneda`, `documento_archivo_id`, `vigencia_desde`, `observaciones`, `historial_cobertura` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `campania_x_proveedores` | `precio_compra_kg`, `moneda`, `disponibilidad_desde`, `disponibilidad_hasta`, `observaciones`, `entrevista_aplica` | Consultar la finalidad de cada columna en su diccionario por vista. |
+| `certificado_campana` | `codigo`, `norma_id`, `organismo`, `fecha_emision`, `moneda`, `documento_archivo_id`, `vigencia_desde`, `observaciones`, `historial_cobertura`, `tipo_certificacion` | Consultar la finalidad de cada columna en su diccionario por vista. |
 | `certificado_proveedor` | Ninguno en esta revisión | Se conserva el catálogo o asociación actual. |
 | `chofer_transporte_externo` | `persona_id`, `activo`, `usuario_id`, `numero_licencia` | Consultar la finalidad de cada columna en su diccionario por vista. |
 | `chofer_vehiculo_externo` | `coordinacion_entrega_id` | Consultar la finalidad de cada columna en su diccionario por vista. |
@@ -68,33 +74,22 @@ erDiagram
     factura_venta ||..o{ cobro_venta : propuesta
     persona ||..o| usuario : propuesta
     rol ||..o{ usuario : propuesta
-    usuario ||..o{ sesion_usuario : propuesta
-    campana ||..o{ campana_x_fruta_derivada : propuesta
-    fruta_derivada ||..o{ campana_x_fruta_derivada : propuesta
     proveedor ||..o{ proveedor_x_persona : propuesta
     persona ||..o{ proveedor_x_persona : propuesta
     proveedor ||..o{ proveedor_x_fruta_derivada : propuesta
     fruta_derivada ||..o{ proveedor_x_fruta_derivada : propuesta
-    campana ||..o{ participacion_proveedor_campana : propuesta
-    proveedor ||..o{ participacion_proveedor_campana : propuesta
-    participacion_proveedor_campana ||..o{ participacion_proveedor_x_fruta_derivada : propuesta
-    fruta_derivada ||..o{ participacion_proveedor_x_fruta_derivada : propuesta
-    campania_x_proveedores ||..o{ acuerdo_compra : propuesta
-    fruta_derivada o|..o{ acuerdo_compra : propuesta
     certificado_campana ||..o{ certificado_campana_x_proveedor : propuesta
     campana ||..o{ certificado_campana_x_proveedor : propuesta
-    participacion_proveedor_campana ||..o{ certificado_campana_x_proveedor : propuesta
+    campania_x_proveedores ||..o{ certificado_campana_x_proveedor : propuesta
     proveedor ||..o{ certificado_campana_x_proveedor : propuesta
     certificado_campana ||..o{ ampliacion_certificado_campana : propuesta
     usuario o|..o{ ampliacion_certificado_campana : propuesta
     certificado_campana ||..o{ pago_certificado_campana : propuesta
     usuario o|..o{ pago_certificado_campana : propuesta
-    cliente_negocio ||..o{ destino_cliente_negocio : propuesta
     cliente_negocio_campana ||..o{ cliente_negocio_campana_x_fruta_derivada : propuesta
     fruta_derivada ||..o{ cliente_negocio_campana_x_fruta_derivada : propuesta
     cliente_negocio_campana ||..o{ contrato_venta : propuesta
     contrato_venta ||..o{ entrega_programada : propuesta
-    destino_cliente_negocio ||..o{ entrega_programada : propuesta
     entrega_programada ||..o{ entrega_x_fruta_derivada : propuesta
     fruta_derivada ||..o{ entrega_x_fruta_derivada : propuesta
     campana ||..o{ solicitud_transporte : propuesta
@@ -117,14 +112,13 @@ erDiagram
     usuario o|..o{ medicion_mtd : propuesta
     coordinacion_entrega ||..o| carga : propuesta
     carga ||..o{ proveedor_carga : propuesta
-    participacion_proveedor_campana ||..o{ proveedor_carga : propuesta
+    campania_x_proveedores ||..o{ proveedor_carga : propuesta
     fruta_derivada ||..o{ proveedor_carga : propuesta
     proveedor_carga ||..o{ origen_carga : propuesta
     campania_x_proveedores ||..o{ origen_carga : propuesta
     carga ||..o{ gasto_carga : propuesta
     carga ||..o{ guia_remision : propuesta
     finca ||..o{ guia_remision : propuesta
-    destino_cliente_negocio ||..o{ guia_remision : propuesta
     guia_remision ||..o{ proveedor_guia : propuesta
     carga ||..o{ proveedor_guia : propuesta
     proveedor_carga ||..o{ proveedor_guia : propuesta
@@ -150,7 +144,6 @@ erDiagram
     vehiculo_externo ||..o{ coordinacion_entrega : propuesta
     liquidacion_transporte ||..o{ aplicacion_adelanto : propuesta
     usuario o|..o{ campana : propuesta
-    participacion_proveedor_campana o|..o{ campania_x_proveedores : propuesta
     norma o|..o{ certificado_campana : propuesta
     persona o|..o{ chofer_transporte_externo : propuesta
     persona o|..o{ proveedor : propuesta
@@ -178,7 +171,7 @@ erDiagram
 
 **Entidades amarillas de las referencias incorporadas al mapa:** `fruta`, `fruta_derivada`, `proveedor_x_fruta`, `certificado_proveedor`, `examen_proveedor` y `certificado_campana`. Los rótulos históricos `Certificados` y `certificados_campana` se representan con `certificado_campana` para el certificado de campaña; `certificado_x_productor` se corresponde con la cobertura propuesta `certificado_campana_x_proveedor`, vinculada a proveedor y campaña. Esta equivalencia expresa su función; no afirma que todos los atributos del dibujo sean idénticos. `certificado_proveedor` permanece separado para documentos propios del proveedor. No se añade otra tabla genérica Certificados sin definir un ciclo de vida distinto. `proveedor_x_fruta` se conserva: la nota de la imagen que plantea trasladarlo a finca dice CONFIRMAR y no constituye una decisión aprobada. Las hectáreas están en `finca` (`ha_total_finca`, `ha_cultivo`) en el diccionario específico.
 
-**Trazabilidad de finca tras el cambio:** origen_entrega, origen_carga, analisis_calidad y medicion_mtd ahora identifican finca directamente; antes la obtenían de la participación. El servicio deberá comprobar que esa finca pertenece al proveedor de cxp_id. Los orígenes admiten varias fincas de un proveedor en la misma entrega o carga. acuerdo_compra mantiene condiciones por proveedor y variedad, sin inferir una finca.
+**Trazabilidad de finca tras el cambio:** origen_entrega, origen_carga, analisis_calidad y medicion_mtd ahora identifican finca directamente; antes la obtenían de la participación. El servicio deberá comprobar que esa finca pertenece al proveedor de cxp_id. Los orígenes admiten varias fincas de un proveedor en la misma entrega o carga. El precio simple queda en campania_x_proveedores; no existe una cabecera adicional de acuerdo_compra.
 
 **Decisión de negocio — 27/10/2026:** se elimina el vínculo directo finca–campania_x_proveedores del modelo objetivo. Se mantiene proveedor–finca y la entrevista relaciona campaña/proveedor con la finca visitada. El código actual todavía contiene el vínculo retirado; estos documentos y el SQL son la propuesta para revisión.
 
@@ -221,21 +214,23 @@ erDiagram
 
 | Referencia | Estado | Tema | Alcance |
 |---|---|---|---|
-| D01 | Compatibilidad conservada | Participación adicional | Se conservan ambas tablas y sus dependencias. El editor usa campania_x_proveedores con precio simple; el servicio mantiene la correspondencia con la cabecera usada en cargas. No se exige consolidar por calidad ni se elimina una tabla sin autorización. |
+| D01 | Confirmado e incorporado al SQL | Participación única | Decisión del 29/10/2026: se retira la cabecera participacion_proveedor_campana. campania_x_proveedores conserva cxp_id, proveedor/campaña, cantidad, tipo, evaluación, precio y disponibilidad. Cobertura de certificados y proveedor_carga referencian cxp_id; no se mantiene una segunda participación. |
 | D02 | Aprobado por el usuario | Fincas entrevistadas | El listado de fincas de una participación se obtiene desde entrevista_extencion. No se vuelve a agregar finca_id a campania_x_proveedores; los orígenes de entrega/carga seleccionan las fincas físicas de recojo. |
 | D03 | Aprobado por el usuario | Análisis antes de cosecha | analisis_calidad identifica cxp_id y finca_id; cosecha_id queda opcional. La campaña se obtiene por la participación, sin otra FK redundante a campaña. El servicio validará coincidencia de campaña y origen si se vincula posteriormente una cosecha. |
 | D04 | Aprobado por el usuario | Una variedad por finca | Se conserva finca.fruta_derivada_id y se obtiene fruta por fruta_derivada.fruta_id. No se agrega una tabla de varios cultivos por finca. El vínculo permanece opcional para datos históricos; completar variedad antes de operar cuando la vista la requiere. |
 | D05 | Confirmado por el usuario | Autoridad de transporte | coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día. |
 | D06 | Incorporado al SQL | Vincular antes del acuerdo | acuerdo_transporte admite BORRADOR sin condiciones completas; CONFIRMADO exige monto, tipo y fechas. No hace falta inventar un segundo vínculo. |
 | D07 | Incorporado al SQL | Incorporación de campaña a Calidad | campana.calidad conserva un objeto por canal con su habilitación/estado, antes de crear cargas o elegir entregas. |
-| D08 | Por discutir | Destinos del cliente | destino_cliente_negocio permite reutilizar plantas y direcciones; no se encontró un editor propio en el recorrido. Decidir si es catálogo de negocio o basta capturar destino en cada programación/documento. |
+| D08 | Confirmado e incorporado al SQL | Destino como texto | Decisión del 29/10/2026: no existe CRUD independiente de destinos en el prototipo. Se retira el catálogo propuesto; entrega_programada.destino guarda texto obligatorio. La guía conserva direccion_llegada_snapshot, ubigeo_llegada_snapshot y establecimiento_llegada_snapshot propios, sin FK de destino. |
 | D09 | Por discutir | Cantidad de certificados | El editor dice uno por campaña; el backend y el resumen admiten varios. Se mantiene la capacidad actual hasta decidir si las normas requieren certificados distintos. |
-| D10 | Incorporado al SQL | Condiciones de compra | El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. acuerdo_compra queda como compatibilidad opcional sin exigir tarifarios/fechas/variedad nuevas. La liquidación conserva kilos reconocidos y precio aplicados. |
+| D10 | Incorporado al SQL | Condiciones de compra | El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. Se retira acuerdo_compra: no existe un flujo independiente de acuerdos/versiones en el prototipo. La liquidación conserva kilos reconocidos y precio aplicados. |
 | D11 | Incorporado al SQL | Persona de la liquidación | La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro. |
 | D12 | Incorporado al SQL | Examen por etapas | Pendiente y Enviado admiten resultado/documento ausentes. Con resultado requiere resultado explícito. Se mantienen tipos positivo/negativo del backend para el dato final. |
 | D13 | Decisión previa conservada | Gestión documental diferida | archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa. |
 | D14 | Confirmado por el usuario | Una carga por entrega | Se conserva un viaje/carga por entrega. Cosecha también es única por entrega. El SQL permite varias facturas de esa carga, con suma de kilos no superior a la recepción, según respuesta explícita del usuario. |
 | D15 | Incorporado según respuesta del usuario | Varios requerimientos cliente/campaña | Se retira la unicidad cliente/campaña para permitir requerimientos independientes. Cada fila conserva sus contratos y entregas. El editor del prototipo aún debe alinearse con esta decisión. |
+| D17 | Confirmado e incorporado al SQL | Sin sesiones persistidas | Se retira sesion_usuario y su FK a usuario por decisión expresa. Su función era guardar tokens, expiración y revocación, no solo historial. No se administran sesiones/dispositivos en este alcance; usuario y rol permanecen. La autenticación del backend debe resolverse sin depender de esta tabla. |
+| D16 | Confirmado e incorporado al SQL | Catálogos iniciales y constantes | rol, norma, fruta, fruta_derivada y parametro_uit tienen datos iniciales SQL sin exigir CRUD. guia_x_norma guarda solo normas seleccionadas al guardar una guía, con FK y unicidad. Tipos de certificado, moneda, estados, etapas, métodos y conceptos se mantienen como opciones fijas, sin tablas adicionales. Los puentes de variedades derivadas de campaña/participación se retiran; las selecciones reales de proveedor, cliente y kilos de entrega permanecen. |
 
 **Recorrido entre módulos:** Comercial programa la entrega; Campaña coordina transporte y fincas; Calidad registra análisis y carga; el Chofer reporta eventos y recepción; Logística consulta el seguimiento; Facturación registra venta y cobros; Liquidación registra compras, transporte y pagos. Volver a módulos cambia de navegación, sin crear otro registro de negocio.
 
@@ -282,19 +277,17 @@ flowchart LR
 | Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
 |---|---|---|---|
 | [`usuario`](#tabla-usuario) | Consulta | Identificar al usuario en la futura autenticación; el selector actual permite entrar sin credenciales y no prueba que se persista una cuenta. | Tabla propuesta, sin implementar |
-| [`rol`](#tabla-rol) | Consulta | Distingue permisos de Administrador y Chofer; las autorizaciones se comprobarán en el servidor. | Tabla propuesta, sin implementar |
+| [`rol`](#tabla-rol) | Consulta | Perfiles extensibles con Administrador y Chofer iniciales mediante SQL; no requiere CRUD de perfiles en el alcance actual. | Tabla propuesta, sin implementar |
 | [`persona`](#tabla-persona) | Consulta | Identifica a una persona natural para cuentas o destinatarios de compras; su reutilización no crea otro proveedor ni autoriza por sí sola a cobrar. | Tabla propuesta, sin implementar |
-| [`sesion_usuario`](#tabla-sesion_usuario) | Por discutir | Propuesta técnica para mantener acceso y vencimiento; no se ha decidido si se usará sesión propia o un proveedor de autenticación. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
 
 **Esquema de relaciones utilizado por esta vista:**
 
-**Tablas propuestas para revisar:** `usuario`, `rol`, `persona`, `sesion_usuario`.
+**Tablas propuestas para revisar:** `usuario`, `rol`, `persona`.
 
 ```mermaid
 erDiagram
     persona ||..o| usuario : propuesta
     rol ||..o{ usuario : propuesta
-    usuario ||..o{ sesion_usuario : propuesta
 ```
 
 **D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
@@ -322,7 +315,7 @@ erDiagram
 
 **Diccionario de `rol` — tabla propuesta.**
 
-**Clave primaria:** `rol_id`. Perfiles de acceso; los permisos efectivos se aplican en el servidor.
+**Clave primaria:** `rol_id`. Perfiles extensibles con Administrador y Chofer iniciales mediante SQL; no requiere CRUD de perfiles en el alcance actual.
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -354,25 +347,6 @@ erDiagram
 
 **Restricciones propuestas para revisar:** `UNIQUE (tipo_documento, numero_documento)`.
 
-<a id="tabla-sesion_usuario"></a>
-
-**Diccionario de `sesion_usuario` — tabla propuesta.**
-
-**Clave primaria:** `sesion_usuario_id`. Propuesta técnica para persistir sesiones; solo se conserva el hash del token.
-
-| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
-|---|---|---|---|
-| `sesion_usuario_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
-| `usuario_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `usuario.usuario_id`. |
-| `token_hash` | **TABLA NUEVA** | `text NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
-| `creada_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Atributo propuesto para cubrir el flujo de la vista. |
-| `expira_at` | **TABLA NUEVA** | `timestamptz NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
-| `revocada_at` | **TABLA NUEVA** | `timestamptz` | Atributo propuesto para cubrir el flujo de la vista. |
-| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
-| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
-
-**Restricciones propuestas para revisar:** `UNIQUE (token_hash)`; `CHECK (expira_at > creada_at)`.
-
 ## Módulos del sistema (Administrador > Inicio)
 
 **Referencia de revisión:** V02 · Recorrido del 27/10/2026.
@@ -393,27 +367,24 @@ Es navegación de módulos; no requiere una tabla de negocio propia.
 
 **Observado en la aplicación de referencia:** Padrón con empresa, contacto, teléfono, correo, RUC y tipo Exportador/Industria; acciones Ver, Editar y Vincular.
 
-**Criterio para revisar el modelo:** Se reutiliza cliente_negocio y se propone destino_cliente_negocio como hijo. Al programar una entrega, el servicio debe comprobar que el destino elegido pertenece al cliente del contrato; las FK simples no comprueban por sí solas esa coincidencia.
+**Criterio para revisar el modelo:** Se reutiliza cliente_negocio. El prototipo no tiene CRUD independiente de destinos; la entrega conserva destino como texto y la guía su dirección de llegada histórica (D08, 29/10/2026).
 
 **Funcionalidad esperada de cada tabla en esta vista:**
 
 | Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
 |---|---|---|---|
 | [`cliente_negocio`](#tabla-cliente_negocio) | Escritura esperada | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
-| [`destino_cliente_negocio`](#tabla-destino_cliente_negocio) | Por discutir | Propuesta de puntos de llegada reutilizables de un cliente. La pantalla muestra destinos, pero no se observó un padrón independiente que obligue a esta tabla. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
 
 **Esquema de relaciones utilizado por esta vista:**
 
 **Tablas actuales que se conservan:** `cliente_negocio`.
 
-**Tablas propuestas para revisar:** `destino_cliente_negocio`.
-
 ```mermaid
 erDiagram
-    cliente_negocio ||..o{ destino_cliente_negocio : propuesta
+    cliente_negocio
 ```
 
-**D08 — Destinos del cliente (Por discutir):** destino_cliente_negocio permite reutilizar plantas y direcciones; no se encontró un editor propio en el recorrido. Decidir si es catálogo de negocio o basta capturar destino en cada programación/documento.
+**D08 — Destino como texto (Confirmado e incorporado al SQL):** Decisión del 29/10/2026: no existe CRUD independiente de destinos en el prototipo. Se retira el catálogo propuesto; entrega_programada.destino guarda texto obligatorio. La guía conserva direccion_llegada_snapshot, ubigeo_llegada_snapshot y establecimiento_llegada_snapshot propios, sin FK de destino.
 
 <a id="tabla-cliente_negocio"></a>
 
@@ -438,27 +409,6 @@ erDiagram
 | `fecha_registro` | **AGREGAR** | `date` | Fecha comercial de registro, si se conoce; created_at se conserva. |
 
 **Restricciones actuales conservadas:** `PRIMARY KEY (cliente_negocio_id)`; `UNIQUE (correo_corporativo)`; `UNIQUE (ruc)`.
-
-<a id="tabla-destino_cliente_negocio"></a>
-
-**Diccionario de `destino_cliente_negocio` — tabla propuesta.**
-
-**Clave primaria:** `destino_cliente_negocio_id`. Puntos de llegada de cada cliente; no asumir que todos comparten una planta.
-
-| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
-|---|---|---|---|
-| `destino_cliente_negocio_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
-| `cliente_negocio_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `cliente_negocio.cliente_negocio_id`. |
-| `nombre` | **TABLA NUEVA** | `varchar(150) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
-| `ubigeo` | **TABLA NUEVA** | `varchar(6)` | Atributo propuesto para cubrir el flujo de la vista. |
-| `direccion` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
-| `codigo_establecimiento` | **TABLA NUEVA** | `varchar(4)` | Atributo propuesto para cubrir el flujo de la vista. |
-| `latitud` | **TABLA NUEVA** | `numeric(10,7)` | Atributo propuesto para cubrir el flujo de la vista. |
-| `longitud` | **TABLA NUEVA** | `numeric(10,7)` | Atributo propuesto para cubrir el flujo de la vista. |
-| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
-| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
-
-**Restricciones propuestas para revisar:** `UNIQUE (destino_cliente_negocio_id, cliente_negocio_id)`; `CHECK (latitud BETWEEN -90 AND 90)`; `CHECK (longitud BETWEEN -180 AND 180)`; `CHECK ((latitud IS NULL) = (longitud IS NULL))`.
 
 ## Detalle de cliente (Administrador > Gestión Comercial > Clientes > Detalle)
 
@@ -620,7 +570,7 @@ erDiagram
     cliente_negocio_campana ||..o{ contrato_venta : propuesta
 ```
 
-**D08 — Destinos del cliente (Por discutir):** destino_cliente_negocio permite reutilizar plantas y direcciones; no se encontró un editor propio en el recorrido. Decidir si es catálogo de negocio o basta capturar destino en cada programación/documento.
+**D08 — Destino como texto (Confirmado e incorporado al SQL):** Decisión del 29/10/2026: no existe CRUD independiente de destinos en el prototipo. Se retira el catálogo propuesto; entrega_programada.destino guarda texto obligatorio. La guía conserva direccion_llegada_snapshot, ubigeo_llegada_snapshot y establecimiento_llegada_snapshot propios, sin FK de destino.
 
 **D15 — Varios requerimientos cliente/campaña (Incorporado según respuesta del usuario):** Se retira la unicidad cliente/campaña para permitir requerimientos independientes. Cada fila conserva sus contratos y entregas. El editor del prototipo aún debe alinearse con esta decisión.
 
@@ -730,14 +680,14 @@ erDiagram
 |---|---|---|---|
 | `entrega_programada_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
 | `contrato_venta_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `contrato_venta.contrato_venta_id`. |
-| `destino_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `destino_cliente_negocio.destino_cliente_negocio_id`. |
+| `destino` | **TABLA NUEVA** | `text NOT NULL` | D08: destino libre capturado por el formulario de entrega; no referencia un catálogo. |
 | `fecha` | **TABLA NUEVA** | `date NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
 | `kilos_programados` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
 | `observaciones` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
 | `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
 | `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
 
-**Restricciones propuestas para revisar:** `CHECK (kilos_programados > 0)`.
+**Restricciones propuestas para revisar:** `CHECK (kilos_programados > 0)`; `CHECK (btrim(destino) <> '')`.
 
 <a id="tabla-coordinacion_entrega"></a>
 
@@ -819,7 +769,7 @@ erDiagram
 
 **Observado en la aplicación de referencia:** Contrato con dos entregas de 500 kg, destino y preparación; edición y eliminación deshabilitadas con carga registrada.
 
-**Criterio para revisar el modelo:** Un contrato puede tener varias entregas. El servicio deberá controlar que sus kilos no superen el contrato y que la distribución por variedad sume la cabecera. El SQL declara las relaciones y cantidades positivas; esas sumas entre filas siguen pendientes de implementación transaccional.
+**Criterio para revisar el modelo:** Cada entrega conserva su destino como texto obligatorio, sin seleccionar un catálogo. El servicio valida kilos y distribución por variedad frente al contrato.
 
 **Funcionalidad esperada de cada tabla en esta vista:**
 
@@ -831,7 +781,6 @@ erDiagram
 | [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
 | [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
 | [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
-| [`destino_cliente_negocio`](#tabla-destino_cliente_negocio) | Consulta | Propuesta de puntos de llegada reutilizables de un cliente. La pantalla muestra destinos, pero no se observó un padrón independiente que obligue a esta tabla. | Tabla propuesta, sin implementar |
 | [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
 | [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
 
@@ -839,22 +788,20 @@ erDiagram
 
 **Tablas actuales que se conservan:** `cliente_negocio_campana`, `cliente_negocio`, `fruta_derivada`.
 
-**Tablas propuestas para revisar:** `entrega_programada`, `entrega_x_fruta_derivada`, `contrato_venta`, `destino_cliente_negocio`, `coordinacion_entrega`, `carga`.
+**Tablas propuestas para revisar:** `entrega_programada`, `entrega_x_fruta_derivada`, `contrato_venta`, `coordinacion_entrega`, `carga`.
 
 ```mermaid
 erDiagram
     cliente_negocio ||..o{ cliente_negocio_campana : actual
-    cliente_negocio ||..o{ destino_cliente_negocio : propuesta
     cliente_negocio_campana ||..o{ contrato_venta : propuesta
     contrato_venta ||..o{ entrega_programada : propuesta
-    destino_cliente_negocio ||..o{ entrega_programada : propuesta
     entrega_programada ||..o{ entrega_x_fruta_derivada : propuesta
     fruta_derivada ||..o{ entrega_x_fruta_derivada : propuesta
     entrega_programada ||..o| coordinacion_entrega : propuesta
     coordinacion_entrega ||..o| carga : propuesta
 ```
 
-**D08 — Destinos del cliente (Por discutir):** destino_cliente_negocio permite reutilizar plantas y direcciones; no se encontró un editor propio en el recorrido. Decidir si es catálogo de negocio o basta capturar destino en cada programación/documento.
+**D08 — Destino como texto (Confirmado e incorporado al SQL):** Decisión del 29/10/2026: no existe CRUD independiente de destinos en el prototipo. Se retira el catálogo propuesto; entrega_programada.destino guarda texto obligatorio. La guía conserva direccion_llegada_snapshot, ubigeo_llegada_snapshot y establecimiento_llegada_snapshot propios, sin FK de destino.
 
 **D14 — Una carga por entrega (Confirmado por el usuario):** Se conserva un viaje/carga por entrega. Cosecha también es única por entrega. El SQL permite varias facturas de esa carga, con suma de kilos no superior a la recepción, según respuesta explícita del usuario.
 
@@ -884,8 +831,6 @@ erDiagram
 **`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
 **`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
-
-**`destino_cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
 **`coordinacion_entrega`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
@@ -921,14 +866,13 @@ erDiagram
 
 **Observado en la aplicación de referencia:** Planificado, En Proceso y Finalizado; campaña pasa por fecha a En proceso según texto visible. La fecha final no ejecuta el cierre.
 
-**Criterio para revisar el modelo:** Se conservan campania_id, fruta_id, estado y requerimiento_comercial, con la regla de una campaña activa por fruta. Se añaden temporada, responsable, lineamientos y datos de cierre. Cambiar el estado automáticamente o verificar el cierre completo corresponde al servicio posterior.
+**Criterio para revisar el modelo:** La campaña conserva una fruta. Las variedades disponibles se consultan desde fruta_derivada sin puente propio; la UI multifruta aún debe alinearse con ese acuerdo. Catálogos iniciales por SQL.
 
 **Funcionalidad esperada de cada tabla en esta vista:**
 
 | Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
 |---|---|---|---|
 | [`campana`](#tabla-campana) | Escritura esperada | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
-| [`campana_x_fruta_derivada`](#tabla-campana_x_fruta_derivada) | Escritura esperada | Conserva las variedades seleccionadas para la campaña, distintas de las variedades efectivamente cargadas. | Tabla propuesta, sin implementar |
 | [`fruta`](#tabla-fruta) | Consulta | Proporciona el catálogo de cultivos y la fruta de la campaña. No representa kilos comprados ni cosechados. | Tabla actual incluida |
 | [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
 | [`usuario`](#tabla-usuario) | Consulta | Relaciona la cuenta autenticada con la identidad y, cuando corresponde, con el chofer. El selector del demo todavía no constituye autenticación. | Tabla propuesta, sin implementar |
@@ -937,34 +881,16 @@ erDiagram
 
 **Tablas actuales que se conservan:** `campana`, `fruta`, `fruta_derivada`.
 
-**Tablas propuestas para revisar:** `campana_x_fruta_derivada`, `usuario`.
+**Tablas propuestas para revisar:** `usuario`.
 
 ```mermaid
 erDiagram
     fruta ||..o{ campana : actual
     fruta ||..o{ fruta_derivada : actual
-    campana ||..o{ campana_x_fruta_derivada : propuesta
-    fruta_derivada ||..o{ campana_x_fruta_derivada : propuesta
     usuario o|..o{ campana : propuesta
 ```
 
 **`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
-
-<a id="tabla-campana_x_fruta_derivada"></a>
-
-**Diccionario de `campana_x_fruta_derivada` — tabla propuesta.**
-
-**Clave primaria:** `campana_x_fruta_derivada_id`. Variedades elegidas para una campaña.
-
-| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
-|---|---|---|---|
-| `campana_x_fruta_derivada_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
-| `campania_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campana.campania_id`. |
-| `fruta_derivada_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `fruta_derivada.fruta_derivada_id`. |
-| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
-| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
-
-**Restricciones propuestas para revisar:** `UNIQUE (campania_id, fruta_derivada_id)`.
 
 <a id="tabla-fruta"></a>
 
@@ -1004,9 +930,8 @@ erDiagram
 | [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
 | [`fruta`](#tabla-fruta) | Consulta | Proporciona el catálogo de cultivos y la fruta de la campaña. No representa kilos comprados ni cosechados. | Tabla actual incluida |
 | [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
-| [`campana_x_fruta_derivada`](#tabla-campana_x_fruta_derivada) | Consulta | Conserva las variedades seleccionadas para la campaña, distintas de las variedades efectivamente cargadas. | Tabla propuesta, sin implementar |
 | [`usuario`](#tabla-usuario) | Consulta | Relaciona la cuenta autenticada con la identidad y, cuando corresponde, con el chofer. El selector del demo todavía no constituye autenticación. | Tabla propuesta, sin implementar |
-| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Consultar oferta estimada y estado de evaluación por participación; no sumar otra vez los campos equivalentes de participacion_proveedor_campana. | Tabla actual incluida |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Consultar oferta y evaluación desde la única participación campania_x_proveedores, sin duplicar cantidades. | Tabla actual incluida |
 | [`examen_proveedor`](#tabla-examen_proveedor) | Consulta | Registra muestras y exámenes de evaluación del proveedor, con contexto de campaña propuesto. No sustituye los análisis operativos de Calidad. | Tabla actual incluida |
 | [`certificado_campana`](#tabla-certificado_campana) | Consulta | Guarda el certificado de campaña, vigencia y costo. No guarda como pago el recibo ni reemplaza el certificado propio del proveedor. | Tabla actual incluida |
 | [`certificado_campana_x_proveedor`](#tabla-certificado_campana_x_proveedor) | Consulta | Distribuye la cobertura inicial del certificado entre productores de esa campaña. Su dependencia de la cabecera adicional de participación sigue por afinar. | Tabla propuesta, sin implementar |
@@ -1023,7 +948,7 @@ erDiagram
 
 **Tablas actuales que se conservan:** `campana`, `fruta`, `fruta_derivada`, `campania_x_proveedores`, `examen_proveedor`, `certificado_campana`, `cliente_negocio_campana`.
 
-**Tablas propuestas para revisar:** `campana_x_fruta_derivada`, `usuario`, `certificado_campana_x_proveedor`, `ampliacion_certificado_campana`, `contrato_venta`, `entrega_programada`, `coordinacion_entrega`, `cosecha`, `carga`, `recepcion_planta`.
+**Tablas propuestas para revisar:** `usuario`, `certificado_campana_x_proveedor`, `ampliacion_certificado_campana`, `contrato_venta`, `entrega_programada`, `coordinacion_entrega`, `cosecha`, `carga`, `recepcion_planta`.
 
 ```mermaid
 erDiagram
@@ -1032,10 +957,9 @@ erDiagram
     campana ||..o{ certificado_campana : actual
     campana ||..o{ cliente_negocio_campana : actual
     fruta ||..o{ fruta_derivada : actual
-    campana ||..o{ campana_x_fruta_derivada : propuesta
-    fruta_derivada ||..o{ campana_x_fruta_derivada : propuesta
     certificado_campana ||..o{ certificado_campana_x_proveedor : propuesta
     campana ||..o{ certificado_campana_x_proveedor : propuesta
+    campania_x_proveedores ||..o{ certificado_campana_x_proveedor : propuesta
     certificado_campana ||..o{ ampliacion_certificado_campana : propuesta
     usuario o|..o{ ampliacion_certificado_campana : propuesta
     cliente_negocio_campana ||..o{ contrato_venta : propuesta
@@ -1048,7 +972,7 @@ erDiagram
     campania_x_proveedores o|..o{ examen_proveedor : propuesta
 ```
 
-**D01 — Participación adicional (Compatibilidad conservada):** Se conservan ambas tablas y sus dependencias. El editor usa campania_x_proveedores con precio simple; el servicio mantiene la correspondencia con la cabecera usada en cargas. No se exige consolidar por calidad ni se elimina una tabla sin autorización.
+**D01 — Participación única (Confirmado e incorporado al SQL):** Decisión del 29/10/2026: se retira la cabecera participacion_proveedor_campana. campania_x_proveedores conserva cxp_id, proveedor/campaña, cantidad, tipo, evaluación, precio y disponibilidad. Cobertura de certificados y proveedor_carga referencian cxp_id; no se mantiene una segunda participación.
 
 **D09 — Cantidad de certificados (Por discutir):** El editor dice uno por campaña; el backend y el resumen admiten varios. Se mantiene la capacidad actual hasta decidir si las normas requieren certificados distintos.
 
@@ -1058,15 +982,13 @@ erDiagram
 
 **`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
-**`campana_x_fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
-
 **`usuario`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
 <a id="tabla-campania_x_proveedores"></a>
 
 **Diccionario de `campania_x_proveedores` — tabla actual ampliada.**
 
-**Clave primaria:** `cxp_id`. Participación del proveedor en una campaña, sin relación directa a finca. La entrevista y los orígenes operativos identifican la finca cuando corresponde.
+**Clave primaria:** `cxp_id`. Única participación proveedor/campaña, identificada por cxp_id; conserva oferta, tipo, evaluación, entrevista aplicable, precio simple PEN y disponibilidad.
 
 **Fuente actual:** [CampaniaProveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/campana-proveedor/entities/campania-proveedor.ts).
 
@@ -1082,16 +1004,16 @@ erDiagram
 | `estado` | **ACTUAL** | `"campania_x_proveedores_estado_enum" NOT NULL DEFAULT 'sin validar'::campania_x_proveedores_estado_enum` | Se conserva de la entidad/migración actual. |
 | `campania_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `campana.campania_id`. |
 | `proveedor_id` | **ACTUAL** | `integer NOT NULL` | Se conserva de la entidad/migración actual. FK a `proveedor.proveedor_id`. |
-| `participacion_proveedor_campana_id` | **AGREGAR** | `integer` | Vínculo opcional a la cabecera propuesta; revisar su necesidad al quedar la participación sin finca. FK a `participacion_proveedor_campana.participacion_proveedor_campana_id`. |
 | `precio_compra_kg` | **AGREGAR** | `numeric(14,4)` | FC02: datos del editor de participación; el precio no requiere un tarifario adicional. |
 | `moneda` | **AGREGAR** | `varchar(3) NOT NULL DEFAULT 'PEN'` | FC02: datos del editor de participación; el precio no requiere un tarifario adicional. |
 | `disponibilidad_desde` | **AGREGAR** | `date` | FC02: datos del editor de participación; el precio no requiere un tarifario adicional. |
 | `disponibilidad_hasta` | **AGREGAR** | `date` | FC02: datos del editor de participación; el precio no requiere un tarifario adicional. |
 | `observaciones` | **AGREGAR** | `text` | FC02: datos del editor de participación; el precio no requiere un tarifario adicional. |
+| `entrevista_aplica` | **AGREGAR** | `boolean NOT NULL DEFAULT true` | Consolidación: conserva el indicador de entrevista de la cabecera retirada; el servicio lo confirma según el proveedor. |
 
 **Restricciones actuales conservadas:** `CHECK (((tipo_proveedor = 'productor'::campania_x_proveedores_tipo_proveedor_enum) OR (fruta_convencional_estimado IS NULL)))`; `PRIMARY KEY (cxp_id)`.
 
-**Restricciones propuestas para revisar:** `UNIQUE (campania_id, proveedor_id)`; `CHECK (moneda = 'PEN' AND (precio_compra_kg IS NULL OR precio_compra_kg > 0))`; `CHECK (disponibilidad_hasta >= disponibilidad_desde)`.
+**Restricciones propuestas para revisar:** `UNIQUE (campania_id, proveedor_id)`; `CHECK (moneda = 'PEN' AND (precio_compra_kg IS NULL OR precio_compra_kg > 0))`; `CHECK (disponibilidad_hasta >= disponibilidad_desde)`; `UNIQUE (cxp_id, campania_id, proveedor_id)`.
 
 <a id="tabla-examen_proveedor"></a>
 
@@ -1153,10 +1075,11 @@ erDiagram
 | `vigencia_desde` | **AGREGAR** | `date` | FC04: inicio de vigencia independiente de la emisión. |
 | `observaciones` | **AGREGAR** | `text` | FC04: notas del editor de certificación. |
 | `historial_cobertura` | **AGREGAR** | `jsonb NOT NULL DEFAULT '[]'::jsonb` | FC04: filas {fecha,kilos,producerIds}; conserva cada selección anterior. |
+| `tipo_certificacion` | **AGREGAR** | `varchar(80)` | Opción fija del formulario, distinta de nombre y de norma_id; nullable para fichas aún incompletas. No se crea tabla de tipos. |
 
 **Restricciones actuales conservadas:** `PRIMARY KEY (certificado_id)`.
 
-**Restricciones propuestas para revisar:** `CHECK (moneda IS NULL OR moneda IN ('PEN','USD','EUR'))`; `CHECK (jsonb_typeof(historial_cobertura) = 'array')`; `CHECK (fecha_vencimiento >= vigencia_desde)`; `UNIQUE (certificado_id, campania_id)`.
+**Restricciones propuestas para revisar:** `CHECK (moneda IS NULL OR moneda IN ('PEN','USD','EUR'))`; `CHECK (jsonb_typeof(historial_cobertura) = 'array')`; `CHECK (fecha_vencimiento >= vigencia_desde)`; `CHECK (tipo_certificacion IN ('Global GAP','Orgánico USDA','Orgánico UE','Fairtrade','Rainforest Alliance'))`; `UNIQUE (certificado_id, campania_id)`.
 
 <a id="tabla-certificado_campana_x_proveedor"></a>
 
@@ -1168,14 +1091,14 @@ erDiagram
 |---|---|---|---|
 | `certificado_campana_x_proveedor_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
 | `certificado_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `certificado_campana.certificado_id`; FK a `certificado_campana.certificado_id,campania_id`. |
-| `campania_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campana.campania_id`; FK a `certificado_campana.certificado_id,campania_id`; FK a `participacion_proveedor_campana.participacion_proveedor_campana_id,campania_id,proveedor_id`. |
-| `participacion_proveedor_campana_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `participacion_proveedor_campana.participacion_proveedor_campana_id`; FK a `participacion_proveedor_campana.participacion_proveedor_campana_id,campania_id,proveedor_id`. |
-| `proveedor_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `proveedor.proveedor_id`; FK a `participacion_proveedor_campana.participacion_proveedor_campana_id,campania_id,proveedor_id`. |
+| `campania_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campana.campania_id`; FK a `certificado_campana.certificado_id,campania_id`; FK a `campania_x_proveedores.cxp_id,campania_id,proveedor_id`. |
+| `cxp_id` | **TABLA NUEVA** | `integer NOT NULL` | Participación única en campania_x_proveedores; no existe cabecera duplicada. FK a `campania_x_proveedores.cxp_id`; FK a `campania_x_proveedores.cxp_id,campania_id,proveedor_id`. |
+| `proveedor_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `proveedor.proveedor_id`; FK a `campania_x_proveedores.cxp_id,campania_id,proveedor_id`. |
 | `kilos_autorizados` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
 | `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
 | `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
 
-**Restricciones propuestas para revisar:** `UNIQUE (certificado_id, participacion_proveedor_campana_id)`; `CHECK (kilos_autorizados > 0)`.
+**Restricciones propuestas para revisar:** `UNIQUE (certificado_id, cxp_id)`; `CHECK (kilos_autorizados > 0)`.
 
 <a id="tabla-ampliacion_certificado_campana"></a>
 
@@ -1281,7 +1204,7 @@ erDiagram
 
 **Observado en la aplicación de referencia:** Roberto Palacios aparece como productor de Palta 2027. El detalle muestra dos fincas; se confirma con el usuario que serán las fincas entrevistadas.
 
-**Criterio para revisar el modelo:** El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. acuerdo_compra queda como compatibilidad opcional sin exigir tarifarios/fechas/variedad nuevas. La liquidación conserva kilos reconocidos y precio aplicados. Se conservan ambas tablas y sus dependencias. El editor usa campania_x_proveedores con precio simple; el servicio mantiene la correspondencia con la cabecera usada en cargas. No se exige consolidar por calidad ni se elimina una tabla sin autorización.
+**Criterio para revisar el modelo:** El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. Se retira acuerdo_compra: no existe un flujo independiente de acuerdos/versiones en el prototipo. La liquidación conserva kilos reconocidos y precio aplicados. Decisión del 29/10/2026: se retira la cabecera participacion_proveedor_campana. campania_x_proveedores conserva cxp_id, proveedor/campaña, cantidad, tipo, evaluación, precio y disponibilidad. Cobertura de certificados y proveedor_carga referencian cxp_id; no se mantiene una segunda participación.
 
 **Funcionalidad esperada de cada tabla en esta vista:**
 
@@ -1297,14 +1220,12 @@ erDiagram
 | [`entrevista_extencion`](#tabla-entrevista_extencion) | Consulta | Consultar las entrevistas de la participación y obtener sus fincas distintas para el detalle «Fincas vinculadas a la campaña», según decisión confirmada. | Tabla actual incluida |
 | [`finca`](#tabla-finca) | Consulta | Leer las fincas alcanzadas a través de entrevistas; no es una asociación directa de finca con la participación. | Tabla actual incluida |
 | [`examen_proveedor`](#tabla-examen_proveedor) | Consulta | Registra muestras y exámenes de evaluación del proveedor, con contexto de campaña propuesto. No sustituye los análisis operativos de Calidad. | Tabla actual incluida |
-| [`participacion_proveedor_campana`](#tabla-participacion_proveedor_campana) | Por discutir | Cabecera adicional propuesta por el diseño anterior que se solapa con campania_x_proveedores. No se debe poblar como segunda participación hasta definir una función diferente. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
-| [`participacion_proveedor_x_fruta_derivada`](#tabla-participacion_proveedor_x_fruta_derivada) | Por discutir | Selección propuesta de variedades por participación. Su FK a la cabecera adicional deberá revisarse si se consolida el diseño en campania_x_proveedores. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
 
 **Esquema de relaciones utilizado por esta vista:**
 
 **Tablas actuales que se conservan:** `campania_x_proveedores`, `proveedor`, `campana`, `proveedor_x_fruta`, `fruta`, `fruta_derivada`, `entrevista_extencion`, `finca`, `examen_proveedor`.
 
-**Tablas propuestas para revisar:** `proveedor_x_fruta_derivada`, `participacion_proveedor_campana`, `participacion_proveedor_x_fruta_derivada`.
+**Tablas propuestas para revisar:** `proveedor_x_fruta_derivada`.
 
 ```mermaid
 erDiagram
@@ -1320,18 +1241,13 @@ erDiagram
     fruta ||..o{ proveedor_x_fruta : actual
     proveedor ||..o{ proveedor_x_fruta_derivada : propuesta
     fruta_derivada ||..o{ proveedor_x_fruta_derivada : propuesta
-    campana ||..o{ participacion_proveedor_campana : propuesta
-    proveedor ||..o{ participacion_proveedor_campana : propuesta
-    participacion_proveedor_campana ||..o{ participacion_proveedor_x_fruta_derivada : propuesta
-    fruta_derivada ||..o{ participacion_proveedor_x_fruta_derivada : propuesta
-    participacion_proveedor_campana o|..o{ campania_x_proveedores : propuesta
     fruta_derivada o|..o{ entrevista_extencion : propuesta
     campania_x_proveedores o|..o{ examen_proveedor : propuesta
     finca o|..o{ examen_proveedor : propuesta
     fruta_derivada o|..o{ finca : propuesta
 ```
 
-**D01 — Participación adicional (Compatibilidad conservada):** Se conservan ambas tablas y sus dependencias. El editor usa campania_x_proveedores con precio simple; el servicio mantiene la correspondencia con la cabecera usada en cargas. No se exige consolidar por calidad ni se elimina una tabla sin autorización.
+**D01 — Participación única (Confirmado e incorporado al SQL):** Decisión del 29/10/2026: se retira la cabecera participacion_proveedor_campana. campania_x_proveedores conserva cxp_id, proveedor/campaña, cantidad, tipo, evaluación, precio y disponibilidad. Cobertura de certificados y proveedor_carga referencian cxp_id; no se mantiene una segunda participación.
 
 **D02 — Fincas entrevistadas (Aprobado por el usuario):** El listado de fincas de una participación se obtiene desde entrevista_extencion. No se vuelve a agregar finca_id a campania_x_proveedores; los orígenes de entrega/carga seleccionan las fincas físicas de recojo.
 
@@ -1488,45 +1404,6 @@ erDiagram
 
 **`examen_proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
-<a id="tabla-participacion_proveedor_campana"></a>
-
-**Diccionario de `participacion_proveedor_campana` — tabla propuesta.**
-
-**Clave primaria:** `participacion_proveedor_campana_id`. Vinculación proveedor–campaña; aquí pertenecen rol, oferta y evaluación.
-
-| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
-|---|---|---|---|
-| `participacion_proveedor_campana_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
-| `campania_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campana.campania_id`. |
-| `proveedor_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `proveedor.proveedor_id`. |
-| `rol_comercial` | **TABLA NUEVA** | `varchar(20) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
-| `tipo_fruta` | **TABLA NUEVA** | `varchar(20) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
-| `kilos_estimados` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
-| `estado` | **TABLA NUEVA** | `varchar(30) NOT NULL DEFAULT 'EXAMEN_PENDIENTE'` | Atributo propuesto para cubrir el flujo de la vista. |
-| `entrevista_aplica` | **TABLA NUEVA** | `boolean NOT NULL DEFAULT true` | Atributo propuesto para cubrir el flujo de la vista. |
-| `fecha_registro` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Atributo propuesto para cubrir el flujo de la vista. |
-| `observaciones` | **TABLA NUEVA** | `text` | Atributo propuesto para cubrir el flujo de la vista. |
-| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
-| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
-
-**Restricciones propuestas para revisar:** `UNIQUE (campania_id, proveedor_id)`; `UNIQUE (participacion_proveedor_campana_id, campania_id, proveedor_id)`; `CHECK (rol_comercial IN ('PRODUCTOR','ACOPIADOR'))`; `CHECK (tipo_fruta IN ('ORGANICA','CONVENCIONAL'))`; `CHECK (kilos_estimados >= 0)`; `CHECK (estado IN ('EXAMEN_PENDIENTE','ENTREVISTA_PENDIENTE','APROBADO','RECHAZADO'))`.
-
-<a id="tabla-participacion_proveedor_x_fruta_derivada"></a>
-
-**Diccionario de `participacion_proveedor_x_fruta_derivada` — tabla propuesta.**
-
-**Clave primaria:** `participacion_proveedor_x_fruta_derivada_id`. Variedades de la participación, sin deducirlas solo de contratos de compra.
-
-| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
-|---|---|---|---|
-| `participacion_proveedor_x_fruta_derivada_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
-| `participacion_proveedor_campana_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `participacion_proveedor_campana.participacion_proveedor_campana_id`. |
-| `fruta_derivada_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `fruta_derivada.fruta_derivada_id`. |
-| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
-| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
-
-**Restricciones propuestas para revisar:** `UNIQUE (participacion_proveedor_campana_id, fruta_derivada_id)`.
-
 ## Entrevista (Administrador > Gestión de Campaña > Planificado > Proveedores > Participación > Entrevista)
 
 **Referencia de revisión:** V12 · Recorrido del 27/10/2026.
@@ -1543,18 +1420,15 @@ erDiagram
 |---|---|---|---|
 | [`entrevista_extencion`](#tabla-entrevista_extencion) | Escritura esperada | Guardar una visita por finca y participación, fecha/hora y datos agronómicos; el código identifica la entrevista, no una nueva finca. | Tabla actual incluida |
 | [`finca`](#tabla-finca) | Escritura esperada | Reutilizar una finca existente del proveedor o registrar una nueva desde la entrevista, separando datos físicos del registro agronómico de campaña. | Tabla actual incluida |
-| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Es la participación del proveedor en una campaña y el punto de agrupación de entrevistas, evaluación y cantidades. Se conserva obligatoriamente y no selecciona finca. | Tabla actual incluida |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Única participación proveedor/campaña, identificada por cxp_id; conserva oferta, tipo, evaluación, entrevista aplicable, precio simple PEN y disponibilidad. | Tabla actual incluida |
 | [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
 | [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
 | [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
 | [`fruta`](#tabla-fruta) | Consulta | Proporciona el catálogo de cultivos y la fruta de la campaña. No representa kilos comprados ni cosechados. | Tabla actual incluida |
-| [`acuerdo_compra`](#tabla-acuerdo_compra) | Por discutir | Propuesta para condiciones de precio y vigencia por proveedor/variedad. No se observó un editor propio de acuerdos en entrevistas; el precio aplicado existe al liquidar. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
 
 **Esquema de relaciones utilizado por esta vista:**
 
 **Tablas actuales que se conservan:** `entrevista_extencion`, `finca`, `campania_x_proveedores`, `proveedor`, `campana`, `fruta_derivada`, `fruta`.
-
-**Tablas propuestas para revisar:** `acuerdo_compra`.
 
 ```mermaid
 erDiagram
@@ -1565,8 +1439,6 @@ erDiagram
     finca ||..o{ entrevista_extencion : actual
     proveedor ||..o{ finca : actual
     fruta ||..o{ fruta_derivada : actual
-    campania_x_proveedores ||..o{ acuerdo_compra : propuesta
-    fruta_derivada o|..o{ acuerdo_compra : propuesta
     fruta_derivada o|..o{ entrevista_extencion : propuesta
     fruta_derivada o|..o{ finca : propuesta
 ```
@@ -1575,7 +1447,7 @@ erDiagram
 
 **D04 — Una variedad por finca (Aprobado por el usuario):** Se conserva finca.fruta_derivada_id y se obtiene fruta por fruta_derivada.fruta_id. No se agrega una tabla de varios cultivos por finca. El vínculo permanece opcional para datos históricos; completar variedad antes de operar cuando la vista la requiere.
 
-**D10 — Condiciones de compra (Incorporado al SQL):** El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. acuerdo_compra queda como compatibilidad opcional sin exigir tarifarios/fechas/variedad nuevas. La liquidación conserva kilos reconocidos y precio aplicados.
+**D10 — Condiciones de compra (Incorporado al SQL):** El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. Se retira acuerdo_compra: no existe un flujo independiente de acuerdos/versiones en el prototipo. La liquidación conserva kilos reconocidos y precio aplicados.
 
 **`entrevista_extencion`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
@@ -1590,28 +1462,6 @@ erDiagram
 **`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
 **`fruta`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
-
-<a id="tabla-acuerdo_compra"></a>
-
-**Diccionario de `acuerdo_compra` — tabla propuesta.**
-
-**Clave primaria:** `acuerdo_compra_id`. Compatibilidad opcional de condiciones de compra; la participación conserva el precio simple sin exigir tarifario ni vigencias.
-
-| Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
-|---|---|---|---|
-| `acuerdo_compra_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
-| `cxp_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `campania_x_proveedores.cxp_id`. |
-| `fruta_derivada_id` | **TABLA NUEVA** | `integer` | Compatibilidad: el precio simple no exige variedad o vigencia de un tarifario nuevo. FK a `fruta_derivada.fruta_derivada_id`. |
-| `precio_kg` | **TABLA NUEVA** | `numeric(14,4) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
-| `kilos_acordados` | **TABLA NUEVA** | `numeric(14,3)` | Atributo propuesto para cubrir el flujo de la vista. |
-| `fecha_inicio` | **TABLA NUEVA** | `date` | Compatibilidad: el precio simple no exige variedad o vigencia de un tarifario nuevo. |
-| `fecha_fin` | **TABLA NUEVA** | `date` | Compatibilidad: el precio simple no exige variedad o vigencia de un tarifario nuevo. |
-| `estado` | **TABLA NUEVA** | `varchar(25) NOT NULL DEFAULT 'VIGENTE'` | Atributo propuesto para cubrir el flujo de la vista. |
-| `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
-| `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
-| `moneda` | **TABLA NUEVA** | `varchar(3) NOT NULL DEFAULT 'PEN'` | Compra en soles según respuesta del usuario. |
-
-**Restricciones propuestas para revisar:** `CHECK (precio_kg > 0)`; `CHECK (kilos_acordados >= 0)`; `CHECK (fecha_fin >= fecha_inicio)`; `CHECK (moneda = 'PEN')`.
 
 ## Exámenes (Administrador > Gestión de Campaña > Planificado > Proveedores > Participación > Exámenes)
 
@@ -1682,37 +1532,33 @@ erDiagram
 | [`certificado_campana`](#tabla-certificado_campana) | Escritura esperada | Guarda el certificado de campaña, vigencia y costo. No guarda como pago el recibo ni reemplaza el certificado propio del proveedor. | Tabla actual incluida |
 | [`certificado_campana_x_proveedor`](#tabla-certificado_campana_x_proveedor) | Escritura esperada | Guardar productores cubiertos y kilos iniciales por certificado. La selección debe corresponder a la campaña; su FK a la cabecera adicional sigue por afinar. | Tabla propuesta, sin implementar |
 | [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
-| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Es la participación del proveedor en una campaña y el punto de agrupación de entrevistas, evaluación y cantidades. Se conserva obligatoriamente y no selecciona finca. | Tabla actual incluida |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Única participación proveedor/campaña, identificada por cxp_id; conserva oferta, tipo, evaluación, entrevista aplicable, precio simple PEN y disponibilidad. | Tabla actual incluida |
 | [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
-| [`norma`](#tabla-norma) | Consulta | Catálogo de normas que se referencian desde certificación y guías; evita duplicar nombres libres en cada documento. | Tabla propuesta, sin implementar |
+| [`norma`](#tabla-norma) | Consulta | Catálogo con datos iniciales SQL de códigos de guía; sin CRUD requerido. Se relaciona con guías mediante guia_x_norma y opcionalmente con certificados, sin confundir el tipo de certificado. | Tabla propuesta, sin implementar |
 | [`ampliacion_certificado_campana`](#tabla-ampliacion_certificado_campana) | Consulta | Registra cada aumento de kilos certificados como evento, sin sobrescribir el volumen inicial. | Tabla propuesta, sin implementar |
 | [`pago_certificado_campana`](#tabla-pago_certificado_campana) | Consulta | Registra desembolsos parciales del certificado en su moneda. El saldo se calcula con los pagos y no por una etiqueta de estado. | Tabla propuesta, sin implementar |
-| [`participacion_proveedor_campana`](#tabla-participacion_proveedor_campana) | Por discutir | Cabecera adicional propuesta por el diseño anterior que se solapa con campania_x_proveedores. No se debe poblar como segunda participación hasta definir una función diferente. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
 
 **Esquema de relaciones utilizado por esta vista:**
 
 **Tablas actuales que se conservan:** `certificado_campana`, `campana`, `campania_x_proveedores`, `proveedor`.
 
-**Tablas propuestas para revisar:** `certificado_campana_x_proveedor`, `norma`, `ampliacion_certificado_campana`, `pago_certificado_campana`, `participacion_proveedor_campana`.
+**Tablas propuestas para revisar:** `certificado_campana_x_proveedor`, `norma`, `ampliacion_certificado_campana`, `pago_certificado_campana`.
 
 ```mermaid
 erDiagram
     campana ||..o{ campania_x_proveedores : actual
     proveedor ||..o{ campania_x_proveedores : actual
     campana ||..o{ certificado_campana : actual
-    campana ||..o{ participacion_proveedor_campana : propuesta
-    proveedor ||..o{ participacion_proveedor_campana : propuesta
     certificado_campana ||..o{ certificado_campana_x_proveedor : propuesta
     campana ||..o{ certificado_campana_x_proveedor : propuesta
-    participacion_proveedor_campana ||..o{ certificado_campana_x_proveedor : propuesta
+    campania_x_proveedores ||..o{ certificado_campana_x_proveedor : propuesta
     proveedor ||..o{ certificado_campana_x_proveedor : propuesta
     certificado_campana ||..o{ ampliacion_certificado_campana : propuesta
     certificado_campana ||..o{ pago_certificado_campana : propuesta
-    participacion_proveedor_campana o|..o{ campania_x_proveedores : propuesta
     norma o|..o{ certificado_campana : propuesta
 ```
 
-**D01 — Participación adicional (Compatibilidad conservada):** Se conservan ambas tablas y sus dependencias. El editor usa campania_x_proveedores con precio simple; el servicio mantiene la correspondencia con la cabecera usada en cargas. No se exige consolidar por calidad ni se elimina una tabla sin autorización.
+**D01 — Participación única (Confirmado e incorporado al SQL):** Decisión del 29/10/2026: se retira la cabecera participacion_proveedor_campana. campania_x_proveedores conserva cxp_id, proveedor/campaña, cantidad, tipo, evaluación, precio y disponibilidad. Cobertura de certificados y proveedor_carga referencian cxp_id; no se mantiene una segunda participación.
 
 **D09 — Cantidad de certificados (Por discutir):** El editor dice uno por campaña; el backend y el resumen admiten varios. Se mantiene la capacidad actual hasta decidir si las normas requieren certificados distintos.
 
@@ -1732,7 +1578,7 @@ erDiagram
 
 **Diccionario de `norma` — tabla propuesta.**
 
-**Clave primaria:** `norma_id`. Catálogo de normas de certificación y traslado.
+**Clave primaria:** `norma_id`. Catálogo con datos iniciales SQL de códigos de guía; sin CRUD requerido. Se relaciona con guías mediante guia_x_norma y opcionalmente con certificados, sin confundir el tipo de certificado.
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -1765,8 +1611,6 @@ erDiagram
 | `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
 
 **Restricciones propuestas para revisar:** `UNIQUE (certificado_id, referencia)`; `CHECK (monto > 0)`.
-
-**`participacion_proveedor_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
 ## Ampliación de certificación (Administrador > Gestión de Campaña > Certificaciones > Ampliación)
 
@@ -2025,7 +1869,7 @@ erDiagram
 | [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
 | [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
 | [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
-| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Es la participación del proveedor en una campaña y el punto de agrupación de entrevistas, evaluación y cantidades. Se conserva obligatoriamente y no selecciona finca. | Tabla actual incluida |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Única participación proveedor/campaña, identificada por cxp_id; conserva oferta, tipo, evaluación, entrevista aplicable, precio simple PEN y disponibilidad. | Tabla actual incluida |
 | [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
 | [`entrevista_extencion`](#tabla-entrevista_extencion) | Consulta | Añade los datos agronómicos de la visita a una finca del proveedor en esa campaña. Las fincas entrevistadas se obtienen de estas filas, sin otra vinculación directa finca–participación. | Tabla actual incluida |
 | [`finca`](#tabla-finca) | Consulta | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
@@ -2791,6 +2635,7 @@ erDiagram
 | `estado` | **TABLA NUEVA** | `varchar(25) NOT NULL DEFAULT 'RECIBIDA'` | Atributo propuesto para cubrir el flujo de la vista. |
 | `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
 | `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
+| `disponibilidad` | **TABLA NUEVA** | `text` | Texto del editor de respuesta de transporte; sin inventar disponibilidad al registrar la cotización. |
 
 **Restricciones propuestas para revisar:** `CHECK (monto > 0)`; `CHECK (moneda IN ('PEN','USD','EUR'))`.
 
@@ -2814,6 +2659,7 @@ erDiagram
 |---|---|---|---|
 | [`solicitud_transporte`](#tabla-solicitud_transporte) | Escritura esperada | Guarda el requerimiento común de servicio, campaña, ruta, ventana y condiciones antes de recibir respuestas. | Tabla propuesta, sin implementar |
 | [`invitacion_transporte`](#tabla-invitacion_transporte) | Escritura esperada | Identifica cada transportista destinatario de una solicitud, preservando el contacto usado. No supone que se haya enviado un correo real. | Tabla propuesta, sin implementar |
+| [`cotizacion_transporte`](#tabla-cotizacion_transporte) | Escritura esperada | Propuesta para cada respuesta económica de un invitado; la lista actual está vacía y el formulario de respuesta no pudo contrastarse. | Tabla propuesta, sin implementar |
 | [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
 | [`empresa_transporte_externo`](#tabla-empresa_transporte_externo) | Consulta | Es el proveedor logístico contratado, empresa o independiente previsto. No representa a la agroexportadora que opera el sistema. | Tabla actual incluida |
 
@@ -2821,13 +2667,14 @@ erDiagram
 
 **Tablas actuales que se conservan:** `campana`, `empresa_transporte_externo`.
 
-**Tablas propuestas para revisar:** `solicitud_transporte`, `invitacion_transporte`.
+**Tablas propuestas para revisar:** `solicitud_transporte`, `invitacion_transporte`, `cotizacion_transporte`.
 
 ```mermaid
 erDiagram
     campana ||..o{ solicitud_transporte : propuesta
     solicitud_transporte ||..o{ invitacion_transporte : propuesta
     empresa_transporte_externo ||..o{ invitacion_transporte : propuesta
+    invitacion_transporte ||..o{ cotizacion_transporte : propuesta
 ```
 
 **D13 — Gestión documental diferida (Decisión previa conservada):** archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa.
@@ -2835,6 +2682,8 @@ erDiagram
 **`solicitud_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
 **`invitacion_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
+
+**`cotizacion_transporte`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
 **`campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
@@ -2951,7 +2800,7 @@ erDiagram
 | [`analisis_calidad`](#tabla-analisis_calidad) | Escritura esperada | Crear el análisis previo por participación y finca, permitiendo resultado pendiente. Vincular cosecha solo cuando exista y pertenezca al mismo contexto. | Tabla propuesta, sin implementar |
 | [`medicion_mtd`](#tabla-medicion_mtd) | Escritura esperada | Registrar el valor de la finca y conservar historial. La captura que exige el mockup queda pendiente de integración documental en este esquema. | Tabla propuesta, sin implementar |
 | [`campana`](#tabla-campana) | Consulta | Identifica la campaña, sus fechas, fruta, responsable y estado; aporta el ámbito de todas las consultas de la vista. | Tabla actual incluida |
-| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Es la participación del proveedor en una campaña y el punto de agrupación de entrevistas, evaluación y cantidades. Se conserva obligatoriamente y no selecciona finca. | Tabla actual incluida |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Única participación proveedor/campaña, identificada por cxp_id; conserva oferta, tipo, evaluación, entrevista aplicable, precio simple PEN y disponibilidad. | Tabla actual incluida |
 | [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
 | [`entrevista_extencion`](#tabla-entrevista_extencion) | Consulta | Añade los datos agronómicos de la visita a una finca del proveedor en esa campaña. Las fincas entrevistadas se obtienen de estas filas, sin otra vinculación directa finca–participación. | Tabla actual incluida |
 | [`finca`](#tabla-finca) | Consulta | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
@@ -3125,7 +2974,7 @@ erDiagram
 |---|---|---|---|
 | `proveedor_carga_id` | **TABLA NUEVA** | `integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY` | Atributo propuesto para cubrir el flujo de la vista. |
 | `carga_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `carga.carga_id`. |
-| `participacion_proveedor_campana_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `participacion_proveedor_campana.participacion_proveedor_campana_id`. |
+| `cxp_id` | **TABLA NUEVA** | `integer NOT NULL` | Participación única en campania_x_proveedores; no existe cabecera duplicada. FK a `campania_x_proveedores.cxp_id`. |
 | `fruta_derivada_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `fruta_derivada.fruta_derivada_id`. |
 | `kilos_cargados` | **TABLA NUEVA** | `numeric(14,3) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
 | `precio_compra_kg_aplicado` | **TABLA NUEVA** | `numeric(14,4)` | Atributo propuesto para cubrir el flujo de la vista. |
@@ -3138,7 +2987,7 @@ erDiagram
 | `created_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend. |
 | `updated_at` | **TABLA NUEVA** | `timestamptz NOT NULL DEFAULT now()` | Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha. |
 
-**Restricciones propuestas para revisar:** `UNIQUE (carga_id, participacion_proveedor_campana_id, fruta_derivada_id)`; `UNIQUE (proveedor_carga_id, carga_id)`; `CHECK (kilos_cargados > 0)`; `CHECK (precio_compra_kg_aplicado > 0)`; `CHECK (jabas_cargadas >= 0)`; `CHECK (jabas_vacias >= 0)`; `CHECK (bines_cargados >= 0)`; `CHECK (bines_vacios >= 0)`; `CHECK (mallas_cargadas >= 0)`; `CHECK (mallas_vacias >= 0)`.
+**Restricciones propuestas para revisar:** `UNIQUE (carga_id, cxp_id, fruta_derivada_id)`; `UNIQUE (proveedor_carga_id, carga_id)`; `CHECK (kilos_cargados > 0)`; `CHECK (precio_compra_kg_aplicado > 0)`; `CHECK (jabas_cargadas >= 0)`; `CHECK (jabas_vacias >= 0)`; `CHECK (bines_cargados >= 0)`; `CHECK (bines_vacios >= 0)`; `CHECK (mallas_cargadas >= 0)`; `CHECK (mallas_vacias >= 0)`.
 
 <a id="tabla-origen_carga"></a>
 
@@ -3221,7 +3070,7 @@ erDiagram
 | [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
 | [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
 | [`origen_entrega`](#tabla-origen_entrega) | Consulta | Selecciona cada finca de los proveedores de la entrega. finca_id identifica el punto físico; cxp_id acredita la participación en campaña. | Tabla propuesta, sin implementar |
-| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Es la participación del proveedor en una campaña y el punto de agrupación de entrevistas, evaluación y cantidades. Se conserva obligatoriamente y no selecciona finca. | Tabla actual incluida |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Única participación proveedor/campaña, identificada por cxp_id; conserva oferta, tipo, evaluación, entrevista aplicable, precio simple PEN y disponibilidad. | Tabla actual incluida |
 | [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
 | [`finca`](#tabla-finca) | Consulta | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
 | [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
@@ -3261,6 +3110,7 @@ erDiagram
     campania_x_proveedores ||..o{ medicion_mtd : propuesta
     coordinacion_entrega ||..o| carga : propuesta
     carga ||..o{ proveedor_carga : propuesta
+    campania_x_proveedores ||..o{ proveedor_carga : propuesta
     fruta_derivada ||..o{ proveedor_carga : propuesta
     proveedor_carga ||..o{ origen_carga : propuesta
     campania_x_proveedores ||..o{ origen_carga : propuesta
@@ -3320,7 +3170,7 @@ erDiagram
 
 **Observado en la aplicación de referencia:** Guías por carga, estado y kilos; la preparación abre el conjunto de guías de esa carga.
 
-**Criterio para revisar el modelo:** La guía conserva contenido completo en JSONB y cada proveedor_guia conserva sus fincas seleccionadas. Se mantiene guía/carga, kilos y normas. El servicio preserva el contenido al emitir.
+**Criterio para revisar el modelo:** La guía conserva contenido completo en JSONB y cada proveedor_guia conserva sus fincas seleccionadas. Se mantiene guía/carga, kilos y normas. El destino es la dirección de llegada textual de la propia guía, junto a sus snapshots de ubigeo/establecimiento, sin catálogo. El servicio preserva el contenido al emitir. Norma usa seed; cada selección del editor se resuelve por codigo y se guarda en guia_x_norma, sin insertar todas las normas. Se conserva standardText histórico en contenido.
 
 **Funcionalidad esperada de cada tabla en esta vista:**
 
@@ -3338,8 +3188,8 @@ erDiagram
 | [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
 | [`guia_remision`](#tabla-guia_remision) | Consulta | Representa el documento estructurado del traslado, con datos históricos de partida, llegada, transportista y conductor. Permanece aunque archivo se difiera. | Tabla propuesta, sin implementar |
 | [`proveedor_guia`](#tabla-proveedor_guia) | Consulta | Asigna kilos de las líneas de proveedor de la carga a cada guía; permite varias guías sin duplicar kilos. | Tabla propuesta, sin implementar |
-| [`guia_x_norma`](#tabla-guia_x_norma) | Consulta | Guarda las normas seleccionadas para una guía, reutilizando el catálogo norma. | Tabla propuesta, sin implementar |
-| [`norma`](#tabla-norma) | Consulta | Catálogo de normas que se referencian desde certificación y guías; evita duplicar nombres libres en cada documento. | Tabla propuesta, sin implementar |
+| [`guia_x_norma`](#tabla-guia_x_norma) | Consulta | Normas elegidas en el editor de cada guía; se insertan/eliminan sus filas al guardar un borrador, resolviendo norma_id por codigo. No se precargan relaciones para todas las guías. UNIQUE evita duplicar selecciones. | Tabla propuesta, sin implementar |
+| [`norma`](#tabla-norma) | Consulta | Catálogo con datos iniciales SQL de códigos de guía; sin CRUD requerido. Se relaciona con guías mediante guia_x_norma y opcionalmente con certificados, sin confundir el tipo de certificado. | Tabla propuesta, sin implementar |
 
 **Esquema de relaciones utilizado por esta vista:**
 
@@ -3409,12 +3259,11 @@ erDiagram
 | `unidad_peso` | **TABLA NUEVA** | `varchar(3) NOT NULL DEFAULT 'KGM'` | Atributo propuesto para cubrir el flujo de la vista. |
 | `numero_bultos` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
 | `finca_partida_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `finca.finca_id`. |
-| `destino_id` | **TABLA NUEVA** | `integer NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. FK a `destino_cliente_negocio.destino_cliente_negocio_id`. |
 | `ubigeo_partida_snapshot` | **TABLA NUEVA** | `varchar(6) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
 | `direccion_partida_snapshot` | **TABLA NUEVA** | `text NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
 | `establecimiento_partida_snapshot` | **TABLA NUEVA** | `varchar(4) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
 | `ubigeo_llegada_snapshot` | **TABLA NUEVA** | `varchar(6) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
-| `direccion_llegada_snapshot` | **TABLA NUEVA** | `text NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
+| `direccion_llegada_snapshot` | **TABLA NUEVA** | `text NOT NULL` | D08: dirección de destino textual capturada en la guía; conserva el punto de llegada histórico sin catálogo. |
 | `establecimiento_llegada_snapshot` | **TABLA NUEVA** | `varchar(4) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
 | `transportista_documento_snapshot` | **TABLA NUEVA** | `varchar(30) NOT NULL` | Atributo propuesto para cubrir el flujo de la vista. |
 | `mtc_snapshot` | **TABLA NUEVA** | `varchar(80)` | Atributo propuesto para cubrir el flujo de la vista. |
@@ -3454,7 +3303,7 @@ erDiagram
 
 **Diccionario de `guia_x_norma` — tabla propuesta.**
 
-**Clave primaria:** `guia_x_norma_id`. Selección múltiple de normas en la guía.
+**Clave primaria:** `guia_x_norma_id`. Normas elegidas en el editor de cada guía; se insertan/eliminan sus filas al guardar un borrador, resolviendo norma_id por codigo. No se precargan relaciones para todas las guías. UNIQUE evita duplicar selecciones.
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -3476,7 +3325,7 @@ erDiagram
 
 **Observado en la aplicación de referencia:** Formulario con kilos, KGM, bultos y secciones de transportista, conductor, partida, llegada y normas. Al abrir preparación apareció fila Por preparar y sincronización; no se guardó ni emitió una guía.
 
-**Criterio para revisar el modelo:** La guía conserva contenido completo en JSONB y cada proveedor_guia conserva sus fincas seleccionadas. Se mantiene guía/carga, kilos y normas. El servicio preserva el contenido al emitir.
+**Criterio para revisar el modelo:** La guía conserva contenido completo en JSONB y cada proveedor_guia conserva sus fincas seleccionadas. Se mantiene guía/carga, kilos y normas. El destino es la dirección de llegada textual de la propia guía, junto a sus snapshots de ubigeo/establecimiento, sin catálogo. El servicio preserva el contenido al emitir. Norma usa seed; cada selección del editor se resuelve por codigo y se guarda en guia_x_norma, sin insertar todas las normas. Se conserva standardText histórico en contenido.
 
 **Funcionalidad esperada de cada tabla en esta vista:**
 
@@ -3484,7 +3333,7 @@ erDiagram
 |---|---|---|---|
 | [`guia_remision`](#tabla-guia_remision) | Escritura esperada | Guardar el borrador estructurado y los datos históricos de traslado; definir una partida física y no convertir una cadena de fincas en dirección válida. | Tabla propuesta, sin implementar |
 | [`proveedor_guia`](#tabla-proveedor_guia) | Escritura esperada | Seleccionar proveedores de la misma carga y distribuir kilos pendientes entre guías; requiere validación transaccional de acumulados. | Tabla propuesta, sin implementar |
-| [`guia_x_norma`](#tabla-guia_x_norma) | Escritura esperada | Guarda las normas seleccionadas para una guía, reutilizando el catálogo norma. | Tabla propuesta, sin implementar |
+| [`guia_x_norma`](#tabla-guia_x_norma) | Escritura esperada | Normas elegidas en el editor de cada guía; se insertan/eliminan sus filas al guardar un borrador, resolviendo norma_id por codigo. No se precargan relaciones para todas las guías. UNIQUE evita duplicar selecciones. | Tabla propuesta, sin implementar |
 | [`carga`](#tabla-carga) | Consulta | Representa la carga física de una coordinación, fecha y responsable. El peso real se obtiene de sus líneas de proveedores y se diferencia del programado. | Tabla propuesta, sin implementar |
 | [`proveedor_carga`](#tabla-proveedor_carga) | Consulta | Desglosa kilos reales, variedad, bultos y precio aplicado por proveedor. No distribuye automáticamente kilos entre las fincas de ese proveedor. | Tabla propuesta, sin implementar |
 | [`origen_carga`](#tabla-origen_carga) | Consulta | Conserva las fincas que aportaron a una línea de proveedor de la carga; los kilos por finca pueden quedar sin medir. | Tabla propuesta, sin implementar |
@@ -3500,14 +3349,13 @@ erDiagram
 | [`contrato_venta`](#tabla-contrato_venta) | Consulta | Representa cada contrato del cliente/campaña con kilos, precio y moneda propios. Contratado no equivale a programado ni facturado. | Tabla propuesta, sin implementar |
 | [`cliente_negocio_campana`](#tabla-cliente_negocio_campana) | Consulta | Representa el vínculo y requerimiento del cliente en la campaña, previo a sus contratos. El backend mantiene un vínculo único por cliente/campaña. | Tabla actual incluida |
 | [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
-| [`destino_cliente_negocio`](#tabla-destino_cliente_negocio) | Consulta | Propuesta de puntos de llegada reutilizables de un cliente. La pantalla muestra destinos, pero no se observó un padrón independiente que obligue a esta tabla. | Tabla propuesta, sin implementar |
-| [`norma`](#tabla-norma) | Consulta | Catálogo de normas que se referencian desde certificación y guías; evita duplicar nombres libres en cada documento. | Tabla propuesta, sin implementar |
+| [`norma`](#tabla-norma) | Consulta | Catálogo con datos iniciales SQL de códigos de guía; sin CRUD requerido. Se relaciona con guías mediante guia_x_norma y opcionalmente con certificados, sin confundir el tipo de certificado. | Tabla propuesta, sin implementar |
 
 **Esquema de relaciones utilizado por esta vista:**
 
 **Tablas actuales que se conservan:** `finca`, `proveedor`, `fruta_derivada`, `empresa_transporte_externo`, `vehiculo_externo`, `chofer_transporte_externo`, `cliente_negocio_campana`, `cliente_negocio`.
 
-**Tablas propuestas para revisar:** `guia_remision`, `proveedor_guia`, `guia_x_norma`, `carga`, `proveedor_carga`, `origen_carga`, `origen_entrega`, `coordinacion_entrega`, `entrega_programada`, `contrato_venta`, `destino_cliente_negocio`, `norma`.
+**Tablas propuestas para revisar:** `guia_remision`, `proveedor_guia`, `guia_x_norma`, `carga`, `proveedor_carga`, `origen_carga`, `origen_entrega`, `coordinacion_entrega`, `entrega_programada`, `contrato_venta`, `norma`.
 
 ```mermaid
 erDiagram
@@ -3515,10 +3363,8 @@ erDiagram
     cliente_negocio ||..o{ cliente_negocio_campana : actual
     proveedor ||..o{ finca : actual
     empresa_transporte_externo ||..o{ vehiculo_externo : actual
-    cliente_negocio ||..o{ destino_cliente_negocio : propuesta
     cliente_negocio_campana ||..o{ contrato_venta : propuesta
     contrato_venta ||..o{ entrega_programada : propuesta
-    destino_cliente_negocio ||..o{ entrega_programada : propuesta
     entrega_programada ||..o| coordinacion_entrega : propuesta
     empresa_transporte_externo ||..o{ coordinacion_entrega : propuesta
     chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
@@ -3529,7 +3375,6 @@ erDiagram
     proveedor_carga ||..o{ origen_carga : propuesta
     carga ||..o{ guia_remision : propuesta
     finca ||..o{ guia_remision : propuesta
-    destino_cliente_negocio ||..o{ guia_remision : propuesta
     guia_remision ||..o{ proveedor_guia : propuesta
     carga ||..o{ proveedor_guia : propuesta
     proveedor_carga ||..o{ proveedor_guia : propuesta
@@ -3580,8 +3425,6 @@ erDiagram
 **`cliente_negocio_campana`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
 **`cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
-
-**`destino_cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
 **`norma`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
@@ -3682,22 +3525,19 @@ erDiagram
 | [`cliente_negocio`](#tabla-cliente_negocio) | Consulta | Mantiene cliente, tipo Exportador/Industria y contacto. Un cliente comercial no es automáticamente empresa transportista aunque compartan nombre. | Tabla actual incluida |
 | [`vehiculo_externo`](#tabla-vehiculo_externo) | Consulta | Identifica la unidad y su empresa, placa, dimensiones y pesos. Los datos se consultan al asignar y se capturan históricamente en documentos. | Tabla actual incluida |
 | [`chofer_transporte_externo`](#tabla-chofer_transporte_externo) | Consulta | Mantiene conductor, contacto y empresa. El vínculo opcional a usuario permitirá filtrar las asignaciones de quien inicia sesión. | Tabla actual incluida |
-| [`destino_cliente_negocio`](#tabla-destino_cliente_negocio) | Consulta | Propuesta de puntos de llegada reutilizables de un cliente. La pantalla muestra destinos, pero no se observó un padrón independiente que obligue a esta tabla. | Tabla propuesta, sin implementar |
 
 **Esquema de relaciones utilizado por esta vista:**
 
 **Tablas actuales que se conservan:** `campana`, `cliente_negocio_campana`, `cliente_negocio`, `vehiculo_externo`, `chofer_transporte_externo`.
 
-**Tablas propuestas para revisar:** `carga`, `coordinacion_entrega`, `historial_chofer`, `entrega_programada`, `contrato_venta`, `destino_cliente_negocio`.
+**Tablas propuestas para revisar:** `carga`, `coordinacion_entrega`, `historial_chofer`, `entrega_programada`, `contrato_venta`.
 
 ```mermaid
 erDiagram
     cliente_negocio ||..o{ cliente_negocio_campana : actual
     campana ||..o{ cliente_negocio_campana : actual
-    cliente_negocio ||..o{ destino_cliente_negocio : propuesta
     cliente_negocio_campana ||..o{ contrato_venta : propuesta
     contrato_venta ||..o{ entrega_programada : propuesta
-    destino_cliente_negocio ||..o{ entrega_programada : propuesta
     entrega_programada ||..o| coordinacion_entrega : propuesta
     chofer_transporte_externo ||..o{ coordinacion_entrega : propuesta
     coordinacion_entrega ||..o| carga : propuesta
@@ -3728,8 +3568,6 @@ erDiagram
 **`vehiculo_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
 **`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
-
-**`destino_cliente_negocio`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
 ## Consulta de entrega (Administrador > Logística y Despacho > Campaña > Cargas > Entrega)
 
@@ -4384,7 +4222,7 @@ erDiagram
     persona ||..o{ liquidacion_proveedor : propuesta
 ```
 
-**D10 — Condiciones de compra (Incorporado al SQL):** El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. acuerdo_compra queda como compatibilidad opcional sin exigir tarifarios/fechas/variedad nuevas. La liquidación conserva kilos reconocidos y precio aplicados.
+**D10 — Condiciones de compra (Incorporado al SQL):** El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. Se retira acuerdo_compra: no existe un flujo independiente de acuerdos/versiones en el prototipo. La liquidación conserva kilos reconocidos y precio aplicados.
 
 **D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
 
@@ -4468,13 +4306,13 @@ erDiagram
 
 **Observado en la aplicación de referencia:** Control por año y persona, principal y vinculadas; incluye todas las campañas y declara que pagos no cambian el acumulado.
 
-**Criterio para revisar el modelo:** El acumulado propuesto se consulta por persona y año desde los documentos de compra. No se precargan valores tributarios: parametro_uit es configuración para revisar. v_control_uit deja disponible nulo si falta el parámetro anual. No se mezclan compras registradas con dinero ya pagado.
+**Criterio para revisar el modelo:** El acumulado se consulta por persona y año desde documentos de compra. parametro_uit incluye los valores iniciales del prototipo, que deben revisarse antes de operación. v_control_uit deja disponible nulo si falta el parámetro anual. No se mezclan compras registradas con dinero ya pagado.
 
 **Funcionalidad esperada de cada tabla en esta vista:**
 
 | Tabla | Uso en esta vista | Funcionalidad esperada | Situación |
 |---|---|---|---|
-| [`parametro_uit`](#tabla-parametro_uit) | Consulta | Guarda los parámetros del control anual como configuración a revisar; los valores del mockup no se toman como norma tributaria verificada. | Tabla propuesta, sin implementar |
+| [`parametro_uit`](#tabla-parametro_uit) | Consulta | Configuración anual con datos iniciales del prototipo y umbral; ampliable mediante SQL sin CRUD. Cada liquidación conserva los parámetros realmente aplicados. | Tabla propuesta, sin implementar |
 | [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
 | [`proveedor_x_persona`](#tabla-proveedor_x_persona) | Consulta | Vincula al proveedor con personas principal/vinculadas que pueden figurar como destinatarias; no reparte ni transfiere compras históricas. | Tabla propuesta, sin implementar |
 | [`persona`](#tabla-persona) | Consulta | Identifica a una persona natural para cuentas o destinatarios de compras; su reutilización no crea otro proveedor ni autoriza por sí sola a cobrar. | Tabla propuesta, sin implementar |
@@ -4504,7 +4342,7 @@ erDiagram
 
 **Diccionario de `parametro_uit` — tabla propuesta.**
 
-**Clave primaria:** `parametro_uit_id`. Parámetros anuales configurables del prototipo, sin afirmar vigencia tributaria.
+**Clave primaria:** `parametro_uit_id`. Configuración anual con datos iniciales del prototipo y umbral; ampliable mediante SQL sin CRUD. Cada liquidación conserva los parámetros realmente aplicados.
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -5067,29 +4905,27 @@ erDiagram
 | [`coordinacion_entrega`](#tabla-coordinacion_entrega) | Consulta | Selecciona transportista, unidad, chofer y fechas para una entrega programada. Puede existir antes de la carga real. | Tabla propuesta, sin implementar |
 | [`origen_entrega`](#tabla-origen_entrega) | Consulta | Selecciona cada finca de los proveedores de la entrega. finca_id identifica el punto físico; cxp_id acredita la participación en campaña. | Tabla propuesta, sin implementar |
 | [`finca`](#tabla-finca) | Consulta | Conserva ubicación, coordenadas, hectáreas y una variedad por finca en este alcance. Su fruta se obtiene por fruta_derivada; no tiene FK directa a participación. | Tabla actual incluida |
-| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Es la participación del proveedor en una campaña y el punto de agrupación de entrevistas, evaluación y cantidades. Se conserva obligatoriamente y no selecciona finca. | Tabla actual incluida |
+| [`campania_x_proveedores`](#tabla-campania_x_proveedores) | Consulta | Única participación proveedor/campaña, identificada por cxp_id; conserva oferta, tipo, evaluación, entrevista aplicable, precio simple PEN y disponibilidad. | Tabla actual incluida |
 | [`proveedor`](#tabla-proveedor) | Consulta | Mantiene el padrón comercial y datos generales de la persona o entidad proveedora, compartidos entre campañas. | Tabla actual incluida |
 | [`fruta_derivada`](#tabla-fruta_derivada) | Consulta | Identifica una variedad y su fruta. Permite mostrar el cultivo de la finca sin duplicar fruta_id en finca. | Tabla actual incluida |
 | [`entrega_programada`](#tabla-entrega_programada) | Consulta | Guarda fecha, kilos y destino previstos de un contrato antes de completar transporte o registrar carga física. | Tabla propuesta, sin implementar |
-| [`acuerdo_compra`](#tabla-acuerdo_compra) | Por discutir | Propuesta para condiciones de precio y vigencia por proveedor/variedad. No se observó un editor propio de acuerdos en entrevistas; el precio aplicado existe al liquidar. | Tabla propuesta, sin implementar; permanencia o diseño por discutir |
 
 **Esquema de relaciones utilizado por esta vista:**
 
 **Tablas actuales que se conservan:** `finca`, `campania_x_proveedores`, `proveedor`, `fruta_derivada`.
 
-**Tablas propuestas para revisar:** `carga`, `proveedor_carga`, `origen_carga`, `gasto_carga`, `coordinacion_entrega`, `origen_entrega`, `entrega_programada`, `acuerdo_compra`.
+**Tablas propuestas para revisar:** `carga`, `proveedor_carga`, `origen_carga`, `gasto_carga`, `coordinacion_entrega`, `origen_entrega`, `entrega_programada`.
 
 ```mermaid
 erDiagram
     proveedor ||..o{ campania_x_proveedores : actual
     proveedor ||..o{ finca : actual
-    campania_x_proveedores ||..o{ acuerdo_compra : propuesta
-    fruta_derivada o|..o{ acuerdo_compra : propuesta
     entrega_programada ||..o| coordinacion_entrega : propuesta
     coordinacion_entrega ||..o{ origen_entrega : propuesta
     campania_x_proveedores ||..o{ origen_entrega : propuesta
     coordinacion_entrega ||..o| carga : propuesta
     carga ||..o{ proveedor_carga : propuesta
+    campania_x_proveedores ||..o{ proveedor_carga : propuesta
     fruta_derivada ||..o{ proveedor_carga : propuesta
     proveedor_carga ||..o{ origen_carga : propuesta
     campania_x_proveedores ||..o{ origen_carga : propuesta
@@ -5103,7 +4939,7 @@ erDiagram
 
 **D04 — Una variedad por finca (Aprobado por el usuario):** Se conserva finca.fruta_derivada_id y se obtiene fruta por fruta_derivada.fruta_id. No se agrega una tabla de varios cultivos por finca. El vínculo permanece opcional para datos históricos; completar variedad antes de operar cuando la vista la requiere.
 
-**D10 — Condiciones de compra (Incorporado al SQL):** El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. acuerdo_compra queda como compatibilidad opcional sin exigir tarifarios/fechas/variedad nuevas. La liquidación conserva kilos reconocidos y precio aplicados.
+**D10 — Condiciones de compra (Incorporado al SQL):** El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. Se retira acuerdo_compra: no existe un flujo independiente de acuerdos/versiones en el prototipo. La liquidación conserva kilos reconocidos y precio aplicados.
 
 **D14 — Una carga por entrega (Confirmado por el usuario):** Se conserva un viaje/carga por entrega. Cosecha también es única por entrega. El SQL permite varias facturas de esa carga, con suma de kilos no superior a la recepción, según respuesta explícita del usuario.
 
@@ -5128,8 +4964,6 @@ erDiagram
 **`fruta_derivada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
 **`entrega_programada`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
-
-**`acuerdo_compra`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
 ## Mi despacho (Chofer > Mis cargas > Carga > Mi despacho)
 
@@ -5362,14 +5196,22 @@ erDiagram
 
 **`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
-**Verificación de este SQL revisado:** instalación en PostgreSQL temporal PGlite con btree_gist; 44 comprobaciones de persistencia y reglas financieras acotadas. No se ejecutó en la base del usuario, ni verifica la UI, los permisos, la concurrencia multiconexión o el cierre completo.
+**Verificación de este SQL revisado:** instalación en PostgreSQL temporal PGlite con btree_gist; 59 comprobaciones de persistencia y reglas financieras acotadas. No se ejecutó en la base del usuario, ni verifica la UI, los permisos, la concurrencia multiconexión o el cierre completo.
 
 | Comprobación | Resultado |
 |---|---|
 | Instalación completa en PostgreSQL temporal | correcto |
+| Catálogos iniciales: 2 perfiles, 5 normas, 5 frutas y 17 variedades | correcto |
+| Parámetros anuales iniciales y umbral | correcto |
+| Seed reejecutable sin duplicar catálogos | correcto |
+| Normas no preasignadas a guías | correcto |
+| Cinco propuestas retiradas, incluidas sesiones, sin cabecera duplicada | correcto |
 | Todas las columnas del modelo existen en el SQL ejecutado | correcto |
 | Se conservan los nombres de las 173 columnas legacy incluidas | correcto |
 | Altas, participación sin MTD, contrato pendiente y vínculo de transporte sin acuerdo completo | correcto |
+| Destino libre de entrega sin catálogo | correcto |
+| Entrega con destino vacío | rechazado como se esperaba |
+| Catálogo de destinos excluido | correcto |
 | Texto y ceros iniciales conservados | correcto |
 | Hectáreas fraccionarias conservadas | correcto |
 | Examen pendiente sin resultado | correcto |
@@ -5407,9 +5249,16 @@ erDiagram
 | Dos viajes consecutivos en el mismo día | correcto |
 | Viajes del chofer realmente solapados | rechazado como se esperaba |
 | Análisis previo sin cosecha | correcto |
-| Guía recupera contenido y fincas seleccionadas | correcto |
+| Guía guarda únicamente las normas elegidas | correcto |
+| Guía no duplica una norma elegida | rechazado como se esperaba |
+| Carga no admite participación inexistente | rechazado como se esperaba |
+| Guía recupera contenido, fincas y destino histórico | correcto |
 | Control anual usa UIT aplicada y no revaloriza el documento | correcto |
 | Sobrepago de certificación | rechazado como se esperaba |
+| Tipo de certificado fijo conserva dato distinto del nombre | correcto |
+| Tipo de certificado desconocido | rechazado como se esperaba |
+| Cobertura no mezcla participación y otro proveedor | rechazado como se esperaba |
+| Cobertura referencia la participación consolidada | correcto |
 
 **Antes de aplicar cambios a tu base:** revisar vista por vista los atributos marcados AGREGAR y las tablas nuevas; decidir cuáles se implementan primero; preparar migraciones TypeORM aditivas con backfill validado. Este archivo SQL total es una referencia de instalación nueva, no una migración de tus registros.
 
@@ -5653,6 +5502,9 @@ Este apartado prevalece sobre los hallazgos y pendientes históricos conservados
 
 | Auditoría | Persistencia incorporada |
 |---|---|
+| D01/D10/D16 (29/10/2026) | Participación única, cuatro propuestas retiradas, catálogos con seed SQL y normas elegidas en guia_x_norma. Tipo de certificado como opción fija en tipo_certificacion y disponibilidad de cotización textual. |
+| D17 (29/10/2026) | Se retira sesion_usuario y su FK; se mantienen usuario y rol. Gestión persistente de sesiones/dispositivos fuera del alcance. |
+| D08 (29/10/2026) | Destino de entrega textual; guía con datos de llegada propios. Se excluye el catálogo de destinos y sus tres FK. |
 | FC01 | Documentos/teléfonos/códigos como texto, hectáreas decimales, RUC condicionado al tipo y dimensiones opcionales. |
 | FC02–FC03 | Precio simple en participación; MTD legacy y escalares agronómicos opcionales; examen por etapas. |
 | FC04–FC06 | Vigencia/historial de cobertura, contratos con precio pendiente y vínculo de transporte BORRADOR/CONFIRMADO. |
@@ -5673,7 +5525,7 @@ Los IDs de relaciones se guardan con los IDs reales del backend (enteros), no co
 | `cosecha.organizacion` | `harvestDate`, `crewLead`, `serviceId`, confirmaciones, capacitación, `evidence`, `mobility`, `supplies`. |
 | `cosecha.avances` | Lista con `id`, `providerId`, `fincaId`, `date`, `kilos`, `crates`, `responsible`, `observations`, `evidence`. |
 | `cosecha.cierre` / `industria` | Objetos `closure` e `industry` de QualityOperation, incluidas referencias documentales y resultados/correcciones. |
-| `guia_remision.contenido` | `RemissionGuideDetails` completo y, si procede, lista/snapshot de campos impresos. `emitida_at` distingue emisión. |
+| `guia_remision.contenido` | RemissionGuideDetails completo. standardCodes refleja la selección persistida en guia_x_norma y standardText conserva la frase histórica; el servicio sincroniza ambos al guardar borrador y los congela al emitir. emitida_at distingue emisión. |
 | `proveedor_guia.fincas_ids` | Lista de IDs de fincas efectivamente elegidas para ese proveedor en esa guía. |
 | `recepcion_planta.compras` | Lista `purchases`: `providerId`, `recognizedQuantity`, referencia, cantidad original, documento, revisión y observación. El trigger comprueba proveedor real y reparto reconocido completo. |
 | `recepcion_planta.logistica` | Estado, ventana de llegada/atención, llegada real, espera/reprogramación, evaluación y observaciones de LogisticsDelivery. Inicio/fin de descarga tienen columnas propias. |
@@ -5734,10 +5586,10 @@ El siguiente inventario es para preparar una migración posterior. El SQL total 
 ### Límites y trabajo de implementación pendiente
 
 - Implementar DTO/servicios y adaptadores de la web para los nuevos campos y JSON; la propuesta SQL no conecta pantallas automáticamente.
-- Preservar IDs y correspondencia de las dos tablas de participación; no se eliminó ninguna. La coordinación es la fuente operativa del viaje.
+- Implementar la web/backend sobre cxp_id de campania_x_proveedores. Si existen datos de un diseño anterior, preparar mapeo de IDs antes de migrar; el SQL total solo instala el objetivo nuevo. La coordinación sigue siendo la fuente del viaje.
 - El schema permite varios requerimientos y facturas según las respuestas explícitas; el prototipo todavía bloquea esos casos y liquida compra sobre cargados. El backend/web deben adoptar la base reconocida y esas cardinalidades.
 - Validar transiciones, permisos del chofer, sumas de cosecha/guías, inmutabilidad de guías emitidas y pendientes completos de cierre en sus servicios. Los triggers financieros no son una implementación completa de esos procesos.
 - La UIT aplicada queda congelada por documento. Si un año contiene parámetros aplicados diferentes, la vista anual separa grupos por esos parámetros; el servicio debe mostrar/conciliar la configuración, no asumir un único grupo.
 - Los bloqueos de fila financieros se ejecutaron en PGlite; no se acredita una prueba de concurrencia con varias conexiones de un servidor PostgreSQL.
 
-**Resultado ejecutado:** 44 comprobaciones correctas sobre 66 tablas y 137 FK. Consultar `resultado_revision.json` para los escenarios y hash exactos.
+**Resultado ejecutado:** 59 comprobaciones correctas sobre 60 tablas y 124 FK. Consultar `resultado_revision.json` para los escenarios y hash exactos.

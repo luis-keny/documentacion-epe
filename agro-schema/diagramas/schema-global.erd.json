@@ -24,8 +24,7 @@
         "focus": [
           "proveedor",
           "campania_x_proveedores",
-          "entrevista_extencion",
-          "participacion_proveedor_campana"
+          "entrevista_extencion"
         ],
         "note": "Resalta las tablas principales de este flujo."
       },
@@ -76,7 +75,7 @@
     {
       "id": "campana",
       "label": "campana",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Campañas y certificación",
       "row": 0,
       "col": 0,
@@ -120,7 +119,8 @@
           "name": "fruta_id",
           "type": "integer",
           "key": [
-            "fk"
+            "fk",
+            "uk"
           ],
           "references": "fruta.fruta_id"
         },
@@ -165,12 +165,12 @@
           "type": "jsonb"
         }
       ],
-      "width": 300
+      "width": 340
     },
     {
       "id": "certificado_campana",
       "label": "certificado_campana",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Campañas y certificación",
       "row": 1,
       "col": 0,
@@ -263,60 +263,20 @@
         {
           "name": "historial_cobertura",
           "type": "jsonb"
+        },
+        {
+          "name": "tipo_certificacion",
+          "type": "varchar(80)"
         }
       ],
-      "width": 334
-    },
-    {
-      "id": "campana_x_fruta_derivada",
-      "label": "campana_x_fruta_derivada",
-      "sublabel": "Propuesta",
-      "tag": "Campañas y certificación",
-      "row": 2,
-      "col": 0,
-      "attributes": [
-        {
-          "name": "campana_x_fruta_derivada_id",
-          "type": "integer",
-          "key": [
-            "pk"
-          ]
-        },
-        {
-          "name": "campania_id",
-          "type": "integer",
-          "key": [
-            "fk",
-            "uk"
-          ],
-          "references": "campana.campania_id"
-        },
-        {
-          "name": "fruta_derivada_id",
-          "type": "integer",
-          "key": [
-            "fk",
-            "uk"
-          ],
-          "references": "fruta_derivada.fruta_derivada_id"
-        },
-        {
-          "name": "created_at",
-          "type": "timestamptz"
-        },
-        {
-          "name": "updated_at",
-          "type": "timestamptz"
-        }
-      ],
-      "width": 309
+      "width": 340
     },
     {
       "id": "certificado_campana_x_proveedor",
       "label": "certificado_campana_x_proveedor",
       "sublabel": "Propuesta",
       "tag": "Campañas y certificación",
-      "row": 3,
+      "row": 2,
       "col": 0,
       "attributes": [
         {
@@ -341,16 +301,16 @@
           "key": [
             "fk"
           ],
-          "references": "participacion_proveedor_campana.campania_id"
+          "references": "campana.campania_id"
         },
         {
-          "name": "participacion_proveedor_campana_id",
+          "name": "cxp_id",
           "type": "integer",
           "key": [
             "fk",
             "uk"
           ],
-          "references": "participacion_proveedor_campana.participacion_proveedor_campana_id"
+          "references": "campania_x_proveedores.cxp_id"
         },
         {
           "name": "proveedor_id",
@@ -358,7 +318,7 @@
           "key": [
             "fk"
           ],
-          "references": "participacion_proveedor_campana.proveedor_id"
+          "references": "proveedor.proveedor_id"
         },
         {
           "name": "kilos_autorizados",
@@ -373,14 +333,14 @@
           "type": "timestamptz"
         }
       ],
-      "width": 355
+      "width": 380
     },
     {
       "id": "ampliacion_certificado_campana",
       "label": "ampliacion_certificado_campana",
       "sublabel": "Propuesta",
       "tag": "Campañas y certificación",
-      "row": 4,
+      "row": 3,
       "col": 0,
       "attributes": [
         {
@@ -427,14 +387,14 @@
           "type": "timestamptz"
         }
       ],
-      "width": 328
+      "width": 373
     },
     {
       "id": "pago_certificado_campana",
       "label": "pago_certificado_campana",
       "sublabel": "Propuesta",
       "tag": "Campañas y certificación",
-      "row": 5,
+      "row": 4,
       "col": 0,
       "attributes": [
         {
@@ -489,12 +449,12 @@
           "type": "timestamptz"
         }
       ],
-      "width": 309
+      "width": 340
     },
     {
       "id": "campania_x_proveedores",
       "label": "campania_x_proveedores",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Proveedores y abastecimiento",
       "row": 0,
       "col": 1,
@@ -511,7 +471,8 @@
           "name": "cxp_id",
           "type": "serial",
           "key": [
-            "pk"
+            "pk",
+            "uk"
           ]
         },
         {
@@ -553,14 +514,6 @@
           "references": "proveedor.proveedor_id"
         },
         {
-          "name": "participacion_proveedor_campana_id",
-          "type": "integer",
-          "key": [
-            "fk"
-          ],
-          "references": "participacion_proveedor_campana.participacion_proveedor_campana_id"
-        },
-        {
           "name": "precio_compra_kg",
           "type": "numeric(14,4)"
         },
@@ -579,14 +532,18 @@
         {
           "name": "observaciones",
           "type": "text"
+        },
+        {
+          "name": "entrevista_aplica",
+          "type": "boolean"
         }
       ],
-      "width": 456
+      "width": 462
     },
     {
       "id": "certificado_proveedor",
       "label": "certificado_proveedor",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Proveedores y abastecimiento",
       "row": 1,
       "col": 1,
@@ -627,12 +584,12 @@
           "type": "integer"
         }
       ],
-      "width": 284
+      "width": 340
     },
     {
       "id": "entrevista_extencion",
       "label": "entrevista_extencion",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Proveedores y abastecimiento",
       "row": 2,
       "col": 1,
@@ -674,7 +631,10 @@
         },
         {
           "name": "codigo",
-          "type": "varchar(255)"
+          "type": "varchar(255)",
+          "key": [
+            "uk"
+          ]
         },
         {
           "name": "cam_x_prov_id",
@@ -729,12 +689,12 @@
           "references": "usuario.usuario_id"
         }
       ],
-      "width": 327
+      "width": 368
     },
     {
       "id": "examen_proveedor",
       "label": "examen_proveedor",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Proveedores y abastecimiento",
       "row": 3,
       "col": 1,
@@ -819,12 +779,12 @@
           "type": "integer"
         }
       ],
-      "width": 334
+      "width": 361
     },
     {
       "id": "finca",
       "label": "finca",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Proveedores y abastecimiento",
       "row": 4,
       "col": 1,
@@ -917,12 +877,12 @@
           "type": "numeric(6,2)"
         }
       ],
-      "width": 288
+      "width": 340
     },
     {
       "id": "proveedor",
       "label": "proveedor",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Proveedores y abastecimiento",
       "row": 5,
       "col": 1,
@@ -1027,12 +987,12 @@
           "type": "date"
         }
       ],
-      "width": 354
+      "width": 384
     },
     {
       "id": "proveedor_x_fruta",
       "label": "proveedor_x_fruta",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Proveedores y abastecimiento",
       "row": 6,
       "col": 1,
@@ -1056,7 +1016,8 @@
           "name": "proveedor_id",
           "type": "integer",
           "key": [
-            "fk"
+            "fk",
+            "uk"
           ],
           "references": "proveedor.proveedor_id"
         },
@@ -1064,12 +1025,13 @@
           "name": "fruta_id",
           "type": "integer",
           "key": [
-            "fk"
+            "fk",
+            "uk"
           ],
           "references": "fruta.fruta_id"
         }
       ],
-      "width": 284
+      "width": 340
     },
     {
       "id": "proveedor_x_persona",
@@ -1121,7 +1083,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 276
+      "width": 340
     },
     {
       "id": "proveedor_x_fruta_derivada",
@@ -1165,195 +1127,12 @@
           "type": "timestamptz"
         }
       ],
-      "width": 322
-    },
-    {
-      "id": "participacion_proveedor_campana",
-      "label": "participacion_proveedor_campana",
-      "sublabel": "Propuesta",
-      "tag": "Proveedores y abastecimiento",
-      "row": 9,
-      "col": 1,
-      "attributes": [
-        {
-          "name": "participacion_proveedor_campana_id",
-          "type": "integer",
-          "key": [
-            "pk",
-            "uk"
-          ]
-        },
-        {
-          "name": "campania_id",
-          "type": "integer",
-          "key": [
-            "fk",
-            "uk"
-          ],
-          "references": "campana.campania_id"
-        },
-        {
-          "name": "proveedor_id",
-          "type": "integer",
-          "key": [
-            "fk",
-            "uk"
-          ],
-          "references": "proveedor.proveedor_id"
-        },
-        {
-          "name": "rol_comercial",
-          "type": "varchar(20)"
-        },
-        {
-          "name": "tipo_fruta",
-          "type": "varchar(20)"
-        },
-        {
-          "name": "kilos_estimados",
-          "type": "numeric(14,3)"
-        },
-        {
-          "name": "estado",
-          "type": "varchar(30)"
-        },
-        {
-          "name": "entrevista_aplica",
-          "type": "boolean"
-        },
-        {
-          "name": "fecha_registro",
-          "type": "timestamptz"
-        },
-        {
-          "name": "observaciones",
-          "type": "text"
-        },
-        {
-          "name": "created_at",
-          "type": "timestamptz"
-        },
-        {
-          "name": "updated_at",
-          "type": "timestamptz"
-        }
-      ],
-      "width": 355
-    },
-    {
-      "id": "participacion_proveedor_x_fruta_derivada",
-      "label": "participacion_proveedor_x_fruta_derivada",
-      "sublabel": "Propuesta",
-      "tag": "Proveedores y abastecimiento",
-      "row": 10,
-      "col": 1,
-      "attributes": [
-        {
-          "name": "participacion_proveedor_x_fruta_derivada_id",
-          "type": "integer",
-          "key": [
-            "pk"
-          ]
-        },
-        {
-          "name": "participacion_proveedor_campana_id",
-          "type": "integer",
-          "key": [
-            "fk",
-            "uk"
-          ],
-          "references": "participacion_proveedor_campana.participacion_proveedor_campana_id"
-        },
-        {
-          "name": "fruta_derivada_id",
-          "type": "integer",
-          "key": [
-            "fk",
-            "uk"
-          ],
-          "references": "fruta_derivada.fruta_derivada_id"
-        },
-        {
-          "name": "created_at",
-          "type": "timestamptz"
-        },
-        {
-          "name": "updated_at",
-          "type": "timestamptz"
-        }
-      ],
-      "width": 414
-    },
-    {
-      "id": "acuerdo_compra",
-      "label": "acuerdo_compra",
-      "sublabel": "Propuesta",
-      "tag": "Proveedores y abastecimiento",
-      "row": 11,
-      "col": 1,
-      "attributes": [
-        {
-          "name": "acuerdo_compra_id",
-          "type": "integer",
-          "key": [
-            "pk"
-          ]
-        },
-        {
-          "name": "cxp_id",
-          "type": "integer",
-          "key": [
-            "fk"
-          ],
-          "references": "campania_x_proveedores.cxp_id"
-        },
-        {
-          "name": "fruta_derivada_id",
-          "type": "integer",
-          "key": [
-            "fk"
-          ],
-          "references": "fruta_derivada.fruta_derivada_id"
-        },
-        {
-          "name": "precio_kg",
-          "type": "numeric(14,4)"
-        },
-        {
-          "name": "kilos_acordados",
-          "type": "numeric(14,3)"
-        },
-        {
-          "name": "fecha_inicio",
-          "type": "date"
-        },
-        {
-          "name": "fecha_fin",
-          "type": "date"
-        },
-        {
-          "name": "estado",
-          "type": "varchar(25)"
-        },
-        {
-          "name": "created_at",
-          "type": "timestamptz"
-        },
-        {
-          "name": "updated_at",
-          "type": "timestamptz"
-        },
-        {
-          "name": "moneda",
-          "type": "varchar(3)"
-        }
-      ],
-      "width": 247
+      "width": 345
     },
     {
       "id": "chofer_transporte_externo",
       "label": "chofer_transporte_externo",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Transporte y acuerdos",
       "row": 0,
       "col": 2,
@@ -1420,12 +1199,12 @@
           "type": "varchar(40)"
         }
       ],
-      "width": 322
+      "width": 345
     },
     {
       "id": "chofer_vehiculo_externo",
       "label": "chofer_vehiculo_externo",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Transporte y acuerdos",
       "row": 1,
       "col": 2,
@@ -1486,12 +1265,12 @@
           "references": "coordinacion_entrega.coordinacion_entrega_id"
         }
       ],
-      "width": 295
+      "width": 340
     },
     {
       "id": "detalle_trazabilidad",
       "label": "detalle_trazabilidad",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Transporte y acuerdos",
       "row": 2,
       "col": 2,
@@ -1564,12 +1343,12 @@
           "type": "integer"
         }
       ],
-      "width": 284
+      "width": 340
     },
     {
       "id": "empresa_transporte_externo",
       "label": "empresa_transporte_externo",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Transporte y acuerdos",
       "row": 3,
       "col": 2,
@@ -1652,12 +1431,12 @@
           "type": "boolean"
         }
       ],
-      "width": 296
+      "width": 340
     },
     {
       "id": "trazabilidad_transporte",
       "label": "trazabilidad_transporte",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Transporte y acuerdos",
       "row": 4,
       "col": 2,
@@ -1718,12 +1497,12 @@
           "references": "carga.carga_id"
         }
       ],
-      "width": 339
+      "width": 364
     },
     {
       "id": "vehiculo_externo",
       "label": "vehiculo_externo",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Transporte y acuerdos",
       "row": 5,
       "col": 2,
@@ -1789,7 +1568,7 @@
           "type": "numeric(14,3)"
         }
       ],
-      "width": 322
+      "width": 345
     },
     {
       "id": "solicitud_transporte",
@@ -1874,7 +1653,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 262
+      "width": 340
     },
     {
       "id": "invitacion_transporte",
@@ -1926,7 +1705,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 322
+      "width": 345
     },
     {
       "id": "cotizacion_transporte",
@@ -1982,9 +1761,13 @@
         {
           "name": "updated_at",
           "type": "timestamptz"
+        },
+        {
+          "name": "disponibilidad",
+          "type": "text"
         }
       ],
-      "width": 269
+      "width": 340
     },
     {
       "id": "acuerdo_transporte",
@@ -2073,12 +1856,12 @@
           "type": "text"
         }
       ],
-      "width": 322
+      "width": 345
     },
     {
       "id": "cliente_negocio",
       "label": "cliente_negocio",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Clientes y contratos",
       "row": 0,
       "col": 3,
@@ -2137,12 +1920,12 @@
           "type": "date"
         }
       ],
-      "width": 366
+      "width": 394
     },
     {
       "id": "cliente_negocio_campana",
       "label": "cliente_negocio_campana",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Clientes y contratos",
       "row": 1,
       "col": 3,
@@ -2219,74 +2002,14 @@
           "type": "text"
         }
       ],
-      "width": 284
-    },
-    {
-      "id": "destino_cliente_negocio",
-      "label": "destino_cliente_negocio",
-      "sublabel": "Propuesta",
-      "tag": "Clientes y contratos",
-      "row": 2,
-      "col": 3,
-      "attributes": [
-        {
-          "name": "destino_cliente_negocio_id",
-          "type": "integer",
-          "key": [
-            "pk",
-            "uk"
-          ]
-        },
-        {
-          "name": "cliente_negocio_id",
-          "type": "integer",
-          "key": [
-            "fk",
-            "uk"
-          ],
-          "references": "cliente_negocio.cliente_negocio_id"
-        },
-        {
-          "name": "nombre",
-          "type": "varchar(150)"
-        },
-        {
-          "name": "ubigeo",
-          "type": "varchar(6)"
-        },
-        {
-          "name": "direccion",
-          "type": "text"
-        },
-        {
-          "name": "codigo_establecimiento",
-          "type": "varchar(4)"
-        },
-        {
-          "name": "latitud",
-          "type": "numeric(10,7)"
-        },
-        {
-          "name": "longitud",
-          "type": "numeric(10,7)"
-        },
-        {
-          "name": "created_at",
-          "type": "timestamptz"
-        },
-        {
-          "name": "updated_at",
-          "type": "timestamptz"
-        }
-      ],
-      "width": 302
+      "width": 340
     },
     {
       "id": "cliente_negocio_campana_x_fruta_derivada",
       "label": "cliente_negocio_campana_x_fruta_derivada",
       "sublabel": "Propuesta",
       "tag": "Clientes y contratos",
-      "row": 3,
+      "row": 2,
       "col": 3,
       "attributes": [
         {
@@ -2323,14 +2046,14 @@
           "type": "timestamptz"
         }
       ],
-      "width": 414
+      "width": 443
     },
     {
       "id": "contrato_venta",
       "label": "contrato_venta",
       "sublabel": "Propuesta",
       "tag": "Clientes y contratos",
-      "row": 4,
+      "row": 3,
       "col": 3,
       "attributes": [
         {
@@ -2404,14 +2127,14 @@
           "type": "text"
         }
       ],
-      "width": 282
+      "width": 340
     },
     {
       "id": "entrega_programada",
       "label": "entrega_programada",
       "sublabel": "Propuesta",
       "tag": "Clientes y contratos",
-      "row": 5,
+      "row": 4,
       "col": 3,
       "attributes": [
         {
@@ -2430,12 +2153,8 @@
           "references": "contrato_venta.contrato_venta_id"
         },
         {
-          "name": "destino_id",
-          "type": "integer",
-          "key": [
-            "fk"
-          ],
-          "references": "destino_cliente_negocio.destino_cliente_negocio_id"
+          "name": "destino",
+          "type": "text"
         },
         {
           "name": "fecha",
@@ -2458,14 +2177,14 @@
           "type": "timestamptz"
         }
       ],
-      "width": 261
+      "width": 340
     },
     {
       "id": "entrega_x_fruta_derivada",
       "label": "entrega_x_fruta_derivada",
       "sublabel": "Propuesta",
       "tag": "Clientes y contratos",
-      "row": 6,
+      "row": 5,
       "col": 3,
       "attributes": [
         {
@@ -2506,12 +2225,12 @@
           "type": "timestamptz"
         }
       ],
-      "width": 309
+      "width": 340
     },
     {
       "id": "fruta",
       "label": "fruta",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Identidad y catálogos",
       "row": 0,
       "col": 4,
@@ -2536,12 +2255,12 @@
           "type": "varchar(150)"
         }
       ],
-      "width": 284
+      "width": 340
     },
     {
       "id": "fruta_derivada",
       "label": "fruta_derivada",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Identidad y catálogos",
       "row": 1,
       "col": 4,
@@ -2574,7 +2293,7 @@
           "references": "fruta.fruta_id"
         }
       ],
-      "width": 284
+      "width": 340
     },
     {
       "id": "persona",
@@ -2634,7 +2353,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 243
+      "width": 340
     },
     {
       "id": "rol",
@@ -2667,7 +2386,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 245
+      "width": 340
     },
     {
       "id": "usuario",
@@ -2725,67 +2444,14 @@
           "type": "timestamptz"
         }
       ],
-      "width": 245
-    },
-    {
-      "id": "sesion_usuario",
-      "label": "sesion_usuario",
-      "sublabel": "Propuesta",
-      "tag": "Identidad y catálogos",
-      "row": 5,
-      "col": 4,
-      "attributes": [
-        {
-          "name": "sesion_usuario_id",
-          "type": "integer",
-          "key": [
-            "pk"
-          ]
-        },
-        {
-          "name": "usuario_id",
-          "type": "integer",
-          "key": [
-            "fk"
-          ],
-          "references": "usuario.usuario_id"
-        },
-        {
-          "name": "token_hash",
-          "type": "text",
-          "key": [
-            "uk"
-          ]
-        },
-        {
-          "name": "creada_at",
-          "type": "timestamptz"
-        },
-        {
-          "name": "expira_at",
-          "type": "timestamptz"
-        },
-        {
-          "name": "revocada_at",
-          "type": "timestamptz"
-        },
-        {
-          "name": "created_at",
-          "type": "timestamptz"
-        },
-        {
-          "name": "updated_at",
-          "type": "timestamptz"
-        }
-      ],
-      "width": 245
+      "width": 340
     },
     {
       "id": "parametro_uit",
       "label": "parametro_uit",
       "sublabel": "Propuesta",
       "tag": "Identidad y catálogos",
-      "row": 6,
+      "row": 5,
       "col": 4,
       "attributes": [
         {
@@ -2823,14 +2489,14 @@
           "type": "timestamptz"
         }
       ],
-      "width": 245
+      "width": 340
     },
     {
       "id": "norma",
       "label": "norma",
       "sublabel": "Propuesta",
       "tag": "Identidad y catálogos",
-      "row": 7,
+      "row": 6,
       "col": 4,
       "attributes": [
         {
@@ -2860,7 +2526,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 245
+      "width": 340
     },
     {
       "id": "coordinacion_entrega",
@@ -2901,7 +2567,7 @@
           "key": [
             "fk"
           ],
-          "references": "chofer_transporte_externo.id_empresa_transporte_externo"
+          "references": "empresa_transporte_externo.id_empresa_transporte_externo"
         },
         {
           "name": "id_vehiculo_externo",
@@ -2956,7 +2622,7 @@
           "type": "text"
         }
       ],
-      "width": 322
+      "width": 345
     },
     {
       "id": "origen_entrega",
@@ -3009,7 +2675,7 @@
           "references": "finca.finca_id"
         }
       ],
-      "width": 282
+      "width": 340
     },
     {
       "id": "carga",
@@ -3084,7 +2750,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 321
+      "width": 341
     },
     {
       "id": "proveedor_carga",
@@ -3112,13 +2778,13 @@
           "references": "carga.carga_id"
         },
         {
-          "name": "participacion_proveedor_campana_id",
+          "name": "cxp_id",
           "type": "integer",
           "key": [
             "fk",
             "uk"
           ],
-          "references": "participacion_proveedor_campana.participacion_proveedor_campana_id"
+          "references": "campania_x_proveedores.cxp_id"
         },
         {
           "name": "fruta_derivada_id",
@@ -3170,7 +2836,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 355
+      "width": 353
     },
     {
       "id": "origen_carga",
@@ -3227,7 +2893,7 @@
           "references": "finca.finca_id"
         }
       ],
-      "width": 249
+      "width": 340
     },
     {
       "id": "gasto_carga",
@@ -3273,7 +2939,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 245
+      "width": 340
     },
     {
       "id": "guia_remision",
@@ -3334,14 +3000,6 @@
             "fk"
           ],
           "references": "finca.finca_id"
-        },
-        {
-          "name": "destino_id",
-          "type": "integer",
-          "key": [
-            "fk"
-          ],
-          "references": "destino_cliente_negocio.destino_cliente_negocio_id"
         },
         {
           "name": "ubigeo_partida_snapshot",
@@ -3416,7 +3074,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 367
+      "width": 390
     },
     {
       "id": "proveedor_guia",
@@ -3448,7 +3106,7 @@
           "key": [
             "fk"
           ],
-          "references": "proveedor_carga.carga_id"
+          "references": "carga.carga_id"
         },
         {
           "name": "proveedor_carga_id",
@@ -3476,7 +3134,7 @@
           "type": "jsonb"
         }
       ],
-      "width": 267
+      "width": 340
     },
     {
       "id": "guia_x_norma",
@@ -3520,7 +3178,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 236
+      "width": 340
     },
     {
       "id": "historial_chofer",
@@ -3544,7 +3202,7 @@
             "fk",
             "uk"
           ],
-          "references": "carga.coordinacion_entrega_id"
+          "references": "coordinacion_entrega.coordinacion_entrega_id"
         },
         {
           "name": "carga_id",
@@ -3586,7 +3244,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 315
+      "width": 340
     },
     {
       "id": "cosecha",
@@ -3676,7 +3334,7 @@
           "type": "text"
         }
       ],
-      "width": 274
+      "width": 340
     },
     {
       "id": "analisis_calidad",
@@ -3758,7 +3416,7 @@
           "references": "finca.finca_id"
         }
       ],
-      "width": 267
+      "width": 340
     },
     {
       "id": "medicion_mtd",
@@ -3828,7 +3486,7 @@
           "references": "finca.finca_id"
         }
       ],
-      "width": 276
+      "width": 340
     },
     {
       "id": "recepcion_planta",
@@ -3963,7 +3621,7 @@
           "type": "boolean"
         }
       ],
-      "width": 315
+      "width": 340
     },
     {
       "id": "liquidacion_proveedor",
@@ -4078,7 +3736,7 @@
           "type": "numeric(10,2)"
         }
       ],
-      "width": 296
+      "width": 340
     },
     {
       "id": "liquidacion_transporte",
@@ -4152,7 +3810,7 @@
           "type": "text"
         }
       ],
-      "width": 296
+      "width": 340
     },
     {
       "id": "gasto_transporte",
@@ -4206,7 +3864,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 282
+      "width": 340
     },
     {
       "id": "adelanto_transporte",
@@ -4260,7 +3918,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 276
+      "width": 340
     },
     {
       "id": "aplicacion_adelanto",
@@ -4312,7 +3970,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 296
+      "width": 340
     },
     {
       "id": "factura_venta",
@@ -4412,7 +4070,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 281
+      "width": 340
     },
     {
       "id": "pago_proveedor",
@@ -4478,7 +4136,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 296
+      "width": 340
     },
     {
       "id": "pago_transporte",
@@ -4544,7 +4202,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 296
+      "width": 340
     },
     {
       "id": "cobro_venta",
@@ -4610,7 +4268,7 @@
           "type": "timestamptz"
         }
       ],
-      "width": 296
+      "width": 340
     }
   ],
   "relationships": [],
@@ -4628,7 +4286,7 @@
       "dot": "amber",
       "title": "Alcance SQL",
       "items": [
-        "66 tablas y 137 relaciones FK, distribuidas por dominio funcional.",
+        "60 tablas y 124 relaciones FK, distribuidas por dominio funcional.",
         "La tabla archivo se excluye; sus referencias documentales no tienen FK.",
         "El SQL es instalación nueva para revisión, no migración sobre una base desplegada."
       ]

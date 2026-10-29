@@ -113,4 +113,14 @@ def aplicar(M, F, addcol, fk):
     M['empresa_transporte_externo']['description']='Padrón de empresas con RUC e independientes identificados por documento; admite correo y dimensiones pendientes en sus subrecursos.'
     M['acuerdo_compra']['description']='Compatibilidad opcional de condiciones de compra; la participación conserva el precio simple sin exigir tarifario ni vigencias.'
     M['acuerdo_transporte']['description']='Vínculo empresa/campaña en BORRADOR; al CONFIRMAR conserva monto, moneda PEN, tipo, adelanto previsto y fechas.'
+    # D08 (29/10/2026): el prototipo captura destinos como texto, sin CRUD de catálogo.
+    destino=next(c for c in M['entrega_programada']['columns'] if c['name']=='destino_id')
+    destino.update(name='destino',definition='text NOT NULL',why='D08: destino libre capturado por el formulario de entrega; no referencia un catálogo.')
+    check('entrega_programada',"btrim(destino) <> ''")
+    M['guia_remision']['columns']=[c for c in M['guia_remision']['columns'] if c['name']!='destino_id']
+    for c in M['guia_remision']['columns']:
+        if c['name']=='direccion_llegada_snapshot':
+            c['why']='D08: dirección de destino textual capturada en la guía; conserva el punto de llegada histórico sin catálogo.'
+    del M['destino_cliente_negocio']
+    F[:]=[f for f in F if f['child']!='destino_cliente_negocio' and f['parent']!='destino_cliente_negocio']
     return cambios

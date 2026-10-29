@@ -130,7 +130,7 @@
     "campania_x_proveedores": {
       "pk": "cxp_id",
       "existing": true,
-      "description": "Participación del proveedor en una campaña, sin relación directa a finca. La entrevista y los orígenes operativos identifican la finca cuando corresponde.",
+      "description": "Única participación proveedor/campaña, identificada por cxp_id; conserva oferta, tipo, evaluación, entrevista aplicable, precio simple PEN y disponibilidad.",
       "columns": [
         {
           "name": "created_at",
@@ -193,12 +193,6 @@
           "why": "Se conserva de la entidad/migración actual."
         },
         {
-          "name": "participacion_proveedor_campana_id",
-          "definition": "integer",
-          "status": "AGREGAR",
-          "why": "Vínculo opcional a la cabecera propuesta; revisar su necesidad al quedar la participación sin finca."
-        },
-        {
           "name": "precio_compra_kg",
           "definition": "numeric(14,4)",
           "status": "AGREGAR",
@@ -227,6 +221,12 @@
           "definition": "text",
           "status": "AGREGAR",
           "why": "FC02: datos del editor de participación; el precio no requiere un tarifario adicional."
+        },
+        {
+          "name": "entrevista_aplica",
+          "definition": "boolean NOT NULL DEFAULT true",
+          "status": "AGREGAR",
+          "why": "Consolidación: conserva el indicador de entrevista de la cabecera retirada; el servicio lo confirma según el proveedor."
         }
       ],
       "constraints": [
@@ -251,6 +251,10 @@
         },
         {
           "definition": "CHECK (disponibilidad_hasta >= disponibilidad_desde)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "UNIQUE (cxp_id, campania_id, proveedor_id)",
           "status": "NUEVA"
         }
       ],
@@ -374,6 +378,12 @@
           "definition": "jsonb NOT NULL DEFAULT '[]'::jsonb",
           "status": "AGREGAR",
           "why": "FC04: filas {fecha,kilos,producerIds}; conserva cada selección anterior."
+        },
+        {
+          "name": "tipo_certificacion",
+          "definition": "varchar(80)",
+          "status": "AGREGAR",
+          "why": "Opción fija del formulario, distinta de nombre y de norma_id; nullable para fichas aún incompletas. No se crea tabla de tipos."
         }
       ],
       "constraints": [
@@ -392,6 +402,10 @@
         },
         {
           "definition": "CHECK (fecha_vencimiento >= vigencia_desde)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (tipo_certificacion IN ('Global GAP','Orgánico USDA','Orgánico UE','Fairtrade','Rainforest Alliance'))",
           "status": "NUEVA"
         },
         {
@@ -2018,7 +2032,7 @@
     "rol": {
       "pk": "rol_id",
       "existing": false,
-      "description": "Perfiles de acceso; los permisos efectivos se aplican en el servidor.",
+      "description": "Perfiles extensibles con Administrador y Chofer iniciales mediante SQL; no requiere CRUD de perfiles en el alcance actual.",
       "columns": [
         {
           "name": "rol_id",
@@ -2119,76 +2133,10 @@
       ],
       "indexes": []
     },
-    "sesion_usuario": {
-      "pk": "sesion_usuario_id",
-      "existing": false,
-      "description": "Propuesta técnica para persistir sesiones; solo se conserva el hash del token.",
-      "columns": [
-        {
-          "name": "sesion_usuario_id",
-          "definition": "integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "usuario_id",
-          "definition": "integer NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "token_hash",
-          "definition": "text NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "creada_at",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "expira_at",
-          "definition": "timestamptz NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "revocada_at",
-          "definition": "timestamptz",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "created_at",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Auditoría con la misma convención del backend."
-        },
-        {
-          "name": "updated_at",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
-        }
-      ],
-      "constraints": [
-        {
-          "definition": "UNIQUE (token_hash)",
-          "status": "NUEVA"
-        },
-        {
-          "definition": "CHECK (expira_at > creada_at)",
-          "status": "NUEVA"
-        }
-      ],
-      "indexes": []
-    },
     "parametro_uit": {
       "pk": "parametro_uit_id",
       "existing": false,
-      "description": "Parámetros anuales configurables del prototipo, sin afirmar vigencia tributaria.",
+      "description": "Configuración anual con datos iniciales del prototipo y umbral; ampliable mediante SQL sin CRUD. Cada liquidación conserva los parámetros realmente aplicados.",
       "columns": [
         {
           "name": "parametro_uit_id",
@@ -2248,50 +2196,6 @@
         },
         {
           "definition": "CHECK (umbral_alerta > 0 AND umbral_alerta <= 1)",
-          "status": "NUEVA"
-        }
-      ],
-      "indexes": []
-    },
-    "campana_x_fruta_derivada": {
-      "pk": "campana_x_fruta_derivada_id",
-      "existing": false,
-      "description": "Variedades elegidas para una campaña.",
-      "columns": [
-        {
-          "name": "campana_x_fruta_derivada_id",
-          "definition": "integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "campania_id",
-          "definition": "integer NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "fruta_derivada_id",
-          "definition": "integer NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "created_at",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Auditoría con la misma convención del backend."
-        },
-        {
-          "name": "updated_at",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
-        }
-      ],
-      "constraints": [
-        {
-          "definition": "UNIQUE (campania_id, fruta_derivada_id)",
           "status": "NUEVA"
         }
       ],
@@ -2397,252 +2301,10 @@
       ],
       "indexes": []
     },
-    "participacion_proveedor_campana": {
-      "pk": "participacion_proveedor_campana_id",
-      "existing": false,
-      "description": "Vinculación proveedor–campaña; aquí pertenecen rol, oferta y evaluación.",
-      "columns": [
-        {
-          "name": "participacion_proveedor_campana_id",
-          "definition": "integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "campania_id",
-          "definition": "integer NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "proveedor_id",
-          "definition": "integer NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "rol_comercial",
-          "definition": "varchar(20) NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "tipo_fruta",
-          "definition": "varchar(20) NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "kilos_estimados",
-          "definition": "numeric(14,3) NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "estado",
-          "definition": "varchar(30) NOT NULL DEFAULT 'EXAMEN_PENDIENTE'",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "entrevista_aplica",
-          "definition": "boolean NOT NULL DEFAULT true",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "fecha_registro",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "observaciones",
-          "definition": "text",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "created_at",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Auditoría con la misma convención del backend."
-        },
-        {
-          "name": "updated_at",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
-        }
-      ],
-      "constraints": [
-        {
-          "definition": "UNIQUE (campania_id, proveedor_id)",
-          "status": "NUEVA"
-        },
-        {
-          "definition": "UNIQUE (participacion_proveedor_campana_id, campania_id, proveedor_id)",
-          "status": "NUEVA"
-        },
-        {
-          "definition": "CHECK (rol_comercial IN ('PRODUCTOR','ACOPIADOR'))",
-          "status": "NUEVA"
-        },
-        {
-          "definition": "CHECK (tipo_fruta IN ('ORGANICA','CONVENCIONAL'))",
-          "status": "NUEVA"
-        },
-        {
-          "definition": "CHECK (kilos_estimados >= 0)",
-          "status": "NUEVA"
-        },
-        {
-          "definition": "CHECK (estado IN ('EXAMEN_PENDIENTE','ENTREVISTA_PENDIENTE','APROBADO','RECHAZADO'))",
-          "status": "NUEVA"
-        }
-      ],
-      "indexes": []
-    },
-    "participacion_proveedor_x_fruta_derivada": {
-      "pk": "participacion_proveedor_x_fruta_derivada_id",
-      "existing": false,
-      "description": "Variedades de la participación, sin deducirlas solo de contratos de compra.",
-      "columns": [
-        {
-          "name": "participacion_proveedor_x_fruta_derivada_id",
-          "definition": "integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "participacion_proveedor_campana_id",
-          "definition": "integer NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "fruta_derivada_id",
-          "definition": "integer NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "created_at",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Auditoría con la misma convención del backend."
-        },
-        {
-          "name": "updated_at",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
-        }
-      ],
-      "constraints": [
-        {
-          "definition": "UNIQUE (participacion_proveedor_campana_id, fruta_derivada_id)",
-          "status": "NUEVA"
-        }
-      ],
-      "indexes": []
-    },
-    "acuerdo_compra": {
-      "pk": "acuerdo_compra_id",
-      "existing": false,
-      "description": "Compatibilidad opcional de condiciones de compra; la participación conserva el precio simple sin exigir tarifario ni vigencias.",
-      "columns": [
-        {
-          "name": "acuerdo_compra_id",
-          "definition": "integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "cxp_id",
-          "definition": "integer NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "fruta_derivada_id",
-          "definition": "integer",
-          "status": "TABLA NUEVA",
-          "why": "Compatibilidad: el precio simple no exige variedad o vigencia de un tarifario nuevo."
-        },
-        {
-          "name": "precio_kg",
-          "definition": "numeric(14,4) NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "kilos_acordados",
-          "definition": "numeric(14,3)",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "fecha_inicio",
-          "definition": "date",
-          "status": "TABLA NUEVA",
-          "why": "Compatibilidad: el precio simple no exige variedad o vigencia de un tarifario nuevo."
-        },
-        {
-          "name": "fecha_fin",
-          "definition": "date",
-          "status": "TABLA NUEVA",
-          "why": "Compatibilidad: el precio simple no exige variedad o vigencia de un tarifario nuevo."
-        },
-        {
-          "name": "estado",
-          "definition": "varchar(25) NOT NULL DEFAULT 'VIGENTE'",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "created_at",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Auditoría con la misma convención del backend."
-        },
-        {
-          "name": "updated_at",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
-        },
-        {
-          "name": "moneda",
-          "definition": "varchar(3) NOT NULL DEFAULT 'PEN'",
-          "status": "TABLA NUEVA",
-          "why": "Compra en soles según respuesta del usuario."
-        }
-      ],
-      "constraints": [
-        {
-          "definition": "CHECK (precio_kg > 0)",
-          "status": "NUEVA"
-        },
-        {
-          "definition": "CHECK (kilos_acordados >= 0)",
-          "status": "NUEVA"
-        },
-        {
-          "definition": "CHECK (fecha_fin >= fecha_inicio)",
-          "status": "NUEVA"
-        },
-        {
-          "definition": "CHECK (moneda = 'PEN')",
-          "status": "NUEVA"
-        }
-      ],
-      "indexes": []
-    },
     "norma": {
       "pk": "norma_id",
       "existing": false,
-      "description": "Catálogo de normas de certificación y traslado.",
+      "description": "Catálogo con datos iniciales SQL de códigos de guía; sin CRUD requerido. Se relaciona con guías mediante guia_x_norma y opcionalmente con certificados, sin confundir el tipo de certificado.",
       "columns": [
         {
           "name": "norma_id",
@@ -2707,10 +2369,10 @@
           "why": "Atributo propuesto para cubrir el flujo de la vista."
         },
         {
-          "name": "participacion_proveedor_campana_id",
+          "name": "cxp_id",
           "definition": "integer NOT NULL",
           "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
+          "why": "Participación única en campania_x_proveedores; no existe cabecera duplicada."
         },
         {
           "name": "proveedor_id",
@@ -2739,7 +2401,7 @@
       ],
       "constraints": [
         {
-          "definition": "UNIQUE (certificado_id, participacion_proveedor_campana_id)",
+          "definition": "UNIQUE (certificado_id, cxp_id)",
           "status": "NUEVA"
         },
         {
@@ -2878,92 +2540,6 @@
         },
         {
           "definition": "CHECK (monto > 0)",
-          "status": "NUEVA"
-        }
-      ],
-      "indexes": []
-    },
-    "destino_cliente_negocio": {
-      "pk": "destino_cliente_negocio_id",
-      "existing": false,
-      "description": "Puntos de llegada de cada cliente; no asumir que todos comparten una planta.",
-      "columns": [
-        {
-          "name": "destino_cliente_negocio_id",
-          "definition": "integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "cliente_negocio_id",
-          "definition": "integer NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "nombre",
-          "definition": "varchar(150) NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "ubigeo",
-          "definition": "varchar(6)",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "direccion",
-          "definition": "text",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "codigo_establecimiento",
-          "definition": "varchar(4)",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "latitud",
-          "definition": "numeric(10,7)",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "longitud",
-          "definition": "numeric(10,7)",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
-          "name": "created_at",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Auditoría con la misma convención del backend."
-        },
-        {
-          "name": "updated_at",
-          "definition": "timestamptz NOT NULL DEFAULT now()",
-          "status": "TABLA NUEVA",
-          "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
-        }
-      ],
-      "constraints": [
-        {
-          "definition": "UNIQUE (destino_cliente_negocio_id, cliente_negocio_id)",
-          "status": "NUEVA"
-        },
-        {
-          "definition": "CHECK (latitud BETWEEN -90 AND 90)",
-          "status": "NUEVA"
-        },
-        {
-          "definition": "CHECK (longitud BETWEEN -180 AND 180)",
-          "status": "NUEVA"
-        },
-        {
-          "definition": "CHECK ((latitud IS NULL) = (longitud IS NULL))",
           "status": "NUEVA"
         }
       ],
@@ -3151,10 +2727,10 @@
           "why": "Atributo propuesto para cubrir el flujo de la vista."
         },
         {
-          "name": "destino_id",
-          "definition": "integer NOT NULL",
+          "name": "destino",
+          "definition": "text NOT NULL",
           "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
+          "why": "D08: destino libre capturado por el formulario de entrega; no referencia un catálogo."
         },
         {
           "name": "fecha",
@@ -3190,6 +2766,10 @@
       "constraints": [
         {
           "definition": "CHECK (kilos_programados > 0)",
+          "status": "NUEVA"
+        },
+        {
+          "definition": "CHECK (btrim(destino) <> '')",
           "status": "NUEVA"
         }
       ],
@@ -3479,6 +3059,12 @@
           "definition": "timestamptz NOT NULL DEFAULT now()",
           "status": "TABLA NUEVA",
           "why": "Auditoría con la misma convención del backend; el servicio/ORM actualiza esta fecha."
+        },
+        {
+          "name": "disponibilidad",
+          "definition": "text",
+          "status": "TABLA NUEVA",
+          "why": "Texto del editor de respuesta de transporte; sin inventar disponibilidad al registrar la cotización."
         }
       ],
       "constraints": [
@@ -4243,10 +3829,10 @@
           "why": "Atributo propuesto para cubrir el flujo de la vista."
         },
         {
-          "name": "participacion_proveedor_campana_id",
+          "name": "cxp_id",
           "definition": "integer NOT NULL",
           "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
+          "why": "Participación única en campania_x_proveedores; no existe cabecera duplicada."
         },
         {
           "name": "fruta_derivada_id",
@@ -4317,7 +3903,7 @@
       ],
       "constraints": [
         {
-          "definition": "UNIQUE (carga_id, participacion_proveedor_campana_id, fruta_derivada_id)",
+          "definition": "UNIQUE (carga_id, cxp_id, fruta_derivada_id)",
           "status": "NUEVA"
         },
         {
@@ -4533,12 +4119,6 @@
           "why": "Atributo propuesto para cubrir el flujo de la vista."
         },
         {
-          "name": "destino_id",
-          "definition": "integer NOT NULL",
-          "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
-        },
-        {
           "name": "ubigeo_partida_snapshot",
           "definition": "varchar(6) NOT NULL",
           "status": "TABLA NUEVA",
@@ -4566,7 +4146,7 @@
           "name": "direccion_llegada_snapshot",
           "definition": "text NOT NULL",
           "status": "TABLA NUEVA",
-          "why": "Atributo propuesto para cubrir el flujo de la vista."
+          "why": "D08: dirección de destino textual capturada en la guía; conserva el punto de llegada histórico sin catálogo."
         },
         {
           "name": "establecimiento_llegada_snapshot",
@@ -4748,7 +4328,7 @@
     "guia_x_norma": {
       "pk": "guia_x_norma_id",
       "existing": false,
-      "description": "Selección múltiple de normas en la guía.",
+      "description": "Normas elegidas en el editor de cada guía; se insertan/eliminan sus filas al guardar un borrador, resolviendo norma_id por codigo. No se precargan relaciones para todas las guías. UNIQUE evita duplicar selecciones.",
       "columns": [
         {
           "name": "guia_x_norma_id",
@@ -6281,42 +5861,6 @@
       "status": "NUEVA"
     },
     {
-      "child": "sesion_usuario",
-      "cols": [
-        "usuario_id"
-      ],
-      "parent": "usuario",
-      "targets": [
-        "usuario_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
-      "child": "campana_x_fruta_derivada",
-      "cols": [
-        "campania_id"
-      ],
-      "parent": "campana",
-      "targets": [
-        "campania_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
-      "child": "campana_x_fruta_derivada",
-      "cols": [
-        "fruta_derivada_id"
-      ],
-      "parent": "fruta_derivada",
-      "targets": [
-        "fruta_derivada_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
       "child": "proveedor_x_persona",
       "cols": [
         "proveedor_id"
@@ -6365,7 +5909,19 @@
       "status": "NUEVA"
     },
     {
-      "child": "participacion_proveedor_campana",
+      "child": "certificado_campana_x_proveedor",
+      "cols": [
+        "certificado_id"
+      ],
+      "parent": "certificado_campana",
+      "targets": [
+        "certificado_id"
+      ],
+      "onDelete": "RESTRICT",
+      "status": "NUEVA"
+    },
+    {
+      "child": "certificado_campana_x_proveedor",
       "cols": [
         "campania_id"
       ],
@@ -6377,43 +5933,7 @@
       "status": "NUEVA"
     },
     {
-      "child": "participacion_proveedor_campana",
-      "cols": [
-        "proveedor_id"
-      ],
-      "parent": "proveedor",
-      "targets": [
-        "proveedor_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
-      "child": "participacion_proveedor_x_fruta_derivada",
-      "cols": [
-        "participacion_proveedor_campana_id"
-      ],
-      "parent": "participacion_proveedor_campana",
-      "targets": [
-        "participacion_proveedor_campana_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
-      "child": "participacion_proveedor_x_fruta_derivada",
-      "cols": [
-        "fruta_derivada_id"
-      ],
-      "parent": "fruta_derivada",
-      "targets": [
-        "fruta_derivada_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
-      "child": "acuerdo_compra",
+      "child": "certificado_campana_x_proveedor",
       "cols": [
         "cxp_id"
       ],
@@ -6425,54 +5945,6 @@
       "status": "NUEVA"
     },
     {
-      "child": "acuerdo_compra",
-      "cols": [
-        "fruta_derivada_id"
-      ],
-      "parent": "fruta_derivada",
-      "targets": [
-        "fruta_derivada_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
-      "child": "certificado_campana_x_proveedor",
-      "cols": [
-        "certificado_id"
-      ],
-      "parent": "certificado_campana",
-      "targets": [
-        "certificado_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
-      "child": "certificado_campana_x_proveedor",
-      "cols": [
-        "campania_id"
-      ],
-      "parent": "campana",
-      "targets": [
-        "campania_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
-      "child": "certificado_campana_x_proveedor",
-      "cols": [
-        "participacion_proveedor_campana_id"
-      ],
-      "parent": "participacion_proveedor_campana",
-      "targets": [
-        "participacion_proveedor_campana_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
       "child": "certificado_campana_x_proveedor",
       "cols": [
         "proveedor_id"
@@ -6528,18 +6000,6 @@
       "parent": "usuario",
       "targets": [
         "usuario_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
-      "child": "destino_cliente_negocio",
-      "cols": [
-        "cliente_negocio_id"
-      ],
-      "parent": "cliente_negocio",
-      "targets": [
-        "cliente_negocio_id"
       ],
       "onDelete": "RESTRICT",
       "status": "NUEVA"
@@ -6588,18 +6048,6 @@
       "parent": "contrato_venta",
       "targets": [
         "contrato_venta_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
-      "child": "entrega_programada",
-      "cols": [
-        "destino_id"
-      ],
-      "parent": "destino_cliente_negocio",
-      "targets": [
-        "destino_cliente_negocio_id"
       ],
       "onDelete": "RESTRICT",
       "status": "NUEVA"
@@ -6871,11 +6319,11 @@
     {
       "child": "proveedor_carga",
       "cols": [
-        "participacion_proveedor_campana_id"
+        "cxp_id"
       ],
-      "parent": "participacion_proveedor_campana",
+      "parent": "campania_x_proveedores",
       "targets": [
-        "participacion_proveedor_campana_id"
+        "cxp_id"
       ],
       "onDelete": "RESTRICT",
       "status": "NUEVA"
@@ -6948,18 +6396,6 @@
       "parent": "finca",
       "targets": [
         "finca_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
-      "child": "guia_remision",
-      "cols": [
-        "destino_id"
-      ],
-      "parent": "destino_cliente_negocio",
-      "targets": [
-        "destino_cliente_negocio_id"
       ],
       "onDelete": "RESTRICT",
       "status": "NUEVA"
@@ -7245,13 +6681,13 @@
     {
       "child": "certificado_campana_x_proveedor",
       "cols": [
-        "participacion_proveedor_campana_id",
+        "cxp_id",
         "campania_id",
         "proveedor_id"
       ],
-      "parent": "participacion_proveedor_campana",
+      "parent": "campania_x_proveedores",
       "targets": [
-        "participacion_proveedor_campana_id",
+        "cxp_id",
         "campania_id",
         "proveedor_id"
       ],
@@ -7374,18 +6810,6 @@
       "parent": "usuario",
       "targets": [
         "usuario_id"
-      ],
-      "onDelete": "RESTRICT",
-      "status": "NUEVA"
-    },
-    {
-      "child": "campania_x_proveedores",
-      "cols": [
-        "participacion_proveedor_campana_id"
-      ],
-      "parent": "participacion_proveedor_campana",
-      "targets": [
-        "participacion_proveedor_campana_id"
       ],
       "onDelete": "RESTRICT",
       "status": "NUEVA"
@@ -7632,11 +7056,24 @@
     }
   ],
   "existing_count": 19,
-  "new_count": 47,
+  "new_count": 41,
   "existing_columns": 173,
   "excluded_tables": [
-    "archivo"
+    "archivo",
+    "destino_cliente_negocio",
+    "campana_x_fruta_derivada",
+    "participacion_proveedor_x_fruta_derivada",
+    "participacion_proveedor_campana",
+    "acuerdo_compra",
+    "sesion_usuario"
   ],
+  "initial_data": {
+    "roles": 2,
+    "normas": 5,
+    "frutas": 5,
+    "variedades": 17,
+    "parametros_anuales": 2
+  },
   "pending_file_relations": [
     {
       "child": "certificado_proveedor",
@@ -7977,9 +7414,10 @@
     }
   ],
   "removed_columns": [
-    "campania_x_proveedores.finca_id"
+    "campania_x_proveedores.finca_id",
+    "campania_x_proveedores.participacion_proveedor_campana_id"
   ],
-  "additional_columns": 73,
+  "additional_columns": 74,
   "modified_columns": [
     {
       "tabla": "proveedor",

@@ -11,7 +11,7 @@ BEGIN
     IF pid IS NULL OR pid = ANY(ids) THEN RAISE EXCEPTION 'Proveedor duplicado o inválido en recepción'; END IF;
     ids := array_append(ids, pid);
     SELECT sum(pc.kilos_cargados) INTO cargado FROM proveedor_carga pc
-      JOIN participacion_proveedor_campana p ON p.participacion_proveedor_campana_id=pc.participacion_proveedor_campana_id
+      JOIN campania_x_proveedores p ON p.cxp_id=pc.cxp_id
       WHERE pc.carga_id=NEW.carga_id AND p.proveedor_id=pid;
     IF cargado IS NULL THEN RAISE EXCEPTION 'El proveedor no pertenece a esta carga'; END IF;
     IF item->>'recognizedQuantity' IS NULL THEN completos := false;
@@ -27,7 +27,7 @@ BEGIN
       RAISE EXCEPTION 'La suma reconocida debe coincidir con el peso de planta';
     END IF;
     IF cardinality(ids) <> (SELECT count(DISTINCT p.proveedor_id) FROM proveedor_carga pc
-      JOIN participacion_proveedor_campana p ON p.participacion_proveedor_campana_id=pc.participacion_proveedor_campana_id WHERE pc.carga_id=NEW.carga_id) THEN
+      JOIN campania_x_proveedores p ON p.cxp_id=pc.cxp_id WHERE pc.carga_id=NEW.carga_id) THEN
       RAISE EXCEPTION 'Completa el desglose de todos los proveedores';
     END IF;
   END IF;
@@ -50,10 +50,10 @@ BEGIN
   SELECT (x->>'recognizedQuantity')::numeric INTO reconocidos FROM recepcion_planta r,
     LATERAL jsonb_array_elements(r.compras) x WHERE r.carga_id=NEW.carga_id AND (x->>'providerId')::integer=NEW.proveedor_id;
   IF reconocidos IS NULL THEN
-    SELECT count(DISTINCT p.proveedor_id) INTO proveedores FROM proveedor_carga pc JOIN participacion_proveedor_campana p
-      ON p.participacion_proveedor_campana_id=pc.participacion_proveedor_campana_id WHERE pc.carga_id=NEW.carga_id;
-    IF proveedores=1 AND EXISTS(SELECT 1 FROM proveedor_carga pc JOIN participacion_proveedor_campana p
-      ON p.participacion_proveedor_campana_id=pc.participacion_proveedor_campana_id WHERE pc.carga_id=NEW.carga_id AND p.proveedor_id=NEW.proveedor_id) THEN
+    SELECT count(DISTINCT p.proveedor_id) INTO proveedores FROM proveedor_carga pc JOIN campania_x_proveedores p
+      ON p.cxp_id=pc.cxp_id WHERE pc.carga_id=NEW.carga_id;
+    IF proveedores=1 AND EXISTS(SELECT 1 FROM proveedor_carga pc JOIN campania_x_proveedores p
+      ON p.cxp_id=pc.cxp_id WHERE pc.carga_id=NEW.carga_id AND p.proveedor_id=NEW.proveedor_id) THEN
       SELECT peso_planta_kg INTO reconocidos FROM recepcion_planta WHERE carga_id=NEW.carga_id;
     END IF;
   END IF;

@@ -1,0 +1,164 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Campaña, operación física y obligaciones financieras",
+    "output": "flujo-general.html",
+    "quality_profile": "showcase",
+    "locale": "es",
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "frontend": {
+          "label": "Vista o captura"
+        },
+        "backend": {
+          "label": "Actividad del negocio"
+        },
+        "security": {
+          "label": "Control o condición"
+        },
+        "external": {
+          "label": "Acción fuera del sistema"
+        }
+      }
+    }
+  },
+  "nodes": [
+    {
+      "id": "campana",
+      "label": "Crear campaña",
+      "type": "frontend",
+      "width": 124,
+      "lane": "plan",
+      "col": 0
+    },
+    {
+      "id": "demanda",
+      "label": "Acordar venta",
+      "type": "backend",
+      "width": 124,
+      "lane": "plan",
+      "col": 1
+    },
+    {
+      "id": "coordinar",
+      "label": "Coordinar entrega",
+      "type": "backend",
+      "width": 151,
+      "lane": "plan",
+      "col": 2
+    },
+    {
+      "id": "cargar",
+      "label": "Calidad y carga",
+      "type": "backend",
+      "width": 137,
+      "lane": "campo",
+      "col": 0
+    },
+    {
+      "id": "recibir",
+      "label": "Viaje y recepción",
+      "type": "backend",
+      "width": 151,
+      "lane": "campo",
+      "col": 1
+    },
+    {
+      "id": "comprar",
+      "label": "Liquidar y pagar",
+      "type": "backend",
+      "width": 144,
+      "lane": "dinero",
+      "col": 0
+    },
+    {
+      "id": "vender",
+      "label": "Facturar y cobrar",
+      "type": "backend",
+      "width": 151,
+      "lane": "dinero",
+      "col": 1
+    },
+    {
+      "id": "finalizar",
+      "label": "Finalizar campaña",
+      "type": "security",
+      "width": 151,
+      "lane": "dinero",
+      "col": 2
+    }
+  ],
+  "lanes": [
+    {
+      "id": "plan",
+      "label": "Preparar y acordar"
+    },
+    {
+      "id": "campo",
+      "label": "Ejecutar la entrega"
+    },
+    {
+      "id": "dinero",
+      "label": "Conciliar y cerrar"
+    }
+  ],
+  "edges": [
+    {
+      "id": "campana-to-demanda-1",
+      "from": "campana",
+      "to": "demanda",
+      "label": "campaña"
+    },
+    {
+      "id": "demanda-to-coordinar-1",
+      "from": "demanda",
+      "to": "coordinar",
+      "label": "programación"
+    },
+    {
+      "id": "coordinar-to-cargar-1",
+      "from": "coordinar",
+      "to": "cargar",
+      "label": "datos completos"
+    },
+    {
+      "id": "cargar-to-recibir-1",
+      "from": "cargar",
+      "to": "recibir",
+      "label": "carga y guía",
+      "variant": "emphasis"
+    },
+    {
+      "id": "recibir-to-vender-1",
+      "from": "recibir",
+      "to": "vender",
+      "label": "peso en planta"
+    },
+    {
+      "id": "cargar-to-comprar-1",
+      "from": "cargar",
+      "to": "comprar",
+      "label": "kilos cargados"
+    },
+    {
+      "id": "vender-to-finalizar-1",
+      "from": "vender",
+      "to": "finalizar",
+      "label": "cobros saldados"
+    },
+    {
+      "id": "comprar-to-finalizar-1",
+      "from": "comprar",
+      "to": "finalizar",
+      "label": "pagos saldados"
+    },
+    {
+      "id": "recibir-to-finalizar-1",
+      "from": "recibir",
+      "to": "finalizar",
+      "label": "cierres completos"
+    }
+  ]
+}

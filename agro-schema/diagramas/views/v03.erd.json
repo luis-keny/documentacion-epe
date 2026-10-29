@@ -17,7 +17,7 @@
     {
       "id": "cliente_negocio",
       "label": "cliente_negocio",
-      "sublabel": "Propuesta",
+      "sublabel": "Actual",
       "tag": "Clientes y contratos",
       "row": 0,
       "col": 0,
@@ -76,81 +76,10 @@
           "type": "date"
         }
       ],
-      "width": 366
-    },
-    {
-      "id": "destino_cliente_negocio",
-      "label": "destino_cliente_negocio",
-      "sublabel": "Propuesta",
-      "tag": "Clientes y contratos",
-      "row": 1,
-      "col": 0,
-      "attributes": [
-        {
-          "name": "destino_cliente_negocio_id",
-          "type": "integer",
-          "key": [
-            "pk",
-            "uk"
-          ]
-        },
-        {
-          "name": "cliente_negocio_id",
-          "type": "integer",
-          "key": [
-            "fk",
-            "uk"
-          ],
-          "references": "cliente_negocio.cliente_negocio_id"
-        },
-        {
-          "name": "nombre",
-          "type": "varchar(150)"
-        },
-        {
-          "name": "ubigeo",
-          "type": "varchar(6)"
-        },
-        {
-          "name": "direccion",
-          "type": "text"
-        },
-        {
-          "name": "codigo_establecimiento",
-          "type": "varchar(4)"
-        },
-        {
-          "name": "latitud",
-          "type": "numeric(10,7)"
-        },
-        {
-          "name": "longitud",
-          "type": "numeric(10,7)"
-        },
-        {
-          "name": "created_at",
-          "type": "timestamptz"
-        },
-        {
-          "name": "updated_at",
-          "type": "timestamptz"
-        }
-      ],
-      "width": 302
+      "width": 394
     }
   ],
-  "relationships": [
-    {
-      "id": "fk_revision_48",
-      "from": "destino_cliente_negocio",
-      "to": "cliente_negocio",
-      "fromCardinality": "many",
-      "toCardinality": "one",
-      "fromOptional": false,
-      "identifying": false,
-      "variant": "dashed"
-    }
-  ],
+  "relationships": [],
   "cards": [
     {
       "dot": "cyan",
@@ -165,7 +94,7 @@
       "dot": "amber",
       "title": "Alcance SQL",
       "items": [
-        "66 tablas y 137 relaciones FK, distribuidas por dominio funcional.",
+        "60 tablas y 124 relaciones FK, distribuidas por dominio funcional.",
         "La tabla archivo se excluye; sus referencias documentales no tienen FK.",
         "El SQL es instalación nueva para revisión, no migración sobre una base desplegada."
       ]

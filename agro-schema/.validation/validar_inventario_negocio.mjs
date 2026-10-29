@@ -15,13 +15,15 @@ for (const [, child, name, childCols, parent, parentCols] of fks) {
   }
 }
 const views = [...sql.matchAll(/CREATE VIEW (\w+) AS/g)].map(m => m[1]);
-if (tables.size !== 66 || fks.length !== 137 || views.length !== 6) errors.push('Inventario diferente del documentado');
+if (tables.size !== 60 || fks.length !== 124 || views.length !== 6) errors.push('Inventario diferente del documentado');
+if (tables.has('destino_cliente_negocio') || /"destino_id"/.test(sql)) errors.push('D08: catálogo o FK de destino reintroducidos');
+if (!/"destino" text NOT NULL/.test(sql)) errors.push('D08: falta destino textual obligatorio');
 const result = {
   metodo: 'Inspección estática de declaraciones SQL; no valida ejecución, restricciones ni transacciones',
   schema_sha256: createHash('sha256').update(sql).digest('hex'),
   tablas: tables.size, claves_foraneas: fks.length, vistas: views,
   errores_referencias: errors,
-  columnas_financieras: Object.fromEntries(['acuerdo_compra', 'acuerdo_transporte', 'liquidacion_proveedor', 'liquidacion_transporte', 'factura_venta'].map(t => [t, [...tables.get(t)]])),
+  columnas_financieras: Object.fromEntries(['acuerdo_transporte', 'liquidacion_proveedor', 'liquidacion_transporte', 'factura_venta'].map(t => [t, [...tables.get(t)]])),
 };
 writeFileSync(new URL('./resultado_inventario_negocio.json', import.meta.url), JSON.stringify(result, null, 2) + '\n');
 console.log(JSON.stringify({ tablas: tables.size, claves_foraneas: fks.length, vistas: views.length, errores: errors }));

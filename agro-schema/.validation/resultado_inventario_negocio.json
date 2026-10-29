@@ -1,8 +1,8 @@
 {
   "metodo": "Inspección estática de declaraciones SQL; no valida ejecución, restricciones ni transacciones",
-  "schema_sha256": "b0da0d5446b97deaa318132b0675ccc9f5333b6be0444c778b2f837d9b9c00b5",
-  "tablas": 66,
-  "claves_foraneas": 137,
+  "schema_sha256": "5094ec9efdab160dcf7adafd5b29858c9cbe2caedc44796412ed3e79a9ea8963",
+  "tablas": 60,
+  "claves_foraneas": 124,
   "vistas": [
     "v_saldo_proveedor",
     "v_saldo_factura",
@@ -13,19 +13,6 @@
   ],
   "errores_referencias": [],
   "columnas_financieras": {
-    "acuerdo_compra": [
-      "acuerdo_compra_id",
-      "cxp_id",
-      "fruta_derivada_id",
-      "precio_kg",
-      "kilos_acordados",
-      "fecha_inicio",
-      "fecha_fin",
-      "estado",
-      "created_at",
-      "updated_at",
-      "moneda"
-    ],
     "acuerdo_transporte": [
       "acuerdo_transporte_id",
       "campania_id",

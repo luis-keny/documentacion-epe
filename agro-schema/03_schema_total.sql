@@ -1,14 +1,16 @@
 -- MODELO DOCUMENTADO PARA REVISION MANUAL. No modifica entidades TypeORM ni la base desplegada.
 
+-- D08 aprobado 2026-10-29: destino de entrega como texto; guía con dirección de llegada histórica; sin catálogo de destinos.
+
 -- Actualización funcional FC01-FC14: tipos/borradores, detalle JSON, recepción reconocida, ajustes y cardinalidades autorizadas.
 
--- Instalación nueva en agro: incluye 19 tablas actuales y 47 propuestas; archivo queda excluida por decisión de negocio.
+-- Instalación nueva en agro: incluye 19 tablas actuales y 41 propuestas; catálogos iniciales incluidos; archivo queda excluida.
 
 -- Conserva los nombres de 173 columnas actuales y adapta tipos/nulabilidad para los formularios; retira archivo y campania_x_proveedores.finca_id. Referencias documentales opcionales, sin FK, pendientes de integración.
 
 -- Decisión aprobada 2026-10-27: análisis previo por participación/finca; analisis_calidad.cosecha_id es opcional. Una variedad por finca; fruta se obtiene de la variedad.
 
--- Retira su FK e índices por finca; propone unicidad campaña/proveedor y adapta los triggers de entrevistas. Agrega atributos y 47 tablas propuestas.
+-- Participación única campania_x_proveedores; retira puentes derivados y acuerdo_compra. Agrega atributos y 41 tablas propuestas.
 
 -- Se modifican tipos y nulabilidad legacy documentados en modified_columns; no es una migración sobre datos existentes.
 
@@ -76,17 +78,18 @@ CREATE TABLE "campania_x_proveedores" (
   "estado" "campania_x_proveedores_estado_enum" NOT NULL DEFAULT 'sin validar'::campania_x_proveedores_estado_enum,
   "campania_id" integer NOT NULL,
   "proveedor_id" integer NOT NULL,
-  "participacion_proveedor_campana_id" integer,
   "precio_compra_kg" numeric(14,4),
   "moneda" varchar(3) NOT NULL DEFAULT 'PEN',
   "disponibilidad_desde" date,
   "disponibilidad_hasta" date,
   "observaciones" text,
+  "entrevista_aplica" boolean NOT NULL DEFAULT true,
   CONSTRAINT "CHK_fruta_convencional_solo_productor" CHECK (((tipo_proveedor = 'productor'::campania_x_proveedores_tipo_proveedor_enum) OR (fruta_convencional_estimado IS NULL))),
   CONSTRAINT "PK_fd78570e9beb123e572cbc5914a" PRIMARY KEY (cxp_id),
   CONSTRAINT "UQ_campania_proveedor" UNIQUE (campania_id, proveedor_id),
   CHECK (moneda = 'PEN' AND (precio_compra_kg IS NULL OR precio_compra_kg > 0)),
-  CHECK (disponibilidad_hasta >= disponibilidad_desde)
+  CHECK (disponibilidad_hasta >= disponibilidad_desde),
+  UNIQUE (cxp_id, campania_id, proveedor_id)
 );
 
 -- TABLA ACTUAL AMPLIADA: certificado_campana
@@ -111,10 +114,12 @@ CREATE TABLE "certificado_campana" (
   "vigencia_desde" date,
   "observaciones" text,
   "historial_cobertura" jsonb NOT NULL DEFAULT '[]'::jsonb,
+  "tipo_certificacion" varchar(80),
   CONSTRAINT "PK_1856de725430dd73744896b9e4f" PRIMARY KEY (certificado_id),
   CHECK (moneda IS NULL OR moneda IN ('PEN','USD','EUR')),
   CHECK (jsonb_typeof(historial_cobertura) = 'array'),
   CHECK (fecha_vencimiento >= vigencia_desde),
+  CHECK (tipo_certificacion IN ('Global GAP','Orgánico USDA','Orgánico UE','Fairtrade','Rainforest Alliance')),
   UNIQUE (certificado_id, campania_id)
 );
 
@@ -474,21 +479,6 @@ CREATE TABLE "usuario" (
   UNIQUE (usuario)
 );
 
--- TABLA PROPUESTA: sesion_usuario
-
-CREATE TABLE "sesion_usuario" (
-  "sesion_usuario_id" integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  "usuario_id" integer NOT NULL,
-  "token_hash" text NOT NULL,
-  "creada_at" timestamptz NOT NULL DEFAULT now(),
-  "expira_at" timestamptz NOT NULL,
-  "revocada_at" timestamptz,
-  "created_at" timestamptz NOT NULL DEFAULT now(),
-  "updated_at" timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (token_hash),
-  CHECK (expira_at > creada_at)
-);
-
 -- TABLA PROPUESTA: parametro_uit
 
 CREATE TABLE "parametro_uit" (
@@ -503,17 +493,6 @@ CREATE TABLE "parametro_uit" (
   CHECK (valor > 0),
   CHECK (limite_uit > 0),
   CHECK (umbral_alerta > 0 AND umbral_alerta <= 1)
-);
-
--- TABLA PROPUESTA: campana_x_fruta_derivada
-
-CREATE TABLE "campana_x_fruta_derivada" (
-  "campana_x_fruta_derivada_id" integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  "campania_id" integer NOT NULL,
-  "fruta_derivada_id" integer NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT now(),
-  "updated_at" timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (campania_id, fruta_derivada_id)
 );
 
 -- TABLA PROPUESTA: proveedor_x_persona
@@ -540,60 +519,6 @@ CREATE TABLE "proveedor_x_fruta_derivada" (
   UNIQUE (proveedor_id, fruta_derivada_id)
 );
 
--- TABLA PROPUESTA: participacion_proveedor_campana
-
-CREATE TABLE "participacion_proveedor_campana" (
-  "participacion_proveedor_campana_id" integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  "campania_id" integer NOT NULL,
-  "proveedor_id" integer NOT NULL,
-  "rol_comercial" varchar(20) NOT NULL,
-  "tipo_fruta" varchar(20) NOT NULL,
-  "kilos_estimados" numeric(14,3) NOT NULL,
-  "estado" varchar(30) NOT NULL DEFAULT 'EXAMEN_PENDIENTE',
-  "entrevista_aplica" boolean NOT NULL DEFAULT true,
-  "fecha_registro" timestamptz NOT NULL DEFAULT now(),
-  "observaciones" text,
-  "created_at" timestamptz NOT NULL DEFAULT now(),
-  "updated_at" timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (campania_id, proveedor_id),
-  UNIQUE (participacion_proveedor_campana_id, campania_id, proveedor_id),
-  CHECK (rol_comercial IN ('PRODUCTOR','ACOPIADOR')),
-  CHECK (tipo_fruta IN ('ORGANICA','CONVENCIONAL')),
-  CHECK (kilos_estimados >= 0),
-  CHECK (estado IN ('EXAMEN_PENDIENTE','ENTREVISTA_PENDIENTE','APROBADO','RECHAZADO'))
-);
-
--- TABLA PROPUESTA: participacion_proveedor_x_fruta_derivada
-
-CREATE TABLE "participacion_proveedor_x_fruta_derivada" (
-  "participacion_proveedor_x_fruta_derivada_id" integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  "participacion_proveedor_campana_id" integer NOT NULL,
-  "fruta_derivada_id" integer NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT now(),
-  "updated_at" timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (participacion_proveedor_campana_id, fruta_derivada_id)
-);
-
--- TABLA PROPUESTA: acuerdo_compra
-
-CREATE TABLE "acuerdo_compra" (
-  "acuerdo_compra_id" integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  "cxp_id" integer NOT NULL,
-  "fruta_derivada_id" integer,
-  "precio_kg" numeric(14,4) NOT NULL,
-  "kilos_acordados" numeric(14,3),
-  "fecha_inicio" date,
-  "fecha_fin" date,
-  "estado" varchar(25) NOT NULL DEFAULT 'VIGENTE',
-  "created_at" timestamptz NOT NULL DEFAULT now(),
-  "updated_at" timestamptz NOT NULL DEFAULT now(),
-  "moneda" varchar(3) NOT NULL DEFAULT 'PEN',
-  CHECK (precio_kg > 0),
-  CHECK (kilos_acordados >= 0),
-  CHECK (fecha_fin >= fecha_inicio),
-  CHECK (moneda = 'PEN')
-);
-
 -- TABLA PROPUESTA: norma
 
 CREATE TABLE "norma" (
@@ -611,12 +536,12 @@ CREATE TABLE "certificado_campana_x_proveedor" (
   "certificado_campana_x_proveedor_id" integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   "certificado_id" integer NOT NULL,
   "campania_id" integer NOT NULL,
-  "participacion_proveedor_campana_id" integer NOT NULL,
+  "cxp_id" integer NOT NULL,
   "proveedor_id" integer NOT NULL,
   "kilos_autorizados" numeric(14,3) NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (certificado_id, participacion_proveedor_campana_id),
+  UNIQUE (certificado_id, cxp_id),
   CHECK (kilos_autorizados > 0)
 );
 
@@ -648,25 +573,6 @@ CREATE TABLE "pago_certificado_campana" (
   "updated_at" timestamptz NOT NULL DEFAULT now(),
   UNIQUE (certificado_id, referencia),
   CHECK (monto > 0)
-);
-
--- TABLA PROPUESTA: destino_cliente_negocio
-
-CREATE TABLE "destino_cliente_negocio" (
-  "destino_cliente_negocio_id" integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  "cliente_negocio_id" integer NOT NULL,
-  "nombre" varchar(150) NOT NULL,
-  "ubigeo" varchar(6),
-  "direccion" text,
-  "codigo_establecimiento" varchar(4),
-  "latitud" numeric(10,7),
-  "longitud" numeric(10,7),
-  "created_at" timestamptz NOT NULL DEFAULT now(),
-  "updated_at" timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (destino_cliente_negocio_id, cliente_negocio_id),
-  CHECK (latitud BETWEEN -90 AND 90),
-  CHECK (longitud BETWEEN -180 AND 180),
-  CHECK ((latitud IS NULL) = (longitud IS NULL))
 );
 
 -- TABLA PROPUESTA: cliente_negocio_campana_x_fruta_derivada
@@ -710,13 +616,14 @@ CREATE TABLE "contrato_venta" (
 CREATE TABLE "entrega_programada" (
   "entrega_programada_id" integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   "contrato_venta_id" integer NOT NULL,
-  "destino_id" integer NOT NULL,
+  "destino" text NOT NULL,
   "fecha" date NOT NULL,
   "kilos_programados" numeric(14,3) NOT NULL,
   "observaciones" text,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
-  CHECK (kilos_programados > 0)
+  CHECK (kilos_programados > 0),
+  CHECK (btrim(destino) <> '')
 );
 
 -- TABLA PROPUESTA: entrega_x_fruta_derivada
@@ -780,6 +687,7 @@ CREATE TABLE "cotizacion_transporte" (
   "estado" varchar(25) NOT NULL DEFAULT 'RECIBIDA',
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
+  "disponibilidad" text,
   CHECK (monto > 0),
   CHECK (moneda IN ('PEN','USD','EUR'))
 );
@@ -944,7 +852,7 @@ CREATE TABLE "carga" (
 CREATE TABLE "proveedor_carga" (
   "proveedor_carga_id" integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   "carga_id" integer NOT NULL,
-  "participacion_proveedor_campana_id" integer NOT NULL,
+  "cxp_id" integer NOT NULL,
   "fruta_derivada_id" integer NOT NULL,
   "kilos_cargados" numeric(14,3) NOT NULL,
   "precio_compra_kg_aplicado" numeric(14,4),
@@ -956,7 +864,7 @@ CREATE TABLE "proveedor_carga" (
   "mallas_vacias" integer NOT NULL DEFAULT 0,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (carga_id, participacion_proveedor_campana_id, fruta_derivada_id),
+  UNIQUE (carga_id, cxp_id, fruta_derivada_id),
   UNIQUE (proveedor_carga_id, carga_id),
   CHECK (kilos_cargados > 0),
   CHECK (precio_compra_kg_aplicado > 0),
@@ -1007,7 +915,6 @@ CREATE TABLE "guia_remision" (
   "unidad_peso" varchar(3) NOT NULL DEFAULT 'KGM',
   "numero_bultos" integer NOT NULL,
   "finca_partida_id" integer NOT NULL,
-  "destino_id" integer NOT NULL,
   "ubigeo_partida_snapshot" varchar(6) NOT NULL,
   "direccion_partida_snapshot" text NOT NULL,
   "establecimiento_partida_snapshot" varchar(4) NOT NULL,
@@ -1359,227 +1266,201 @@ ALTER TABLE "usuario" ADD CONSTRAINT "fk_revision_25" FOREIGN KEY ("persona_id")
 
 ALTER TABLE "usuario" ADD CONSTRAINT "fk_revision_26" FOREIGN KEY ("rol_id") REFERENCES "rol" ("rol_id") ON DELETE RESTRICT;
 
-ALTER TABLE "sesion_usuario" ADD CONSTRAINT "fk_revision_27" FOREIGN KEY ("usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "proveedor_x_persona" ADD CONSTRAINT "fk_revision_27" FOREIGN KEY ("proveedor_id") REFERENCES "proveedor" ("proveedor_id") ON DELETE RESTRICT;
 
-ALTER TABLE "campana_x_fruta_derivada" ADD CONSTRAINT "fk_revision_28" FOREIGN KEY ("campania_id") REFERENCES "campana" ("campania_id") ON DELETE RESTRICT;
+ALTER TABLE "proveedor_x_persona" ADD CONSTRAINT "fk_revision_28" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
 
-ALTER TABLE "campana_x_fruta_derivada" ADD CONSTRAINT "fk_revision_29" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
+ALTER TABLE "proveedor_x_fruta_derivada" ADD CONSTRAINT "fk_revision_29" FOREIGN KEY ("proveedor_id") REFERENCES "proveedor" ("proveedor_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor_x_persona" ADD CONSTRAINT "fk_revision_30" FOREIGN KEY ("proveedor_id") REFERENCES "proveedor" ("proveedor_id") ON DELETE RESTRICT;
+ALTER TABLE "proveedor_x_fruta_derivada" ADD CONSTRAINT "fk_revision_30" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor_x_persona" ADD CONSTRAINT "fk_revision_31" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
+ALTER TABLE "certificado_campana_x_proveedor" ADD CONSTRAINT "fk_revision_31" FOREIGN KEY ("certificado_id") REFERENCES "certificado_campana" ("certificado_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor_x_fruta_derivada" ADD CONSTRAINT "fk_revision_32" FOREIGN KEY ("proveedor_id") REFERENCES "proveedor" ("proveedor_id") ON DELETE RESTRICT;
+ALTER TABLE "certificado_campana_x_proveedor" ADD CONSTRAINT "fk_revision_32" FOREIGN KEY ("campania_id") REFERENCES "campana" ("campania_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor_x_fruta_derivada" ADD CONSTRAINT "fk_revision_33" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
+ALTER TABLE "certificado_campana_x_proveedor" ADD CONSTRAINT "fk_revision_33" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
 
-ALTER TABLE "participacion_proveedor_campana" ADD CONSTRAINT "fk_revision_34" FOREIGN KEY ("campania_id") REFERENCES "campana" ("campania_id") ON DELETE RESTRICT;
+ALTER TABLE "certificado_campana_x_proveedor" ADD CONSTRAINT "fk_revision_34" FOREIGN KEY ("proveedor_id") REFERENCES "proveedor" ("proveedor_id") ON DELETE RESTRICT;
 
-ALTER TABLE "participacion_proveedor_campana" ADD CONSTRAINT "fk_revision_35" FOREIGN KEY ("proveedor_id") REFERENCES "proveedor" ("proveedor_id") ON DELETE RESTRICT;
+ALTER TABLE "ampliacion_certificado_campana" ADD CONSTRAINT "fk_revision_35" FOREIGN KEY ("certificado_id") REFERENCES "certificado_campana" ("certificado_id") ON DELETE RESTRICT;
 
-ALTER TABLE "participacion_proveedor_x_fruta_derivada" ADD CONSTRAINT "fk_revision_36" FOREIGN KEY ("participacion_proveedor_campana_id") REFERENCES "participacion_proveedor_campana" ("participacion_proveedor_campana_id") ON DELETE RESTRICT;
+ALTER TABLE "ampliacion_certificado_campana" ADD CONSTRAINT "fk_revision_36" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "participacion_proveedor_x_fruta_derivada" ADD CONSTRAINT "fk_revision_37" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
+ALTER TABLE "pago_certificado_campana" ADD CONSTRAINT "fk_revision_37" FOREIGN KEY ("certificado_id") REFERENCES "certificado_campana" ("certificado_id") ON DELETE RESTRICT;
 
-ALTER TABLE "acuerdo_compra" ADD CONSTRAINT "fk_revision_38" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
+ALTER TABLE "pago_certificado_campana" ADD CONSTRAINT "fk_revision_38" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "acuerdo_compra" ADD CONSTRAINT "fk_revision_39" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
+ALTER TABLE "cliente_negocio_campana_x_fruta_derivada" ADD CONSTRAINT "fk_revision_39" FOREIGN KEY ("cliente_negocio_campana_id") REFERENCES "cliente_negocio_campana" ("cliente_negocio_campana_id") ON DELETE RESTRICT;
 
-ALTER TABLE "certificado_campana_x_proveedor" ADD CONSTRAINT "fk_revision_40" FOREIGN KEY ("certificado_id") REFERENCES "certificado_campana" ("certificado_id") ON DELETE RESTRICT;
+ALTER TABLE "cliente_negocio_campana_x_fruta_derivada" ADD CONSTRAINT "fk_revision_40" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
 
-ALTER TABLE "certificado_campana_x_proveedor" ADD CONSTRAINT "fk_revision_41" FOREIGN KEY ("campania_id") REFERENCES "campana" ("campania_id") ON DELETE RESTRICT;
+ALTER TABLE "contrato_venta" ADD CONSTRAINT "fk_revision_41" FOREIGN KEY ("cliente_negocio_campana_id") REFERENCES "cliente_negocio_campana" ("cliente_negocio_campana_id") ON DELETE RESTRICT;
 
-ALTER TABLE "certificado_campana_x_proveedor" ADD CONSTRAINT "fk_revision_42" FOREIGN KEY ("participacion_proveedor_campana_id") REFERENCES "participacion_proveedor_campana" ("participacion_proveedor_campana_id") ON DELETE RESTRICT;
+ALTER TABLE "entrega_programada" ADD CONSTRAINT "fk_revision_42" FOREIGN KEY ("contrato_venta_id") REFERENCES "contrato_venta" ("contrato_venta_id") ON DELETE RESTRICT;
 
-ALTER TABLE "certificado_campana_x_proveedor" ADD CONSTRAINT "fk_revision_43" FOREIGN KEY ("proveedor_id") REFERENCES "proveedor" ("proveedor_id") ON DELETE RESTRICT;
+ALTER TABLE "entrega_x_fruta_derivada" ADD CONSTRAINT "fk_revision_43" FOREIGN KEY ("entrega_programada_id") REFERENCES "entrega_programada" ("entrega_programada_id") ON DELETE RESTRICT;
 
-ALTER TABLE "ampliacion_certificado_campana" ADD CONSTRAINT "fk_revision_44" FOREIGN KEY ("certificado_id") REFERENCES "certificado_campana" ("certificado_id") ON DELETE RESTRICT;
+ALTER TABLE "entrega_x_fruta_derivada" ADD CONSTRAINT "fk_revision_44" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
 
-ALTER TABLE "ampliacion_certificado_campana" ADD CONSTRAINT "fk_revision_45" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "solicitud_transporte" ADD CONSTRAINT "fk_revision_45" FOREIGN KEY ("campania_id") REFERENCES "campana" ("campania_id") ON DELETE RESTRICT;
 
-ALTER TABLE "pago_certificado_campana" ADD CONSTRAINT "fk_revision_46" FOREIGN KEY ("certificado_id") REFERENCES "certificado_campana" ("certificado_id") ON DELETE RESTRICT;
+ALTER TABLE "invitacion_transporte" ADD CONSTRAINT "fk_revision_46" FOREIGN KEY ("solicitud_transporte_id") REFERENCES "solicitud_transporte" ("solicitud_transporte_id") ON DELETE RESTRICT;
 
-ALTER TABLE "pago_certificado_campana" ADD CONSTRAINT "fk_revision_47" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "invitacion_transporte" ADD CONSTRAINT "fk_revision_47" FOREIGN KEY ("id_empresa_transporte_externo") REFERENCES "empresa_transporte_externo" ("id_empresa_transporte_externo") ON DELETE RESTRICT;
 
-ALTER TABLE "destino_cliente_negocio" ADD CONSTRAINT "fk_revision_48" FOREIGN KEY ("cliente_negocio_id") REFERENCES "cliente_negocio" ("cliente_negocio_id") ON DELETE RESTRICT;
+ALTER TABLE "cotizacion_transporte" ADD CONSTRAINT "fk_revision_48" FOREIGN KEY ("invitacion_transporte_id") REFERENCES "invitacion_transporte" ("invitacion_transporte_id") ON DELETE RESTRICT;
 
-ALTER TABLE "cliente_negocio_campana_x_fruta_derivada" ADD CONSTRAINT "fk_revision_49" FOREIGN KEY ("cliente_negocio_campana_id") REFERENCES "cliente_negocio_campana" ("cliente_negocio_campana_id") ON DELETE RESTRICT;
+ALTER TABLE "acuerdo_transporte" ADD CONSTRAINT "fk_revision_49" FOREIGN KEY ("campania_id") REFERENCES "campana" ("campania_id") ON DELETE RESTRICT;
 
-ALTER TABLE "cliente_negocio_campana_x_fruta_derivada" ADD CONSTRAINT "fk_revision_50" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
+ALTER TABLE "acuerdo_transporte" ADD CONSTRAINT "fk_revision_50" FOREIGN KEY ("id_empresa_transporte_externo") REFERENCES "empresa_transporte_externo" ("id_empresa_transporte_externo") ON DELETE RESTRICT;
 
-ALTER TABLE "contrato_venta" ADD CONSTRAINT "fk_revision_51" FOREIGN KEY ("cliente_negocio_campana_id") REFERENCES "cliente_negocio_campana" ("cliente_negocio_campana_id") ON DELETE RESTRICT;
+ALTER TABLE "acuerdo_transporte" ADD CONSTRAINT "fk_revision_51" FOREIGN KEY ("cotizacion_transporte_id") REFERENCES "cotizacion_transporte" ("cotizacion_transporte_id") ON DELETE RESTRICT;
 
-ALTER TABLE "entrega_programada" ADD CONSTRAINT "fk_revision_52" FOREIGN KEY ("contrato_venta_id") REFERENCES "contrato_venta" ("contrato_venta_id") ON DELETE RESTRICT;
+ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_52" FOREIGN KEY ("entrega_programada_id") REFERENCES "entrega_programada" ("entrega_programada_id") ON DELETE RESTRICT;
 
-ALTER TABLE "entrega_programada" ADD CONSTRAINT "fk_revision_53" FOREIGN KEY ("destino_id") REFERENCES "destino_cliente_negocio" ("destino_cliente_negocio_id") ON DELETE RESTRICT;
+ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_53" FOREIGN KEY ("acuerdo_transporte_id") REFERENCES "acuerdo_transporte" ("acuerdo_transporte_id") ON DELETE RESTRICT;
 
-ALTER TABLE "entrega_x_fruta_derivada" ADD CONSTRAINT "fk_revision_54" FOREIGN KEY ("entrega_programada_id") REFERENCES "entrega_programada" ("entrega_programada_id") ON DELETE RESTRICT;
+ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_54" FOREIGN KEY ("id_empresa_transporte_externo") REFERENCES "empresa_transporte_externo" ("id_empresa_transporte_externo") ON DELETE RESTRICT;
 
-ALTER TABLE "entrega_x_fruta_derivada" ADD CONSTRAINT "fk_revision_55" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
+ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_55" FOREIGN KEY ("id_chofer_transporte_externo") REFERENCES "chofer_transporte_externo" ("id_chofer_transporte_externo") ON DELETE RESTRICT;
 
-ALTER TABLE "solicitud_transporte" ADD CONSTRAINT "fk_revision_56" FOREIGN KEY ("campania_id") REFERENCES "campana" ("campania_id") ON DELETE RESTRICT;
+ALTER TABLE "origen_entrega" ADD CONSTRAINT "fk_revision_56" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
 
-ALTER TABLE "invitacion_transporte" ADD CONSTRAINT "fk_revision_57" FOREIGN KEY ("solicitud_transporte_id") REFERENCES "solicitud_transporte" ("solicitud_transporte_id") ON DELETE RESTRICT;
+ALTER TABLE "origen_entrega" ADD CONSTRAINT "fk_revision_57" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
 
-ALTER TABLE "invitacion_transporte" ADD CONSTRAINT "fk_revision_58" FOREIGN KEY ("id_empresa_transporte_externo") REFERENCES "empresa_transporte_externo" ("id_empresa_transporte_externo") ON DELETE RESTRICT;
+ALTER TABLE "cosecha" ADD CONSTRAINT "fk_revision_58" FOREIGN KEY ("entrega_programada_id") REFERENCES "entrega_programada" ("entrega_programada_id") ON DELETE RESTRICT;
 
-ALTER TABLE "cotizacion_transporte" ADD CONSTRAINT "fk_revision_59" FOREIGN KEY ("invitacion_transporte_id") REFERENCES "invitacion_transporte" ("invitacion_transporte_id") ON DELETE RESTRICT;
+ALTER TABLE "analisis_calidad" ADD CONSTRAINT "fk_revision_59" FOREIGN KEY ("cosecha_id") REFERENCES "cosecha" ("cosecha_id") ON DELETE RESTRICT;
 
-ALTER TABLE "acuerdo_transporte" ADD CONSTRAINT "fk_revision_60" FOREIGN KEY ("campania_id") REFERENCES "campana" ("campania_id") ON DELETE RESTRICT;
+ALTER TABLE "analisis_calidad" ADD CONSTRAINT "fk_revision_60" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
 
-ALTER TABLE "acuerdo_transporte" ADD CONSTRAINT "fk_revision_61" FOREIGN KEY ("id_empresa_transporte_externo") REFERENCES "empresa_transporte_externo" ("id_empresa_transporte_externo") ON DELETE RESTRICT;
+ALTER TABLE "medicion_mtd" ADD CONSTRAINT "fk_revision_61" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
 
-ALTER TABLE "acuerdo_transporte" ADD CONSTRAINT "fk_revision_62" FOREIGN KEY ("cotizacion_transporte_id") REFERENCES "cotizacion_transporte" ("cotizacion_transporte_id") ON DELETE RESTRICT;
+ALTER TABLE "medicion_mtd" ADD CONSTRAINT "fk_revision_62" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_63" FOREIGN KEY ("entrega_programada_id") REFERENCES "entrega_programada" ("entrega_programada_id") ON DELETE RESTRICT;
+ALTER TABLE "carga" ADD CONSTRAINT "fk_revision_63" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
 
-ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_64" FOREIGN KEY ("acuerdo_transporte_id") REFERENCES "acuerdo_transporte" ("acuerdo_transporte_id") ON DELETE RESTRICT;
+ALTER TABLE "proveedor_carga" ADD CONSTRAINT "fk_revision_64" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_65" FOREIGN KEY ("id_empresa_transporte_externo") REFERENCES "empresa_transporte_externo" ("id_empresa_transporte_externo") ON DELETE RESTRICT;
+ALTER TABLE "proveedor_carga" ADD CONSTRAINT "fk_revision_65" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
 
-ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_66" FOREIGN KEY ("id_chofer_transporte_externo") REFERENCES "chofer_transporte_externo" ("id_chofer_transporte_externo") ON DELETE RESTRICT;
+ALTER TABLE "proveedor_carga" ADD CONSTRAINT "fk_revision_66" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
 
-ALTER TABLE "origen_entrega" ADD CONSTRAINT "fk_revision_67" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
+ALTER TABLE "origen_carga" ADD CONSTRAINT "fk_revision_67" FOREIGN KEY ("proveedor_carga_id") REFERENCES "proveedor_carga" ("proveedor_carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "origen_entrega" ADD CONSTRAINT "fk_revision_68" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
+ALTER TABLE "origen_carga" ADD CONSTRAINT "fk_revision_68" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
 
-ALTER TABLE "cosecha" ADD CONSTRAINT "fk_revision_69" FOREIGN KEY ("entrega_programada_id") REFERENCES "entrega_programada" ("entrega_programada_id") ON DELETE RESTRICT;
+ALTER TABLE "gasto_carga" ADD CONSTRAINT "fk_revision_69" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "analisis_calidad" ADD CONSTRAINT "fk_revision_70" FOREIGN KEY ("cosecha_id") REFERENCES "cosecha" ("cosecha_id") ON DELETE RESTRICT;
+ALTER TABLE "guia_remision" ADD CONSTRAINT "fk_revision_70" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "analisis_calidad" ADD CONSTRAINT "fk_revision_71" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
+ALTER TABLE "guia_remision" ADD CONSTRAINT "fk_revision_71" FOREIGN KEY ("finca_partida_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
 
-ALTER TABLE "medicion_mtd" ADD CONSTRAINT "fk_revision_72" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
+ALTER TABLE "proveedor_guia" ADD CONSTRAINT "fk_revision_72" FOREIGN KEY ("guia_remision_id") REFERENCES "guia_remision" ("guia_remision_id") ON DELETE RESTRICT;
 
-ALTER TABLE "medicion_mtd" ADD CONSTRAINT "fk_revision_73" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "proveedor_guia" ADD CONSTRAINT "fk_revision_73" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "carga" ADD CONSTRAINT "fk_revision_74" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
+ALTER TABLE "proveedor_guia" ADD CONSTRAINT "fk_revision_74" FOREIGN KEY ("proveedor_carga_id") REFERENCES "proveedor_carga" ("proveedor_carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor_carga" ADD CONSTRAINT "fk_revision_75" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
+ALTER TABLE "guia_x_norma" ADD CONSTRAINT "fk_revision_75" FOREIGN KEY ("guia_remision_id") REFERENCES "guia_remision" ("guia_remision_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor_carga" ADD CONSTRAINT "fk_revision_76" FOREIGN KEY ("participacion_proveedor_campana_id") REFERENCES "participacion_proveedor_campana" ("participacion_proveedor_campana_id") ON DELETE RESTRICT;
+ALTER TABLE "guia_x_norma" ADD CONSTRAINT "fk_revision_76" FOREIGN KEY ("norma_id") REFERENCES "norma" ("norma_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor_carga" ADD CONSTRAINT "fk_revision_77" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
+ALTER TABLE "historial_chofer" ADD CONSTRAINT "fk_revision_77" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
 
-ALTER TABLE "origen_carga" ADD CONSTRAINT "fk_revision_78" FOREIGN KEY ("proveedor_carga_id") REFERENCES "proveedor_carga" ("proveedor_carga_id") ON DELETE RESTRICT;
+ALTER TABLE "historial_chofer" ADD CONSTRAINT "fk_revision_78" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "origen_carga" ADD CONSTRAINT "fk_revision_79" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
+ALTER TABLE "historial_chofer" ADD CONSTRAINT "fk_revision_79" FOREIGN KEY ("id_chofer_transporte_externo") REFERENCES "chofer_transporte_externo" ("id_chofer_transporte_externo") ON DELETE RESTRICT;
 
-ALTER TABLE "gasto_carga" ADD CONSTRAINT "fk_revision_80" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
+ALTER TABLE "recepcion_planta" ADD CONSTRAINT "fk_revision_80" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "guia_remision" ADD CONSTRAINT "fk_revision_81" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
+ALTER TABLE "recepcion_planta" ADD CONSTRAINT "fk_revision_81" FOREIGN KEY ("id_chofer_transporte_externo") REFERENCES "chofer_transporte_externo" ("id_chofer_transporte_externo") ON DELETE RESTRICT;
 
-ALTER TABLE "guia_remision" ADD CONSTRAINT "fk_revision_82" FOREIGN KEY ("finca_partida_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
+ALTER TABLE "liquidacion_proveedor" ADD CONSTRAINT "fk_revision_82" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "guia_remision" ADD CONSTRAINT "fk_revision_83" FOREIGN KEY ("destino_id") REFERENCES "destino_cliente_negocio" ("destino_cliente_negocio_id") ON DELETE RESTRICT;
+ALTER TABLE "liquidacion_proveedor" ADD CONSTRAINT "fk_revision_83" FOREIGN KEY ("proveedor_id") REFERENCES "proveedor" ("proveedor_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor_guia" ADD CONSTRAINT "fk_revision_84" FOREIGN KEY ("guia_remision_id") REFERENCES "guia_remision" ("guia_remision_id") ON DELETE RESTRICT;
+ALTER TABLE "liquidacion_proveedor" ADD CONSTRAINT "fk_revision_84" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor_guia" ADD CONSTRAINT "fk_revision_85" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
+ALTER TABLE "liquidacion_transporte" ADD CONSTRAINT "fk_revision_85" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor_guia" ADD CONSTRAINT "fk_revision_86" FOREIGN KEY ("proveedor_carga_id") REFERENCES "proveedor_carga" ("proveedor_carga_id") ON DELETE RESTRICT;
+ALTER TABLE "liquidacion_transporte" ADD CONSTRAINT "fk_revision_86" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "guia_x_norma" ADD CONSTRAINT "fk_revision_87" FOREIGN KEY ("guia_remision_id") REFERENCES "guia_remision" ("guia_remision_id") ON DELETE RESTRICT;
+ALTER TABLE "gasto_transporte" ADD CONSTRAINT "fk_revision_87" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "guia_x_norma" ADD CONSTRAINT "fk_revision_88" FOREIGN KEY ("norma_id") REFERENCES "norma" ("norma_id") ON DELETE RESTRICT;
+ALTER TABLE "adelanto_transporte" ADD CONSTRAINT "fk_revision_88" FOREIGN KEY ("acuerdo_transporte_id") REFERENCES "acuerdo_transporte" ("acuerdo_transporte_id") ON DELETE RESTRICT;
 
-ALTER TABLE "historial_chofer" ADD CONSTRAINT "fk_revision_89" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
+ALTER TABLE "aplicacion_adelanto" ADD CONSTRAINT "fk_revision_89" FOREIGN KEY ("adelanto_transporte_id") REFERENCES "adelanto_transporte" ("adelanto_transporte_id") ON DELETE RESTRICT;
 
-ALTER TABLE "historial_chofer" ADD CONSTRAINT "fk_revision_90" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
+ALTER TABLE "factura_venta" ADD CONSTRAINT "fk_revision_90" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "historial_chofer" ADD CONSTRAINT "fk_revision_91" FOREIGN KEY ("id_chofer_transporte_externo") REFERENCES "chofer_transporte_externo" ("id_chofer_transporte_externo") ON DELETE RESTRICT;
+ALTER TABLE "pago_proveedor" ADD CONSTRAINT "fk_revision_91" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "recepcion_planta" ADD CONSTRAINT "fk_revision_92" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
+ALTER TABLE "pago_transporte" ADD CONSTRAINT "fk_revision_92" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "recepcion_planta" ADD CONSTRAINT "fk_revision_93" FOREIGN KEY ("id_chofer_transporte_externo") REFERENCES "chofer_transporte_externo" ("id_chofer_transporte_externo") ON DELETE RESTRICT;
+ALTER TABLE "cobro_venta" ADD CONSTRAINT "fk_revision_93" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "liquidacion_proveedor" ADD CONSTRAINT "fk_revision_94" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
+ALTER TABLE "certificado_campana_x_proveedor" ADD CONSTRAINT "fk_revision_94" FOREIGN KEY ("certificado_id", "campania_id") REFERENCES "certificado_campana" ("certificado_id", "campania_id") ON DELETE RESTRICT;
 
-ALTER TABLE "liquidacion_proveedor" ADD CONSTRAINT "fk_revision_95" FOREIGN KEY ("proveedor_id") REFERENCES "proveedor" ("proveedor_id") ON DELETE RESTRICT;
+ALTER TABLE "certificado_campana_x_proveedor" ADD CONSTRAINT "fk_revision_95" FOREIGN KEY ("cxp_id", "campania_id", "proveedor_id") REFERENCES "campania_x_proveedores" ("cxp_id", "campania_id", "proveedor_id") ON DELETE RESTRICT;
 
-ALTER TABLE "liquidacion_proveedor" ADD CONSTRAINT "fk_revision_96" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_96" FOREIGN KEY ("acuerdo_transporte_id", "id_empresa_transporte_externo") REFERENCES "acuerdo_transporte" ("acuerdo_transporte_id", "id_empresa_transporte_externo") ON DELETE RESTRICT;
 
-ALTER TABLE "liquidacion_transporte" ADD CONSTRAINT "fk_revision_97" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
+ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_97" FOREIGN KEY ("id_vehiculo_externo", "id_empresa_transporte_externo") REFERENCES "vehiculo_externo" ("id_vehiculo_externo", "id_empresa_transporte_externo") ON DELETE RESTRICT;
 
-ALTER TABLE "liquidacion_transporte" ADD CONSTRAINT "fk_revision_98" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_98" FOREIGN KEY ("id_chofer_transporte_externo", "id_empresa_transporte_externo") REFERENCES "chofer_transporte_externo" ("id_chofer_transporte_externo", "id_empresa_transporte_externo") ON DELETE RESTRICT;
 
-ALTER TABLE "gasto_transporte" ADD CONSTRAINT "fk_revision_99" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
+ALTER TABLE "historial_chofer" ADD CONSTRAINT "fk_revision_99" FOREIGN KEY ("carga_id", "coordinacion_entrega_id") REFERENCES "carga" ("carga_id", "coordinacion_entrega_id") ON DELETE RESTRICT;
 
-ALTER TABLE "adelanto_transporte" ADD CONSTRAINT "fk_revision_100" FOREIGN KEY ("acuerdo_transporte_id") REFERENCES "acuerdo_transporte" ("acuerdo_transporte_id") ON DELETE RESTRICT;
+ALTER TABLE "proveedor_guia" ADD CONSTRAINT "fk_revision_100" FOREIGN KEY ("guia_remision_id", "carga_id") REFERENCES "guia_remision" ("guia_remision_id", "carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "aplicacion_adelanto" ADD CONSTRAINT "fk_revision_101" FOREIGN KEY ("adelanto_transporte_id") REFERENCES "adelanto_transporte" ("adelanto_transporte_id") ON DELETE RESTRICT;
+ALTER TABLE "proveedor_guia" ADD CONSTRAINT "fk_revision_101" FOREIGN KEY ("proveedor_carga_id", "carga_id") REFERENCES "proveedor_carga" ("proveedor_carga_id", "carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "factura_venta" ADD CONSTRAINT "fk_revision_102" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
+ALTER TABLE "aplicacion_adelanto" ADD CONSTRAINT "fk_revision_102" FOREIGN KEY ("liquidacion_transporte_id") REFERENCES "liquidacion_transporte" ("liquidacion_transporte_id") ON DELETE RESTRICT;
 
-ALTER TABLE "pago_proveedor" ADD CONSTRAINT "fk_revision_103" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "campana" ADD CONSTRAINT "fk_revision_103" FOREIGN KEY ("responsable_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "pago_transporte" ADD CONSTRAINT "fk_revision_104" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "campana" ADD CONSTRAINT "fk_revision_104" FOREIGN KEY ("cerrada_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "cobro_venta" ADD CONSTRAINT "fk_revision_105" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "certificado_campana" ADD CONSTRAINT "fk_revision_105" FOREIGN KEY ("norma_id") REFERENCES "norma" ("norma_id") ON DELETE RESTRICT;
 
-ALTER TABLE "certificado_campana_x_proveedor" ADD CONSTRAINT "fk_revision_106" FOREIGN KEY ("certificado_id", "campania_id") REFERENCES "certificado_campana" ("certificado_id", "campania_id") ON DELETE RESTRICT;
+ALTER TABLE "chofer_transporte_externo" ADD CONSTRAINT "fk_revision_106" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
 
-ALTER TABLE "certificado_campana_x_proveedor" ADD CONSTRAINT "fk_revision_107" FOREIGN KEY ("participacion_proveedor_campana_id", "campania_id", "proveedor_id") REFERENCES "participacion_proveedor_campana" ("participacion_proveedor_campana_id", "campania_id", "proveedor_id") ON DELETE RESTRICT;
+ALTER TABLE "proveedor" ADD CONSTRAINT "fk_revision_107" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
 
-ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_108" FOREIGN KEY ("acuerdo_transporte_id", "id_empresa_transporte_externo") REFERENCES "acuerdo_transporte" ("acuerdo_transporte_id", "id_empresa_transporte_externo") ON DELETE RESTRICT;
+ALTER TABLE "chofer_transporte_externo" ADD CONSTRAINT "fk_revision_108" FOREIGN KEY ("usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_109" FOREIGN KEY ("id_vehiculo_externo", "id_empresa_transporte_externo") REFERENCES "vehiculo_externo" ("id_vehiculo_externo", "id_empresa_transporte_externo") ON DELETE RESTRICT;
+ALTER TABLE "chofer_vehiculo_externo" ADD CONSTRAINT "fk_revision_109" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
 
-ALTER TABLE "coordinacion_entrega" ADD CONSTRAINT "fk_revision_110" FOREIGN KEY ("id_chofer_transporte_externo", "id_empresa_transporte_externo") REFERENCES "chofer_transporte_externo" ("id_chofer_transporte_externo", "id_empresa_transporte_externo") ON DELETE RESTRICT;
+ALTER TABLE "detalle_trazabilidad" ADD CONSTRAINT "fk_revision_110" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "historial_chofer" ADD CONSTRAINT "fk_revision_111" FOREIGN KEY ("carga_id", "coordinacion_entrega_id") REFERENCES "carga" ("carga_id", "coordinacion_entrega_id") ON DELETE RESTRICT;
+ALTER TABLE "detalle_trazabilidad" ADD CONSTRAINT "fk_revision_111" FOREIGN KEY ("guia_remision_id") REFERENCES "guia_remision" ("guia_remision_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor_guia" ADD CONSTRAINT "fk_revision_112" FOREIGN KEY ("guia_remision_id", "carga_id") REFERENCES "guia_remision" ("guia_remision_id", "carga_id") ON DELETE RESTRICT;
+ALTER TABLE "empresa_transporte_externo" ADD CONSTRAINT "fk_revision_112" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor_guia" ADD CONSTRAINT "fk_revision_113" FOREIGN KEY ("proveedor_carga_id", "carga_id") REFERENCES "proveedor_carga" ("proveedor_carga_id", "carga_id") ON DELETE RESTRICT;
+ALTER TABLE "entrevista_extencion" ADD CONSTRAINT "fk_revision_113" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
 
-ALTER TABLE "aplicacion_adelanto" ADD CONSTRAINT "fk_revision_114" FOREIGN KEY ("liquidacion_transporte_id") REFERENCES "liquidacion_transporte" ("liquidacion_transporte_id") ON DELETE RESTRICT;
+ALTER TABLE "entrevista_extencion" ADD CONSTRAINT "fk_revision_114" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
 
-ALTER TABLE "campana" ADD CONSTRAINT "fk_revision_115" FOREIGN KEY ("responsable_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "examen_proveedor" ADD CONSTRAINT "fk_revision_115" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
 
-ALTER TABLE "campana" ADD CONSTRAINT "fk_revision_116" FOREIGN KEY ("cerrada_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "examen_proveedor" ADD CONSTRAINT "fk_revision_116" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
 
-ALTER TABLE "campania_x_proveedores" ADD CONSTRAINT "fk_revision_117" FOREIGN KEY ("participacion_proveedor_campana_id") REFERENCES "participacion_proveedor_campana" ("participacion_proveedor_campana_id") ON DELETE RESTRICT;
+ALTER TABLE "finca" ADD CONSTRAINT "fk_revision_117" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
 
-ALTER TABLE "certificado_campana" ADD CONSTRAINT "fk_revision_118" FOREIGN KEY ("norma_id") REFERENCES "norma" ("norma_id") ON DELETE RESTRICT;
+ALTER TABLE "trazabilidad_transporte" ADD CONSTRAINT "fk_revision_118" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
 
-ALTER TABLE "chofer_transporte_externo" ADD CONSTRAINT "fk_revision_119" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
+ALTER TABLE "trazabilidad_transporte" ADD CONSTRAINT "fk_revision_119" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
 
-ALTER TABLE "proveedor" ADD CONSTRAINT "fk_revision_120" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
+ALTER TABLE "origen_entrega" ADD CONSTRAINT "fk_revision_120" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
 
-ALTER TABLE "chofer_transporte_externo" ADD CONSTRAINT "fk_revision_121" FOREIGN KEY ("usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
+ALTER TABLE "origen_carga" ADD CONSTRAINT "fk_revision_121" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
 
-ALTER TABLE "chofer_vehiculo_externo" ADD CONSTRAINT "fk_revision_122" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
+ALTER TABLE "analisis_calidad" ADD CONSTRAINT "fk_revision_122" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
 
-ALTER TABLE "detalle_trazabilidad" ADD CONSTRAINT "fk_revision_123" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
+ALTER TABLE "medicion_mtd" ADD CONSTRAINT "fk_revision_123" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
 
-ALTER TABLE "detalle_trazabilidad" ADD CONSTRAINT "fk_revision_124" FOREIGN KEY ("guia_remision_id") REFERENCES "guia_remision" ("guia_remision_id") ON DELETE RESTRICT;
-
-ALTER TABLE "empresa_transporte_externo" ADD CONSTRAINT "fk_revision_125" FOREIGN KEY ("persona_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
-
-ALTER TABLE "entrevista_extencion" ADD CONSTRAINT "fk_revision_126" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
-
-ALTER TABLE "entrevista_extencion" ADD CONSTRAINT "fk_revision_127" FOREIGN KEY ("registrado_por_usuario_id") REFERENCES "usuario" ("usuario_id") ON DELETE RESTRICT;
-
-ALTER TABLE "examen_proveedor" ADD CONSTRAINT "fk_revision_128" FOREIGN KEY ("cxp_id") REFERENCES "campania_x_proveedores" ("cxp_id") ON DELETE RESTRICT;
-
-ALTER TABLE "examen_proveedor" ADD CONSTRAINT "fk_revision_129" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
-
-ALTER TABLE "finca" ADD CONSTRAINT "fk_revision_130" FOREIGN KEY ("fruta_derivada_id") REFERENCES "fruta_derivada" ("fruta_derivada_id") ON DELETE RESTRICT;
-
-ALTER TABLE "trazabilidad_transporte" ADD CONSTRAINT "fk_revision_131" FOREIGN KEY ("coordinacion_entrega_id") REFERENCES "coordinacion_entrega" ("coordinacion_entrega_id") ON DELETE RESTRICT;
-
-ALTER TABLE "trazabilidad_transporte" ADD CONSTRAINT "fk_revision_132" FOREIGN KEY ("carga_id") REFERENCES "carga" ("carga_id") ON DELETE RESTRICT;
-
-ALTER TABLE "origen_entrega" ADD CONSTRAINT "fk_revision_133" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
-
-ALTER TABLE "origen_carga" ADD CONSTRAINT "fk_revision_134" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
-
-ALTER TABLE "analisis_calidad" ADD CONSTRAINT "fk_revision_135" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
-
-ALTER TABLE "medicion_mtd" ADD CONSTRAINT "fk_revision_136" FOREIGN KEY ("finca_id") REFERENCES "finca" ("finca_id") ON DELETE RESTRICT;
-
-ALTER TABLE "liquidacion_proveedor" ADD CONSTRAINT "fk_revision_137" FOREIGN KEY ("persona_liquidacion_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
+ALTER TABLE "liquidacion_proveedor" ADD CONSTRAINT "fk_revision_124" FOREIGN KEY ("persona_liquidacion_id") REFERENCES "persona" ("persona_id") ON DELETE RESTRICT;
 
 CREATE UNIQUE INDEX "UQ_campana_fruta_activa" ON agro.campana USING btree (fruta_id) WHERE (estado <> 'terminado'::campana_estado_enum);
 
@@ -1619,227 +1500,201 @@ CREATE INDEX "ix_revision_25" ON "usuario" ("persona_id");
 
 CREATE INDEX "ix_revision_26" ON "usuario" ("rol_id");
 
-CREATE INDEX "ix_revision_27" ON "sesion_usuario" ("usuario_id");
+CREATE INDEX "ix_revision_27" ON "proveedor_x_persona" ("proveedor_id");
 
-CREATE INDEX "ix_revision_28" ON "campana_x_fruta_derivada" ("campania_id");
+CREATE INDEX "ix_revision_28" ON "proveedor_x_persona" ("persona_id");
 
-CREATE INDEX "ix_revision_29" ON "campana_x_fruta_derivada" ("fruta_derivada_id");
+CREATE INDEX "ix_revision_29" ON "proveedor_x_fruta_derivada" ("proveedor_id");
 
-CREATE INDEX "ix_revision_30" ON "proveedor_x_persona" ("proveedor_id");
+CREATE INDEX "ix_revision_30" ON "proveedor_x_fruta_derivada" ("fruta_derivada_id");
 
-CREATE INDEX "ix_revision_31" ON "proveedor_x_persona" ("persona_id");
+CREATE INDEX "ix_revision_31" ON "certificado_campana_x_proveedor" ("certificado_id");
 
-CREATE INDEX "ix_revision_32" ON "proveedor_x_fruta_derivada" ("proveedor_id");
+CREATE INDEX "ix_revision_32" ON "certificado_campana_x_proveedor" ("campania_id");
 
-CREATE INDEX "ix_revision_33" ON "proveedor_x_fruta_derivada" ("fruta_derivada_id");
+CREATE INDEX "ix_revision_33" ON "certificado_campana_x_proveedor" ("cxp_id");
 
-CREATE INDEX "ix_revision_34" ON "participacion_proveedor_campana" ("campania_id");
+CREATE INDEX "ix_revision_34" ON "certificado_campana_x_proveedor" ("proveedor_id");
 
-CREATE INDEX "ix_revision_35" ON "participacion_proveedor_campana" ("proveedor_id");
+CREATE INDEX "ix_revision_35" ON "ampliacion_certificado_campana" ("certificado_id");
 
-CREATE INDEX "ix_revision_36" ON "participacion_proveedor_x_fruta_derivada" ("participacion_proveedor_campana_id");
+CREATE INDEX "ix_revision_36" ON "ampliacion_certificado_campana" ("registrado_por_usuario_id");
 
-CREATE INDEX "ix_revision_37" ON "participacion_proveedor_x_fruta_derivada" ("fruta_derivada_id");
+CREATE INDEX "ix_revision_37" ON "pago_certificado_campana" ("certificado_id");
 
-CREATE INDEX "ix_revision_38" ON "acuerdo_compra" ("cxp_id");
+CREATE INDEX "ix_revision_38" ON "pago_certificado_campana" ("registrado_por_usuario_id");
 
-CREATE INDEX "ix_revision_39" ON "acuerdo_compra" ("fruta_derivada_id");
+CREATE INDEX "ix_revision_39" ON "cliente_negocio_campana_x_fruta_derivada" ("cliente_negocio_campana_id");
 
-CREATE INDEX "ix_revision_40" ON "certificado_campana_x_proveedor" ("certificado_id");
+CREATE INDEX "ix_revision_40" ON "cliente_negocio_campana_x_fruta_derivada" ("fruta_derivada_id");
 
-CREATE INDEX "ix_revision_41" ON "certificado_campana_x_proveedor" ("campania_id");
+CREATE INDEX "ix_revision_41" ON "contrato_venta" ("cliente_negocio_campana_id");
 
-CREATE INDEX "ix_revision_42" ON "certificado_campana_x_proveedor" ("participacion_proveedor_campana_id");
+CREATE INDEX "ix_revision_42" ON "entrega_programada" ("contrato_venta_id");
 
-CREATE INDEX "ix_revision_43" ON "certificado_campana_x_proveedor" ("proveedor_id");
+CREATE INDEX "ix_revision_43" ON "entrega_x_fruta_derivada" ("entrega_programada_id");
 
-CREATE INDEX "ix_revision_44" ON "ampliacion_certificado_campana" ("certificado_id");
+CREATE INDEX "ix_revision_44" ON "entrega_x_fruta_derivada" ("fruta_derivada_id");
 
-CREATE INDEX "ix_revision_45" ON "ampliacion_certificado_campana" ("registrado_por_usuario_id");
+CREATE INDEX "ix_revision_45" ON "solicitud_transporte" ("campania_id");
 
-CREATE INDEX "ix_revision_46" ON "pago_certificado_campana" ("certificado_id");
+CREATE INDEX "ix_revision_46" ON "invitacion_transporte" ("solicitud_transporte_id");
 
-CREATE INDEX "ix_revision_47" ON "pago_certificado_campana" ("registrado_por_usuario_id");
+CREATE INDEX "ix_revision_47" ON "invitacion_transporte" ("id_empresa_transporte_externo");
 
-CREATE INDEX "ix_revision_48" ON "destino_cliente_negocio" ("cliente_negocio_id");
+CREATE INDEX "ix_revision_48" ON "cotizacion_transporte" ("invitacion_transporte_id");
 
-CREATE INDEX "ix_revision_49" ON "cliente_negocio_campana_x_fruta_derivada" ("cliente_negocio_campana_id");
+CREATE INDEX "ix_revision_49" ON "acuerdo_transporte" ("campania_id");
 
-CREATE INDEX "ix_revision_50" ON "cliente_negocio_campana_x_fruta_derivada" ("fruta_derivada_id");
+CREATE INDEX "ix_revision_50" ON "acuerdo_transporte" ("id_empresa_transporte_externo");
 
-CREATE INDEX "ix_revision_51" ON "contrato_venta" ("cliente_negocio_campana_id");
+CREATE INDEX "ix_revision_51" ON "acuerdo_transporte" ("cotizacion_transporte_id");
 
-CREATE INDEX "ix_revision_52" ON "entrega_programada" ("contrato_venta_id");
+CREATE INDEX "ix_revision_52" ON "coordinacion_entrega" ("entrega_programada_id");
 
-CREATE INDEX "ix_revision_53" ON "entrega_programada" ("destino_id");
+CREATE INDEX "ix_revision_53" ON "coordinacion_entrega" ("acuerdo_transporte_id");
 
-CREATE INDEX "ix_revision_54" ON "entrega_x_fruta_derivada" ("entrega_programada_id");
+CREATE INDEX "ix_revision_54" ON "coordinacion_entrega" ("id_empresa_transporte_externo");
 
-CREATE INDEX "ix_revision_55" ON "entrega_x_fruta_derivada" ("fruta_derivada_id");
+CREATE INDEX "ix_revision_55" ON "coordinacion_entrega" ("id_chofer_transporte_externo");
 
-CREATE INDEX "ix_revision_56" ON "solicitud_transporte" ("campania_id");
+CREATE INDEX "ix_revision_56" ON "origen_entrega" ("coordinacion_entrega_id");
 
-CREATE INDEX "ix_revision_57" ON "invitacion_transporte" ("solicitud_transporte_id");
+CREATE INDEX "ix_revision_57" ON "origen_entrega" ("cxp_id");
 
-CREATE INDEX "ix_revision_58" ON "invitacion_transporte" ("id_empresa_transporte_externo");
+CREATE INDEX "ix_revision_58" ON "cosecha" ("entrega_programada_id");
 
-CREATE INDEX "ix_revision_59" ON "cotizacion_transporte" ("invitacion_transporte_id");
+CREATE INDEX "ix_revision_59" ON "analisis_calidad" ("cosecha_id");
 
-CREATE INDEX "ix_revision_60" ON "acuerdo_transporte" ("campania_id");
+CREATE INDEX "ix_revision_60" ON "analisis_calidad" ("cxp_id");
 
-CREATE INDEX "ix_revision_61" ON "acuerdo_transporte" ("id_empresa_transporte_externo");
+CREATE INDEX "ix_revision_61" ON "medicion_mtd" ("cxp_id");
 
-CREATE INDEX "ix_revision_62" ON "acuerdo_transporte" ("cotizacion_transporte_id");
+CREATE INDEX "ix_revision_62" ON "medicion_mtd" ("registrado_por_usuario_id");
 
-CREATE INDEX "ix_revision_63" ON "coordinacion_entrega" ("entrega_programada_id");
+CREATE INDEX "ix_revision_63" ON "carga" ("coordinacion_entrega_id");
 
-CREATE INDEX "ix_revision_64" ON "coordinacion_entrega" ("acuerdo_transporte_id");
+CREATE INDEX "ix_revision_64" ON "proveedor_carga" ("carga_id");
 
-CREATE INDEX "ix_revision_65" ON "coordinacion_entrega" ("id_empresa_transporte_externo");
+CREATE INDEX "ix_revision_65" ON "proveedor_carga" ("cxp_id");
 
-CREATE INDEX "ix_revision_66" ON "coordinacion_entrega" ("id_chofer_transporte_externo");
+CREATE INDEX "ix_revision_66" ON "proveedor_carga" ("fruta_derivada_id");
 
-CREATE INDEX "ix_revision_67" ON "origen_entrega" ("coordinacion_entrega_id");
+CREATE INDEX "ix_revision_67" ON "origen_carga" ("proveedor_carga_id");
 
-CREATE INDEX "ix_revision_68" ON "origen_entrega" ("cxp_id");
+CREATE INDEX "ix_revision_68" ON "origen_carga" ("cxp_id");
 
-CREATE INDEX "ix_revision_69" ON "cosecha" ("entrega_programada_id");
+CREATE INDEX "ix_revision_69" ON "gasto_carga" ("carga_id");
 
-CREATE INDEX "ix_revision_70" ON "analisis_calidad" ("cosecha_id");
+CREATE INDEX "ix_revision_70" ON "guia_remision" ("carga_id");
 
-CREATE INDEX "ix_revision_71" ON "analisis_calidad" ("cxp_id");
+CREATE INDEX "ix_revision_71" ON "guia_remision" ("finca_partida_id");
 
-CREATE INDEX "ix_revision_72" ON "medicion_mtd" ("cxp_id");
+CREATE INDEX "ix_revision_72" ON "proveedor_guia" ("guia_remision_id");
 
-CREATE INDEX "ix_revision_73" ON "medicion_mtd" ("registrado_por_usuario_id");
+CREATE INDEX "ix_revision_73" ON "proveedor_guia" ("carga_id");
 
-CREATE INDEX "ix_revision_74" ON "carga" ("coordinacion_entrega_id");
+CREATE INDEX "ix_revision_74" ON "proveedor_guia" ("proveedor_carga_id");
 
-CREATE INDEX "ix_revision_75" ON "proveedor_carga" ("carga_id");
+CREATE INDEX "ix_revision_75" ON "guia_x_norma" ("guia_remision_id");
 
-CREATE INDEX "ix_revision_76" ON "proveedor_carga" ("participacion_proveedor_campana_id");
+CREATE INDEX "ix_revision_76" ON "guia_x_norma" ("norma_id");
 
-CREATE INDEX "ix_revision_77" ON "proveedor_carga" ("fruta_derivada_id");
+CREATE INDEX "ix_revision_77" ON "historial_chofer" ("coordinacion_entrega_id");
 
-CREATE INDEX "ix_revision_78" ON "origen_carga" ("proveedor_carga_id");
+CREATE INDEX "ix_revision_78" ON "historial_chofer" ("carga_id");
 
-CREATE INDEX "ix_revision_79" ON "origen_carga" ("cxp_id");
+CREATE INDEX "ix_revision_79" ON "historial_chofer" ("id_chofer_transporte_externo");
 
-CREATE INDEX "ix_revision_80" ON "gasto_carga" ("carga_id");
+CREATE INDEX "ix_revision_80" ON "recepcion_planta" ("carga_id");
 
-CREATE INDEX "ix_revision_81" ON "guia_remision" ("carga_id");
+CREATE INDEX "ix_revision_81" ON "recepcion_planta" ("id_chofer_transporte_externo");
 
-CREATE INDEX "ix_revision_82" ON "guia_remision" ("finca_partida_id");
+CREATE INDEX "ix_revision_82" ON "liquidacion_proveedor" ("carga_id");
 
-CREATE INDEX "ix_revision_83" ON "guia_remision" ("destino_id");
+CREATE INDEX "ix_revision_83" ON "liquidacion_proveedor" ("proveedor_id");
 
-CREATE INDEX "ix_revision_84" ON "proveedor_guia" ("guia_remision_id");
+CREATE INDEX "ix_revision_84" ON "liquidacion_proveedor" ("registrado_por_usuario_id");
 
-CREATE INDEX "ix_revision_85" ON "proveedor_guia" ("carga_id");
+CREATE INDEX "ix_revision_85" ON "liquidacion_transporte" ("carga_id");
 
-CREATE INDEX "ix_revision_86" ON "proveedor_guia" ("proveedor_carga_id");
+CREATE INDEX "ix_revision_86" ON "liquidacion_transporte" ("registrado_por_usuario_id");
 
-CREATE INDEX "ix_revision_87" ON "guia_x_norma" ("guia_remision_id");
+CREATE INDEX "ix_revision_87" ON "gasto_transporte" ("carga_id");
 
-CREATE INDEX "ix_revision_88" ON "guia_x_norma" ("norma_id");
+CREATE INDEX "ix_revision_88" ON "adelanto_transporte" ("acuerdo_transporte_id");
 
-CREATE INDEX "ix_revision_89" ON "historial_chofer" ("coordinacion_entrega_id");
+CREATE INDEX "ix_revision_89" ON "aplicacion_adelanto" ("adelanto_transporte_id");
 
-CREATE INDEX "ix_revision_90" ON "historial_chofer" ("carga_id");
+CREATE INDEX "ix_revision_90" ON "factura_venta" ("carga_id");
 
-CREATE INDEX "ix_revision_91" ON "historial_chofer" ("id_chofer_transporte_externo");
+CREATE INDEX "ix_revision_91" ON "pago_proveedor" ("registrado_por_usuario_id");
 
-CREATE INDEX "ix_revision_92" ON "recepcion_planta" ("carga_id");
+CREATE INDEX "ix_revision_92" ON "pago_transporte" ("registrado_por_usuario_id");
 
-CREATE INDEX "ix_revision_93" ON "recepcion_planta" ("id_chofer_transporte_externo");
+CREATE INDEX "ix_revision_93" ON "cobro_venta" ("registrado_por_usuario_id");
 
-CREATE INDEX "ix_revision_94" ON "liquidacion_proveedor" ("carga_id");
+CREATE INDEX "ix_revision_94" ON "certificado_campana_x_proveedor" ("certificado_id", "campania_id");
 
-CREATE INDEX "ix_revision_95" ON "liquidacion_proveedor" ("proveedor_id");
+CREATE INDEX "ix_revision_95" ON "certificado_campana_x_proveedor" ("cxp_id", "campania_id", "proveedor_id");
 
-CREATE INDEX "ix_revision_96" ON "liquidacion_proveedor" ("registrado_por_usuario_id");
+CREATE INDEX "ix_revision_96" ON "coordinacion_entrega" ("acuerdo_transporte_id", "id_empresa_transporte_externo");
 
-CREATE INDEX "ix_revision_97" ON "liquidacion_transporte" ("carga_id");
+CREATE INDEX "ix_revision_97" ON "coordinacion_entrega" ("id_vehiculo_externo", "id_empresa_transporte_externo");
 
-CREATE INDEX "ix_revision_98" ON "liquidacion_transporte" ("registrado_por_usuario_id");
+CREATE INDEX "ix_revision_98" ON "coordinacion_entrega" ("id_chofer_transporte_externo", "id_empresa_transporte_externo");
 
-CREATE INDEX "ix_revision_99" ON "gasto_transporte" ("carga_id");
+CREATE INDEX "ix_revision_99" ON "historial_chofer" ("carga_id", "coordinacion_entrega_id");
 
-CREATE INDEX "ix_revision_100" ON "adelanto_transporte" ("acuerdo_transporte_id");
+CREATE INDEX "ix_revision_100" ON "proveedor_guia" ("guia_remision_id", "carga_id");
 
-CREATE INDEX "ix_revision_101" ON "aplicacion_adelanto" ("adelanto_transporte_id");
+CREATE INDEX "ix_revision_101" ON "proveedor_guia" ("proveedor_carga_id", "carga_id");
 
-CREATE INDEX "ix_revision_102" ON "factura_venta" ("carga_id");
+CREATE INDEX "ix_revision_102" ON "aplicacion_adelanto" ("liquidacion_transporte_id");
 
-CREATE INDEX "ix_revision_103" ON "pago_proveedor" ("registrado_por_usuario_id");
+CREATE INDEX "ix_revision_103" ON "campana" ("responsable_usuario_id");
 
-CREATE INDEX "ix_revision_104" ON "pago_transporte" ("registrado_por_usuario_id");
+CREATE INDEX "ix_revision_104" ON "campana" ("cerrada_por_usuario_id");
 
-CREATE INDEX "ix_revision_105" ON "cobro_venta" ("registrado_por_usuario_id");
+CREATE INDEX "ix_revision_105" ON "certificado_campana" ("norma_id");
 
-CREATE INDEX "ix_revision_106" ON "certificado_campana_x_proveedor" ("certificado_id", "campania_id");
+CREATE INDEX "ix_revision_106" ON "chofer_transporte_externo" ("persona_id");
 
-CREATE INDEX "ix_revision_107" ON "certificado_campana_x_proveedor" ("participacion_proveedor_campana_id", "campania_id", "proveedor_id");
+CREATE INDEX "ix_revision_107" ON "proveedor" ("persona_id");
 
-CREATE INDEX "ix_revision_108" ON "coordinacion_entrega" ("acuerdo_transporte_id", "id_empresa_transporte_externo");
+CREATE INDEX "ix_revision_108" ON "chofer_transporte_externo" ("usuario_id");
 
-CREATE INDEX "ix_revision_109" ON "coordinacion_entrega" ("id_vehiculo_externo", "id_empresa_transporte_externo");
+CREATE INDEX "ix_revision_109" ON "chofer_vehiculo_externo" ("coordinacion_entrega_id");
 
-CREATE INDEX "ix_revision_110" ON "coordinacion_entrega" ("id_chofer_transporte_externo", "id_empresa_transporte_externo");
+CREATE INDEX "ix_revision_110" ON "detalle_trazabilidad" ("carga_id");
 
-CREATE INDEX "ix_revision_111" ON "historial_chofer" ("carga_id", "coordinacion_entrega_id");
+CREATE INDEX "ix_revision_111" ON "detalle_trazabilidad" ("guia_remision_id");
 
-CREATE INDEX "ix_revision_112" ON "proveedor_guia" ("guia_remision_id", "carga_id");
+CREATE INDEX "ix_revision_112" ON "empresa_transporte_externo" ("persona_id");
 
-CREATE INDEX "ix_revision_113" ON "proveedor_guia" ("proveedor_carga_id", "carga_id");
+CREATE INDEX "ix_revision_113" ON "entrevista_extencion" ("fruta_derivada_id");
 
-CREATE INDEX "ix_revision_114" ON "aplicacion_adelanto" ("liquidacion_transporte_id");
+CREATE INDEX "ix_revision_114" ON "entrevista_extencion" ("registrado_por_usuario_id");
 
-CREATE INDEX "ix_revision_115" ON "campana" ("responsable_usuario_id");
+CREATE INDEX "ix_revision_115" ON "examen_proveedor" ("cxp_id");
 
-CREATE INDEX "ix_revision_116" ON "campana" ("cerrada_por_usuario_id");
+CREATE INDEX "ix_revision_116" ON "examen_proveedor" ("finca_id");
 
-CREATE INDEX "ix_revision_117" ON "campania_x_proveedores" ("participacion_proveedor_campana_id");
+CREATE INDEX "ix_revision_117" ON "finca" ("fruta_derivada_id");
 
-CREATE INDEX "ix_revision_118" ON "certificado_campana" ("norma_id");
+CREATE INDEX "ix_revision_118" ON "trazabilidad_transporte" ("coordinacion_entrega_id");
 
-CREATE INDEX "ix_revision_119" ON "chofer_transporte_externo" ("persona_id");
+CREATE INDEX "ix_revision_119" ON "trazabilidad_transporte" ("carga_id");
 
-CREATE INDEX "ix_revision_120" ON "proveedor" ("persona_id");
+CREATE INDEX "ix_revision_120" ON "origen_entrega" ("finca_id");
 
-CREATE INDEX "ix_revision_121" ON "chofer_transporte_externo" ("usuario_id");
+CREATE INDEX "ix_revision_121" ON "origen_carga" ("finca_id");
 
-CREATE INDEX "ix_revision_122" ON "chofer_vehiculo_externo" ("coordinacion_entrega_id");
+CREATE INDEX "ix_revision_122" ON "analisis_calidad" ("finca_id");
 
-CREATE INDEX "ix_revision_123" ON "detalle_trazabilidad" ("carga_id");
+CREATE INDEX "ix_revision_123" ON "medicion_mtd" ("finca_id");
 
-CREATE INDEX "ix_revision_124" ON "detalle_trazabilidad" ("guia_remision_id");
-
-CREATE INDEX "ix_revision_125" ON "empresa_transporte_externo" ("persona_id");
-
-CREATE INDEX "ix_revision_126" ON "entrevista_extencion" ("fruta_derivada_id");
-
-CREATE INDEX "ix_revision_127" ON "entrevista_extencion" ("registrado_por_usuario_id");
-
-CREATE INDEX "ix_revision_128" ON "examen_proveedor" ("cxp_id");
-
-CREATE INDEX "ix_revision_129" ON "examen_proveedor" ("finca_id");
-
-CREATE INDEX "ix_revision_130" ON "finca" ("fruta_derivada_id");
-
-CREATE INDEX "ix_revision_131" ON "trazabilidad_transporte" ("coordinacion_entrega_id");
-
-CREATE INDEX "ix_revision_132" ON "trazabilidad_transporte" ("carga_id");
-
-CREATE INDEX "ix_revision_133" ON "origen_entrega" ("finca_id");
-
-CREATE INDEX "ix_revision_134" ON "origen_carga" ("finca_id");
-
-CREATE INDEX "ix_revision_135" ON "analisis_calidad" ("finca_id");
-
-CREATE INDEX "ix_revision_136" ON "medicion_mtd" ("finca_id");
-
-CREATE INDEX "ix_revision_137" ON "liquidacion_proveedor" ("persona_liquidacion_id");
+CREATE INDEX "ix_revision_124" ON "liquidacion_proveedor" ("persona_liquidacion_id");
 
 CREATE FUNCTION "validar_entrevista_extencion_productor"()
       RETURNS trigger
@@ -1974,7 +1829,7 @@ BEGIN
     IF pid IS NULL OR pid = ANY(ids) THEN RAISE EXCEPTION 'Proveedor duplicado o inválido en recepción'; END IF;
     ids := array_append(ids, pid);
     SELECT sum(pc.kilos_cargados) INTO cargado FROM proveedor_carga pc
-      JOIN participacion_proveedor_campana p ON p.participacion_proveedor_campana_id=pc.participacion_proveedor_campana_id
+      JOIN campania_x_proveedores p ON p.cxp_id=pc.cxp_id
       WHERE pc.carga_id=NEW.carga_id AND p.proveedor_id=pid;
     IF cargado IS NULL THEN RAISE EXCEPTION 'El proveedor no pertenece a esta carga'; END IF;
     IF item->>'recognizedQuantity' IS NULL THEN completos := false;
@@ -1990,7 +1845,7 @@ BEGIN
       RAISE EXCEPTION 'La suma reconocida debe coincidir con el peso de planta';
     END IF;
     IF cardinality(ids) <> (SELECT count(DISTINCT p.proveedor_id) FROM proveedor_carga pc
-      JOIN participacion_proveedor_campana p ON p.participacion_proveedor_campana_id=pc.participacion_proveedor_campana_id WHERE pc.carga_id=NEW.carga_id) THEN
+      JOIN campania_x_proveedores p ON p.cxp_id=pc.cxp_id WHERE pc.carga_id=NEW.carga_id) THEN
       RAISE EXCEPTION 'Completa el desglose de todos los proveedores';
     END IF;
   END IF;
@@ -2013,10 +1868,10 @@ BEGIN
   SELECT (x->>'recognizedQuantity')::numeric INTO reconocidos FROM recepcion_planta r,
     LATERAL jsonb_array_elements(r.compras) x WHERE r.carga_id=NEW.carga_id AND (x->>'providerId')::integer=NEW.proveedor_id;
   IF reconocidos IS NULL THEN
-    SELECT count(DISTINCT p.proveedor_id) INTO proveedores FROM proveedor_carga pc JOIN participacion_proveedor_campana p
-      ON p.participacion_proveedor_campana_id=pc.participacion_proveedor_campana_id WHERE pc.carga_id=NEW.carga_id;
-    IF proveedores=1 AND EXISTS(SELECT 1 FROM proveedor_carga pc JOIN participacion_proveedor_campana p
-      ON p.participacion_proveedor_campana_id=pc.participacion_proveedor_campana_id WHERE pc.carga_id=NEW.carga_id AND p.proveedor_id=NEW.proveedor_id) THEN
+    SELECT count(DISTINCT p.proveedor_id) INTO proveedores FROM proveedor_carga pc JOIN campania_x_proveedores p
+      ON p.cxp_id=pc.cxp_id WHERE pc.carga_id=NEW.carga_id;
+    IF proveedores=1 AND EXISTS(SELECT 1 FROM proveedor_carga pc JOIN campania_x_proveedores p
+      ON p.cxp_id=pc.cxp_id WHERE pc.carga_id=NEW.carga_id AND p.proveedor_id=NEW.proveedor_id) THEN
       SELECT peso_planta_kg INTO reconocidos FROM recepcion_planta WHERE carga_id=NEW.carga_id;
     END IF;
   END IF;
@@ -2142,9 +1997,67 @@ l.valor_uit_aplicado*l.limite_uit_aplicado-sum(l.importe_compra) AS disponible
 FROM liquidacion_proveedor l GROUP BY l.persona_liquidacion_id,extract(year FROM l.fecha)::integer,l.valor_uit_aplicado,l.limite_uit_aplicado;
 
 
+-- Catálogos iniciales del prototipo local (29/10/2026), sin usuarios demo ni movimientos.
+
+-- Reejecutable en mantenimiento controlado; no sobrescribe valores existentes.
+
+-- UIT: valores observados en código, no certificación de vigencia normativa. Revisar al habilitar otro año.
+
+INSERT INTO rol(nombre) VALUES ('Administrador'), ('Chofer') ON CONFLICT (nombre) DO NOTHING;
+
+INSERT INTO norma(codigo,nombre) VALUES ('NOP','NOP'), ('RTPO','RTPO'), ('EU','EU'), ('ROC','ROC'), ('GLOBALGAP_GRASP','GLOBALG.A.P. / GRASP') ON CONFLICT (codigo) DO NOTHING;
+
+INSERT INTO fruta(name) SELECT 'Mango' WHERE NOT EXISTS (SELECT 1 FROM fruta WHERE name='Mango');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Mango Kent', f.fruta_id FROM fruta f WHERE f.name='Mango' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Mango Kent');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Mango Edward', f.fruta_id FROM fruta f WHERE f.name='Mango' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Mango Edward');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Mango Haden', f.fruta_id FROM fruta f WHERE f.name='Mango' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Mango Haden');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Mango Tommy Atkins', f.fruta_id FROM fruta f WHERE f.name='Mango' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Mango Tommy Atkins');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Mango Ataulfo', f.fruta_id FROM fruta f WHERE f.name='Mango' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Mango Ataulfo');
+
+INSERT INTO fruta(name) SELECT 'Palta' WHERE NOT EXISTS (SELECT 1 FROM fruta WHERE name='Palta');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Palta Hass', f.fruta_id FROM fruta f WHERE f.name='Palta' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Palta Hass');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Palta Fuerte', f.fruta_id FROM fruta f WHERE f.name='Palta' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Palta Fuerte');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Palta Zutano', f.fruta_id FROM fruta f WHERE f.name='Palta' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Palta Zutano');
+
+INSERT INTO fruta(name) SELECT 'Arándano' WHERE NOT EXISTS (SELECT 1 FROM fruta WHERE name='Arándano');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Biloxi', f.fruta_id FROM fruta f WHERE f.name='Arándano' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Biloxi');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Ventura', f.fruta_id FROM fruta f WHERE f.name='Arándano' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Ventura');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Emerald', f.fruta_id FROM fruta f WHERE f.name='Arándano' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Emerald');
+
+INSERT INTO fruta(name) SELECT 'Uva' WHERE NOT EXISTS (SELECT 1 FROM fruta WHERE name='Uva');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Red Globe', f.fruta_id FROM fruta f WHERE f.name='Uva' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Red Globe');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Crimson Seedless', f.fruta_id FROM fruta f WHERE f.name='Uva' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Crimson Seedless');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Sugraone', f.fruta_id FROM fruta f WHERE f.name='Uva' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Sugraone');
+
+INSERT INTO fruta(name) SELECT 'Banano' WHERE NOT EXISTS (SELECT 1 FROM fruta WHERE name='Banano');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Cavendish', f.fruta_id FROM fruta f WHERE f.name='Banano' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Cavendish');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Orgánico', f.fruta_id FROM fruta f WHERE f.name='Banano' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Orgánico');
+
+INSERT INTO fruta_derivada(name,fruta_id) SELECT 'Baby Banano', f.fruta_id FROM fruta f WHERE f.name='Banano' AND NOT EXISTS (SELECT 1 FROM fruta_derivada d WHERE d.fruta_id=f.fruta_id AND d.name='Baby Banano');
+
+INSERT INTO parametro_uit(anio,valor,limite_uit,umbral_alerta) VALUES (2025,5350,75,0.90), (2026,5500,75,0.90) ON CONFLICT (anio) DO NOTHING;
+
+-- guia_x_norma queda vacía: sus filas nacen de selecciones reales de cada guía, nunca de este seed.
+
 -- Las reglas de transición, permisos y cierre completo requieren implementación de servicio; las protecciones financieras incluidas se prueban por separado.
 
--- No se importan datos ni se calculan pagos/contratos automáticamente a partir de URLs o pesos históricos.
+-- Solo se cargan catálogos iniciales; no se importan históricos ni se calculan pagos/contratos desde URLs o pesos.
 
 REVOKE ALL ON SCHEMA agro FROM PUBLIC;
 
