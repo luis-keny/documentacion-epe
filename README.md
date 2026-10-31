@@ -4,7 +4,16 @@ Este repositorio contiene la documentación discutida y el SQL de revisión. El 
 
 ## Documentos vigentes
 
+### Guías de uso y flujo
+
+- **[Manuales de usuario V1](manuales/guia-usuario-v1.md):** índices separados para [Administrador](manuales/guia-administrador-v1.md) y [Chofer](manuales/guia-chofer-v1.md), con rutas de pantalla y opciones en texto.
+- [APIs futuras y entrega al agente backend](api-futura.md): guía de implementación, contrato OpenAPI V1, servicios frontend y mocks basados en el modelo objetivo.
 - [Flujo funcional del sistema y de sus módulos (HTML Archify)](flujo-sistema.html): propósito de la aplicación, recorrido general, flujos internos de los ocho módulos, vista del chofer, reglas de avance y condiciones de cierre, basados en el prototipo local.
+- [QA E2E de flujos de negocio V1 (30/10/2026)](pruebas/qa-e2e-flujos-negocio-v1-2026-10-30.md): recorrido real en Chrome de administrador y chofer, datos QA conservados, correcciones aplicadas y bloqueos pendientes.
+- [Catálogos predeterminados V1](../epe-backend/docs/default-data.md) y [SQL idempotente para cargar referencias en producción](../epe-backend/src/database/sql/05_seed_reference_catalogs_production.sql).
+
+### Modelo y reglas de negocio
+
 - **[Schema actualizado tras la auditoría](agro-schema/01_reporte_especifico.md#schema-actualizado-tras-la-auditoría-de-cumplimiento):** ajustes FC01–FC13 incorporados al SQL, contrato de JSONB, tipos modificados y límites de implementación. FC14 (archivos) continúa diferido. Se prioriza funcionamiento sobre calidad del diseño.
 - [Reporte por vista](agro-schema/01_reporte_especifico.md): 62 fichas con navegación, función de cada tabla, atributos, relaciones y decisiones D01–D15.
 - [Antecedente: validación de negocio y cuestionario original](agro-schema/01_reporte_especifico.md#validación-de-negocio-y-cuestionario-pendiente): sus 30 preguntas no son requisitos adicionales; las respuestas y el criterio de cumplimiento posteriores determinan el alcance vigente.
@@ -14,14 +23,22 @@ Este repositorio contiene la documentación discutida y el SQL de revisión. El 
 - [SQL total de revisión](agro-schema/03_schema_total.sql): instalación nueva en el esquema PostgreSQL `agro`; no es una migración sobre la base existente.
 - [Esquema global y relaciones por vista (HTML)](agro-schema/diagramas/esquema-agro-vistas.html): mapa de 60 tablas con sus 685 atributos, tipos, nulabilidad y claves, y diagramas derivados del Mermaid de las vistas V01–V62, con etiquetas de tablas usadas por pantalla/formulario. V02 es navegación sin tablas propias.
 - [Resumen Archify (HTML)](agro-schema/diagramas/esquema-agro.html): explicación del modelo con ERD global y recortes de clientes, proveedores y fincas.
+
+### Auditorías y referencias históricas
+
+- [Estado de integración frontend ↔ backend](../epe-web/docs/integration-status.md): resultado vigente por fecha, alcance probado y límites de la conexión.
 - [Auditoría del backend frente al modelo previsto](agro-schema/auditoria-bd-actual-vs-planificada.md): comparación, decisiones confirmadas y pendientes. Se incorpora desde la documentación del backend para que también quede en este historial.
 - [Auditoría aplicada a las propuestas frente al prototipo](agro-schema/auditoria-tablas-propuestas-vs-prototipo.md): cinco simplificaciones aplicadas, norma y guia_x_norma conservadas, configuración inicial sin CRUD y 41 propuestas vigentes. Incluida también en el HTML por vistas.
 - [DBML inicial aportado](agro-schema/referencias/AGRO_SIMPLIFICADO.dbml): referencia original sin modificar; no representa el modelo objetivo corregido.
 
+La carpeta `prototipo/` conserva el prototipo y sus respaldos como referencia histórica; no reemplaza la guía de usuario ni el contrato backend vigente.
+
 ## Acuerdos confirmados al 29/10/2026
 
+Estos acuerdos describen la revisión del modelo de esa fecha. La guía V1, el estado de integración y las correcciones de backend añadidos después prevalecen para la operación implementada.
+
 - La prioridad es cubrir los flujos de la aplicación usando el prototipo como referencia. No se exige normalizar, refactorizar o mejorar arquitectura para avanzar. Los negocios ausentes del prototipo se reportan y quedan fuera del alcance; las contradicciones con respuestas explícitas se mantienen identificadas.
-- Esta etapa comprende documentación y SQL para revisión manual; no se modifican entidades TypeORM, migraciones ni bases desplegadas.
+- En esa etapa solo se prepararon documentación y SQL para revisión manual; posteriores solicitudes del usuario pueden autorizar cambios incrementales en backend y migraciones.
 - Se incorporaron los ajustes funcionales al SQL: compra sobre kilos reconocidos, varios requerimientos cliente/campaña, varias facturas por carga con ajustes, borradores de exámenes/contratos/transporte y detalle de cosecha/recepción mediante JSONB. El prototipo/web/backend todavía deben adoptar los contratos y cardinalidades actualizados.
 - Se conservan los nombres físicos actuales. El modelo revisado incluye 60 tablas: 19 actuales y 46 propuestas. Una propuesta documentada no equivale a aprobación definitiva de implementación.
 - `campania_x_proveedores` se mantiene y agrupa al proveedor y sus entrevistas dentro de una campaña. Se retira su vínculo directo a finca en el modelo objetivo.
@@ -42,6 +59,8 @@ Las referencias D01–D15 de los reportes describen el estado vigente y las vist
 Se conserva `campania_x_proveedores`; la cabecera adicional se retiró por decisión del usuario, junto a los dos puentes de variedades calculadas y acuerdo_compra. norma y guia_x_norma se conservan con catálogo inicial y selección por guía. La gestión documental se retomará en otra etapa.
 
 ## Evidencias y mantenimiento
+
+Los documentos nuevos se enlazan aquí por propósito: guías de uso en `manuales/`, contrato y desarrollo en sus rutas existentes, y modelo/auditorías en `agro-schema/`. Se conservan las rutas históricas para no romper referencias; este README es el índice de entrada.
 
 La carpeta `agro-schema/.validation` conserva modelos, generadores y resultados de las comprobaciones, incluidos antecedentes del diseño. Los documentos vigentes son los enlazados arriba. Los archivos internos `baseline-*`, `modelo.json`, `modelo_alineado.json` y los generadores antiguos son antecedentes, no el esquema final.
 
