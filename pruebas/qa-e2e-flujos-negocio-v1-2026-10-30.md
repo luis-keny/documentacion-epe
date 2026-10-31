@@ -1,5 +1,7 @@
 # Resultado E2E de negocio V1
 
+> **Corrección posterior:** esta conclusión histórica fue revisada por un bypass de Calidad. Consulte el [informe corregido del frontend](../../epe-web/docs/pruebas/qa-e2e-flujos-negocio-v1-2026-10-30.md) y el [estado de integración](../../epe-web/docs/integration-status.md) para la evidencia posterior.
+
 **Fecha:** 2026-10-30  
 **Frontend:** `http://localhost:5173/modules` (Chrome)  
 **Alcance:** recorrido normal de administrador y chofer, con persistencia observada al recargar y volver a iniciar sesión. Los datos QA se conservaron en la aplicación; no se borraron.

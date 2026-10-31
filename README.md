@@ -1,5 +1,7 @@
 # Documentación y acuerdos del esquema agroexportador
 
+> **Punto de entrada:** consulte el [centro de documentación](INDICE-DOCUMENTACION.md) y la [auditoría documental del 30/10/2026](auditoria-documentacion-2026-10-30.md). Existen copias divergentes de manuales y QA; este índice conserva antecedentes y no sustituye el seguimiento de integración.
+
 Este repositorio contiene la documentación discutida y el SQL de revisión. El primer commit se identifica con el mensaje **v1**. Se actualizan los mismos archivos; las versiones se conservan mediante Git.
 
 ## Documentos vigentes
