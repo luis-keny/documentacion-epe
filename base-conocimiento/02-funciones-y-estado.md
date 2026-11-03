@@ -1,6 +1,6 @@
 # Funciones, estado y evidencia
 
-**Corte documental:** 30/10/2026. Esta matriz identifica fuentes y límites; «documentado» o «hay código» no equivale a probado en producción. La evidencia histórica pertenece al entorno y fecha indicados en cada fuente.
+**Corte documental:** 30/10/2026. Esta matriz es una instantánea histórica por área; el [estado de implementación actualizado](../estado-documentacion-y-avance.md) resume los avances hasta 03/11/2026. «Documentado» o «hay código» no equivale a probado en producción.
 
 | Área | Alcance encontrado | Estado y evidencia | Fuente principal |
 |---|---|---|---|

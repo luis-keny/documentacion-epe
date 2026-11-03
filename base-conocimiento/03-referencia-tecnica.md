@@ -15,7 +15,7 @@ La [guía on-premise](../../epe-backend/docs/guia-on-premise-despliegue-backend.
 
 ## Contrato, implementación y modelo
 
-1. El [contrato HTTP](../../epe-web/docs/future-api-contract.md) y el [OpenAPI](../../epe-web/docs/future-api.openapi.json) documentan el objetivo V1 y sus convenciones. Su nombre «futuro» refleja su origen; no demuestra por sí solo el estado de implementación.
+1. El [contrato HTTP](../../epe-web/docs/future-api-contract.md) y el [OpenAPI](../../epe-web/docs/future-api.openapi.json) son la especificación V1 que actualmente alimenta los DTOs y clientes del frontend. El nombre `future-api` es heredado; compárese con los controladores y Swagger del backend y con el [estado de integración](../../epe-web/docs/integration-status.md).
 2. El [seguimiento de integración](../../epe-web/docs/integration-status.md), el código y las pruebas son fuentes complementarias para conocer la implementación local y sus límites. El README del frontend contiene una tabla de integración que puede ser anterior; no usarla aislada como estado actual.
 3. El [SQL objetivo central](../agro-schema/03_schema_total.sql) se documenta como instalación nueva, no migración para una base con datos. La lectura estática de esta revisión encontró 60 sentencias `CREATE TABLE`; las auditorías incluyen cifras históricas contradictorias de 60 y 65, por lo que no debe citarse otra cifra sin identificar versión y método.
 4. El backend tiene [SQL y migraciones](../../epe-backend/src/database/) propios y un [ER](../../epe-backend/docs/er-diagram.md). El modelo objetivo y una base efectivamente desplegada deben compararse por separado.

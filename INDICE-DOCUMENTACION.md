@@ -1,6 +1,6 @@
 # Centro de documentación del proyecto
 
-**Revisión:** 30/10/2026. Este índice reúne las fuentes locales para preparar futuras documentaciones. La vigencia debe verificarse antes de publicar, ya que hay copias y resultados de fechas iguales con alcances diferentes. Consulte primero la [auditoría documental](auditoria-documentacion-2026-10-30.md).
+Índice único de consulta para la documentación del proyecto. Cada fuente debe leerse según su alcance y fecha: los manuales e integración describen V1, el modelo agro describe el objetivo acordado y el prototipo es una referencia histórica. Consulte la [auditoría documental](auditoria-documentacion-2026-10-30.md) para antecedentes y la [revisión vigente de documentos y avance](estado-documentacion-y-avance.md) para estados actuales.
 
 ## Base de conocimiento consolidada
 
@@ -15,7 +15,7 @@
 | Entender el negocio | [Flujo visual](flujo-sistema.html) → [manual de administrador](../epe-web/docs/manuales/guia-administrador-v1.md) → [manual de chofer](../epe-web/docs/manuales/guia-chofer-v1.md) | El flujo visual usa el prototipo como referencia; confirme el comportamiento actual. |
 | Documentar funciones y operación | Manuales anteriores → [estado de integración](../epe-web/docs/integration-status.md) → [QA histórico](../epe-web/docs/pruebas/qa-e2e-flujos-negocio-v1-2026-10-30.md) | La prueba histórica no acredita por sí sola el ciclo completo; hay confirmación posterior del usuario con distinto alcance de evidencia. |
 | Documentar datos y reglas | [Acuerdos y modelo](README.md) → [reporte por vista](agro-schema/01_reporte_especifico.md) → [tablas y relaciones](agro-schema/02_tablas_y_relaciones.md) → [ER del backend](../epe-backend/docs/er-diagram.md) | El modelo objetivo y el backend implementado pueden diferir. |
-| Documentar API e integración | [Contrato y reglas](../epe-web/docs/future-api-contract.md) → [OpenAPI](../epe-web/docs/future-api.openapi.json) → [estado de integración](../epe-web/docs/integration-status.md) | El contrato describe un objetivo; no demuestra que cada endpoint esté implementado o desplegado. |
+| Documentar API e integración | [Estado por vista](../epe-web/docs/integration-status.md) → contrato OpenAPI V1 usado por los DTOs del frontend ([spec](../epe-web/docs/future-api.openapi.json), [reglas](../epe-web/docs/future-api-contract.md)) → Swagger del backend en `/api/docs` | El nombre `future-api` es histórico: la especificación sigue alimentando el cliente; su generación no acredita por sí sola despliegue ni paridad total. |
 | Instalar u operar el backend | [README del backend](../epe-backend/README.md) → [despliegue on-premise](../epe-backend/docs/guia-on-premise-despliegue-backend.md) → [catálogos](../epe-backend/docs/default-data.md) | Verifique entorno, migraciones, credenciales y respaldo antes de ejecutar instrucciones. |
 | Documentar frontend | [Arquitectura](../epe-web/docs/architecture-and-solid.md) → [sistema visual](../epe-web/docs/ui-and-design-system.md) → [estado de integración](../epe-web/docs/integration-status.md) | Las reglas de diseño y arquitectura no sustituyen una revisión del código actual. |
 
@@ -31,4 +31,4 @@
 
 Para comportamiento actual, contraste código, configuración y pruebas con el estado de integración; para decisiones de negocio, identifique la fecha y el alcance de cada acuerdo. Trate el prototipo, las instantáneas y las auditorías anteriores como contexto. Al redactar, registre fuente, fecha, entorno, estado (implementado, propuesto, pendiente o histórico) y evidencia; señale las contradicciones en vez de elegir una versión sin comprobarla.
 
-Los índices locales de [frontend](../epe-web/docs/README.md) y [backend](../epe-backend/docs/README.md) detallan sus documentos. El índice previo de [modelo y acuerdos](README.md) conserva los enlaces y antecedentes originales.
+Los índices locales de [frontend](../epe-web/docs/README.md) y [backend](../epe-backend/docs/README.md) detallan sus documentos. Este archivo es la entrada central; [README](README.md) solo resume la estructura y deriva aquí.
