@@ -1,10 +1,10 @@
 # Negocio y procesos del sistema
 
-**Corte documental:** 30/10/2026. Síntesis preparada a partir de los manuales V1 y las decisiones del modelo. Describe el recorrido previsto y la información registrada; no acredita que cada operación esté disponible en cualquier despliegue. Para estado y evidencia consulte [funciones y validación](02-funciones-y-estado.md).
+Resumen vigente del negocio y sus actores. Describe el recorrido funcional; la disponibilidad de cada operación se mantiene en el [estado del proyecto](../estado-del-proyecto.md) y el [seguimiento por vista](../../epe-web/docs/integration-status.md).
 
 ## Propósito y actores
 
-Agro Exportaciones F.V. organiza una operación agroexportadora alrededor de campañas: conecta abastecimiento de fruta, acuerdos con clientes, transporte, control de calidad, entrega y liquidación. El flujo visual proporciona una [vista general basada en el prototipo](../flujo-sistema.html).
+Agro Exportaciones F.V. organiza una operación agroexportadora alrededor de campañas: conecta abastecimiento de fruta, acuerdos con clientes, transporte, control de calidad, entrega y liquidación. El flujo visual proporciona una [vista general basada en el prototipo](flows/overview.html).
 
 | Actor | Participación documentada |
 |---|---|
@@ -14,7 +14,7 @@ Agro Exportaciones F.V. organiza una operación agroexportadora alrededor de cam
 | Cliente | Tiene requerimientos, contratos y entregas vinculados a la campaña. |
 | Transportista | Aporta vehículos y choferes y participa mediante acuerdos y coordinaciones. |
 
-Administrador y Chofer son los perfiles de operación de los manuales. El catálogo también incluye otros roles; eso no demuestra que tengan un portal o permisos equivalentes. Fuentes: [manual administrador](../../epe-web/docs/manuales/guia-administrador-v1.md), [manual chofer](../../epe-web/docs/manuales/guia-chofer-v1.md), [catálogos](../../epe-backend/docs/default-data.md).
+Administrador y Chofer son los perfiles de operación de los manuales. El catálogo también incluye otros roles; eso no demuestra que tengan un portal o permisos equivalentes. Fuentes: [manual administrador](../../epe-web/docs/guides/administrator.md), [manual chofer](../../epe-web/docs/guides/driver.md), [semillas](../../epe-backend/docs/seed-data.md).
 
 ## Recorrido de referencia
 
@@ -29,14 +29,14 @@ Administrador y Chofer son los perfiles de operación de los manuales. El catál
 | 7. Finanzas | Factura y cobros, liquidación de proveedor y transporte, referencias de pago. | Saldos y estados registrados para revisión. |
 | 8. Cierre | Revisión de hitos operativos y financieros y motivo de cierre. | Campaña terminada según las condiciones aplicables. |
 
-Este orden resume los manuales; los pasos concretos y sus condiciones se deben verificar en la versión desplegada. [Manual de administrador](../../epe-web/docs/manuales/guia-administrador-v1.md) · [Manual de chofer](../../epe-web/docs/manuales/guia-chofer-v1.md).
+Este orden resume los manuales; los pasos concretos y sus condiciones se deben verificar en la versión desplegada. [Manual de administrador](../../epe-web/docs/guides/administrator.md) · [Manual de chofer](../../epe-web/docs/guides/driver.md).
 
 ## Reglas y términos útiles
 
 - **Campaña:** agrupa la operación de una fruta y sus participantes. **Participación:** vínculo del proveedor con una campaña; las entrevistas relacionan la participación con las fincas del productor.
-- **Entrega programada:** compromiso comercial; la **coordinación** identifica los recursos y origen del viaje; la **carga** registra la operación física. El contrato objetivo describe una entrega, una coordinación y una carga por viaje; confirme su implementación antes de afirmarlo para un entorno.
-- **MTD:** moscas capturadas divididas entre trampas evaluadas y días de exposición. El manual exige conteos completos por origen, dos tipos de análisis distintos, uno de Maduración o Materia seca, y resultados aptos. Se observaron validaciones relacionadas en [frontend](../../epe-web/src/modules/quality/components/QualityDeliveryReviewModal.tsx) y [backend](../../epe-backend/src/common/v1/v1-business.service.ts); no se ejecutó el flujo en esta revisión.
+- **Entrega programada:** compromiso comercial; la **coordinación** identifica los recursos y origen del viaje; la **carga** registra la operación física. La V1 modela un viaje por entrega, coordinación y carga.
+- **MTD:** moscas capturadas divididas entre trampas evaluadas y días de exposición. Sus requisitos operativos están en el [manual del administrador](../../epe-web/docs/guides/administrator.md).
 - **Kilos reconocidos:** cantidad aceptada en planta para el proveedor, relevante para la liquidación de compra en el modelo objetivo. **Adelanto de transporte:** distinguir monto acordado, desembolsado, aplicado y disponible.
 - Una guía o factura registrada en la aplicación y un pago con referencia no prueban por sí mismos emisión ante SUNAT ni operación bancaria real.
 
-Fuentes de las reglas: [contrato V1 usado por el cliente](../../epe-web/docs/future-api-contract.md), [acuerdos del modelo](../README.md) y [QA corregido](../../epe-web/docs/pruebas/qa-e2e-flujos-negocio-v1-2026-10-30.md). Para separar el modelo objetivo de la implementación local, consulte el [reporte por vista](../agro-schema/01_reporte_especifico.md) y el [estado actual](../estado-documentacion-y-avance.md).
+Fuentes: [reglas de API](../../epe-web/docs/api/business-rules.md), [modelo objetivo](../target-model/README.md), [estado del proyecto](../estado-del-proyecto.md) y [seguimiento por vista](../../epe-web/docs/integration-status.md). El QA fechado conserva evidencia histórica, no reglas del negocio vigentes.

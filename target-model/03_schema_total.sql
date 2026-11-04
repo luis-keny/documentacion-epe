@@ -1,4 +1,5 @@
--- MODELO DOCUMENTADO PARA REVISION MANUAL. No modifica entidades TypeORM ni la base desplegada.
+-- MODELO OBJETIVO DOCUMENTADO PARA REVISION MANUAL; no es migracion del backend.
+-- Revisado el 2026-10-29; evaluar retiro o renovacion antes del 2027-01-27.
 
 -- D08 aprobado 2026-10-29: destino de entrega como texto; guía con dirección de llegada histórica; sin catálogo de destinos.
 

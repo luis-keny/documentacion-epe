@@ -1,6 +1,6 @@
 # Modelo de datos de Agro Exportaciones — reporte específico
 
-Fecha de inspección: **25/10/2026, America/Lima**. Fuente funcional: [aplicación de demostración](https://campaign-management-system-umber.vercel.app/). Fuente de comparación: [AGRO_SIMPLIFICADO.dbml](C:/Users/luisl/Downloads/AGRO_SIMPLIFICADO.dbml). Entregables: [modelo general](02_tablas_y_relaciones.md) y [SQL completo](03_schema_total.sql).
+Fecha de inspección: **25/10/2026, America/Lima**. Fuente funcional: [aplicación de demostración](https://campaign-management-system-umber.vercel.app/). Fuente de comparación: [AGRO_SIMPLIFICADO.dbml](../referencias/AGRO_SIMPLIFICADO.dbml). Entregables del mismo corte: [modelo general](baseline-02_tablas_y_relaciones.md) y [SQL completo](baseline-03_schema_total.sql).
 
 **Resultado: el DBML cumple parcialmente; no cubre todas las vistas del prototipo.** Sus 42 tablas son una base útil, pero faltan entidades y hay granularidades incompatibles con los formularios. El esquema propuesto reúne 64 tablas, 151 claves foráneas y seis vistas SQL derivadas. No se leyó el esquema interno del servidor desplegado: los nombres, tipos y reglas del SQL son una propuesta de implementación, no una afirmación de cómo está construido actualmente.
 

@@ -1,5 +1,7 @@
 # Auditoría de la base programada frente al esquema planificado
 
+> **Comparación histórica del modelo objetivo (29/10/2026), no estado del backend.** El backend está completado según confirmación del usuario; usa sus entidades y migraciones para la implementación vigente. Revisar esta comparación para retiro o renovación el **27/01/2027**.
+
 **D17 — 29/10/2026:** sesion_usuario se retira con su FK; usuario y rol se mantienen. Gestión persistente de sesiones fuera del alcance.
 
 **Actualización confirmada — 29/10/2026:** el objetivo vigente tiene 60 tablas (19 actuales y 41 propuestas), 124 FK y seis vistas. Se consolidó la participación en campania_x_proveedores, se retiraron los dos puentes de variedades calculadas y acuerdo_compra. norma y guia_x_norma permanecen; el catálogo tiene datos iniciales SQL y las relaciones se guardan por selección de guía. [Dictamen aplicado y evidencias](auditoria-tablas-propuestas-vs-prototipo.md) · [Datos iniciales](04_datos_iniciales.sql). Los inventarios anteriores de este documento son antecedentes.
@@ -118,34 +120,34 @@ La auditoría anterior **ya había incorporado `entrevista_extencion` y la noven
 | Tablas de transporte conservadas para una transición por revisar | 3; ya incluidas entre las 20 actuales |
 | Tablas técnicas de TypeORM | `typeorm_migrations` configurada, excluida del inventario de dominio |
 
-**Fuentes de verdad:** [registro de entidades y migraciones](D:/upeu/proyecto-carrera/app/epe-backend/src/config/typeorm.datasource.ts:66), [configuración de runtime](D:/upeu/proyecto-carrera/app/epe-backend/src/config/database.config.ts:22) y [convención del repositorio](D:/upeu/proyecto-carrera/app/epe-backend/AGENTS.md:5). Se construyeron los metadatos de TypeORM sin inicializar una conexión. Se ejecutaron las 9 migraciones en PGlite (PostgreSQL WASM, con `btree_gist`), y se contrastaron nombres y nulabilidad de sus 184 columnas: no hubo diferencias con las entidades en ese contraste. No se afirma equivalencia exhaustiva de defaults, precisión, nombres de constraints, planes de consulta o configuración del servidor.
+**Fuentes de verdad:** [registro de entidades y migraciones](../../epe-backend/src/config/typeorm.datasource.ts#L66), [configuración de runtime](../../epe-backend/src/config/database.config.ts#L22) y [convención del repositorio](../../epe-backend/AGENTS.md#L5). Se construyeron los metadatos de TypeORM sin inicializar una conexión. Se ejecutaron las 9 migraciones en PGlite (PostgreSQL WASM, con `btree_gist`), y se contrastaron nombres y nulabilidad de sus 184 columnas: no hubo diferencias con las entidades en ese contraste. No se afirma equivalencia exhaustiva de defaults, precisión, nombres de constraints, planes de consulta o configuración del servidor.
 
 El runtime utiliza `autoLoadEntities` y recibe `DB_SYNCHRONIZE` de configuración; su valor por defecto es false. La CLI tiene `synchronize: false` y registra las migraciones. Debe conservarse el uso de migraciones sin habilitar sincronización automática para desplegar este plan. No se verificó el valor efectivo de una instancia.
 
 | Tabla física actual | PK actual | Columnas | Equivalencia con el plan | Fuente |
 |---|---|---:|---|---|
-| `archivo` | `archivo_id` | 10 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [archivo](D:/upeu/proyecto-carrera/app/epe-backend/src/archivo/entities/archivo.ts:12) |
-| `campana` | `campania_id` | 9 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [campana](D:/upeu/proyecto-carrera/app/epe-backend/src/campana/entities/campana.ts:24) |
-| `campania_x_proveedores` | `cxp_id` | 11 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [campania_x_proveedores](D:/upeu/proyecto-carrera/app/epe-backend/src/campana-proveedor/entities/campania-proveedor.ts:30) |
-| `certificado_campana` | `certificado_id` | 10 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [certificado_campana](D:/upeu/proyecto-carrera/app/epe-backend/src/certificado-campana/entities/certificado-campana.ts:23) |
-| `certificado_proveedor` | `certificado_proveedor_id` | 7 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [certificado_proveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/certificado-proveedor/entities/certificado-proveedor.ts:16) |
-| `chofer_transporte_externo` | `id_chofer_transporte_externo` | 7 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [chofer_transporte_externo](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/chofer-transporte-externo.ts:16) |
-| `chofer_vehiculo_externo` | `id_chofer_vehiculo_externo` | 8 | Reutilizar datos en coordinación; conservar historial/restricciones de asignación. | [chofer_vehiculo_externo](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/chofer-vehiculo-externo.ts:19) |
-| `cliente_negocio` | `cliente_negocio_id` | 10 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [cliente_negocio](D:/upeu/proyecto-carrera/app/epe-backend/src/cliente-negocio/entities/cliente-negocio.ts:9) |
-| `cliente_negocio_campana` | `cliente_negocio_campana_id` | 10 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [cliente_negocio_campana](D:/upeu/proyecto-carrera/app/epe-backend/src/cliente-negocio-campana/entities/cliente-negocio-campana.ts:19) |
-| `detalle_trazabilidad` | `id_detalle_trazabilidad` | 10 | Separar guía, flete, gastos y SCTR; no registrar pagos por inferencia. | [detalle_trazabilidad](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/detalle-trazabilidad.ts:16) |
-| `empresa_transporte_externo` | `id_empresa_transporte_externo` | 7 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [empresa_transporte_externo](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/empresa-transporte-externo.ts:13) |
-| `entrevista_extencion` | `entrevista_id` | 11 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [entrevista_extencion](D:/upeu/proyecto-carrera/app/epe-backend/src/entrevista-extencion/entities/entrevista-extencion.ts:17) |
-| `examen_proveedor` | `examen_proveedor_id` | 10 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [examen_proveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/proveedor/entities/examen-proveedor.ts:19) |
-| `finca` | `finca_id` | 12 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [finca](D:/upeu/proyecto-carrera/app/epe-backend/src/finca/entities/finca.ts:18) |
-| `fruta` | `fruta_id` | 4 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [fruta](D:/upeu/proyecto-carrera/app/epe-backend/src/fruta/entities/fruta.ts:7) |
-| `fruta_derivada` | `fruta_derivada_id` | 5 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [fruta_derivada](D:/upeu/proyecto-carrera/app/epe-backend/src/fruta/entities/fruta-derivada.ts:13) |
-| `proveedor` | `proveedor_id` | 19 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [proveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/proveedor/entities/proveedor.ts:13) |
-| `proveedor_x_fruta` | `pxf_id` | 5 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [proveedor_x_fruta](D:/upeu/proyecto-carrera/app/epe-backend/src/proveedor-fruta/entities/proveedor-fruta.ts:14) |
-| `trazabilidad_transporte` | `id_trazabilidad_transporte` | 8 | Descomponer en coordinación, carga, detalles de proveedor, recepción y eventos. | [trazabilidad_transporte](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/trazabilidad-transporte.ts:26) |
-| `vehiculo_externo` | `id_vehiculo_externo` | 11 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [vehiculo_externo](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/vehiculo-externo.ts:18) |
+| `archivo` | `archivo_id` | 10 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [archivo](../../epe-backend/src/archivo/entities/archivo.ts#L12) |
+| `campana` | `campania_id` | 9 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [campana](../../epe-backend/src/campana/entities/campana.ts#L24) |
+| `campania_x_proveedores` | `cxp_id` | 11 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [campania_x_proveedores](../../epe-backend/src/campana-proveedor/entities/campania-proveedor.ts#L30) |
+| `certificado_campana` | `certificado_id` | 10 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [certificado_campana](../../epe-backend/src/certificado-campana/entities/certificado-campana.ts#L23) |
+| `certificado_proveedor` | `certificado_proveedor_id` | 7 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [certificado_proveedor](../../epe-backend/src/certificado-proveedor/entities/certificado-proveedor.ts#L16) |
+| `chofer_transporte_externo` | `id_chofer_transporte_externo` | 7 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [chofer_transporte_externo](../../epe-backend/src/transporte/entities/chofer-transporte-externo.ts#L16) |
+| `chofer_vehiculo_externo` | `id_chofer_vehiculo_externo` | 8 | Reutilizar datos en coordinación; conservar historial/restricciones de asignación. | [chofer_vehiculo_externo](../../epe-backend/src/transporte/entities/chofer-vehiculo-externo.ts#L19) |
+| `cliente_negocio` | `cliente_negocio_id` | 10 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [cliente_negocio](../../epe-backend/src/cliente-negocio/entities/cliente-negocio.ts#L9) |
+| `cliente_negocio_campana` | `cliente_negocio_campana_id` | 10 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [cliente_negocio_campana](../../epe-backend/src/cliente-negocio-campana/entities/cliente-negocio-campana.ts#L19) |
+| `detalle_trazabilidad` | `id_detalle_trazabilidad` | 10 | Separar guía, flete, gastos y SCTR; no registrar pagos por inferencia. | [detalle_trazabilidad](../../epe-backend/src/transporte/entities/detalle-trazabilidad.ts#L16) |
+| `empresa_transporte_externo` | `id_empresa_transporte_externo` | 7 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [empresa_transporte_externo](../../epe-backend/src/transporte/entities/empresa-transporte-externo.ts#L13) |
+| `entrevista_extencion` | `entrevista_id` | 11 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [entrevista_extencion](../../epe-backend/src/entrevista-extencion/entities/entrevista-extencion.ts#L17) |
+| `examen_proveedor` | `examen_proveedor_id` | 10 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [examen_proveedor](../../epe-backend/src/proveedor/entities/examen-proveedor.ts#L19) |
+| `finca` | `finca_id` | 12 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [finca](../../epe-backend/src/finca/entities/finca.ts#L18) |
+| `fruta` | `fruta_id` | 4 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [fruta](../../epe-backend/src/fruta/entities/fruta.ts#L7) |
+| `fruta_derivada` | `fruta_derivada_id` | 5 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [fruta_derivada](../../epe-backend/src/fruta/entities/fruta-derivada.ts#L13) |
+| `proveedor` | `proveedor_id` | 19 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [proveedor](../../epe-backend/src/proveedor/entities/proveedor.ts#L13) |
+| `proveedor_x_fruta` | `pxf_id` | 5 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [proveedor_x_fruta](../../epe-backend/src/proveedor-fruta/entities/proveedor-fruta.ts#L14) |
+| `trazabilidad_transporte` | `id_trazabilidad_transporte` | 8 | Descomponer en coordinación, carga, detalles de proveedor, recepción y eventos. | [trazabilidad_transporte](../../epe-backend/src/transporte/entities/trazabilidad-transporte.ts#L26) |
+| `vehiculo_externo` | `id_vehiculo_externo` | 11 | Existe; se conserva este nombre y se evalúan las ampliaciones necesarias. | [vehiculo_externo](../../epe-backend/src/transporte/entities/vehiculo-externo.ts#L18) |
 
-**Auditoría transversal existente:** todas las entidades heredan `created_at` y `updated_at` desde [AuditableEntity](D:/upeu/proyecto-carrera/app/epe-backend/src/common/entities/auditable.entity.ts:3). El plan anterior no las incluía de forma uniforme. Deben conservarse al diseñar migraciones; una fecha de subida o emisión no reemplaza la auditoría de cambios.
+**Auditoría transversal existente:** todas las entidades heredan `created_at` y `updated_at` desde [AuditableEntity](../../epe-backend/src/common/entities/auditable.entity.ts#L3). El plan anterior no las incluía de forma uniforme. Deben conservarse al diseñar migraciones; una fecha de subida o emisión no reemplaza la auditoría de cambios.
 
 ## Relaciones implementadas (Backend > Esquema actual > Relaciones Mermaid)
 
@@ -234,13 +236,13 @@ Prioridad **Alta**: puede perder identidad, trazabilidad, historial o compatibil
 | A17 | Decisión | El frontend incorpora campañas manualmente a Calidad y guarda alcances Exportador/Industria en un array local. | Decidir si esa incorporación es un estado propio persistente o una consulta derivada; no duplicar campana ni asumir que el contrato ya representa esta selección. |
 | A18 | Alta | El almacén de análisis usa nombres de productor/finca y permite leer todos los registros al consultar campaña 1. | Mantener IDs reales al persistir y corregir el filtro antes de integrar; el problema está en el almacén local, no en una FK de la base actual. |
 
-**Evidencias de servicios:** [consulta denominada contratos](D:/upeu/proyecto-carrera/app/epe-backend/src/cliente-negocio-campana/services/cliente-negocio-campana.service.ts:87); [coherencia finca/proveedor en servicio](D:/upeu/proyecto-carrera/app/epe-backend/src/campana-proveedor/services/campania-proveedor.service.ts:252); [asignación transaccional con bloqueo del chofer](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/services/chofer-vehiculo-externo.service.ts:100); [una campaña activa por fruta](D:/upeu/proyecto-carrera/app/epe-backend/src/campana/services/campana.service.ts:100).
+**Evidencias de servicios:** [consulta denominada contratos](../../epe-backend/src/cliente-negocio-campana/services/cliente-negocio-campana.service.ts#L87); [coherencia finca/proveedor en servicio](../../epe-backend/src/campana-proveedor/services/campania-proveedor.service.ts#L252); [asignación transaccional con bloqueo del chofer](../../epe-backend/src/transporte/services/chofer-vehiculo-externo.service.ts#L100); [una campaña activa por fruta](../../epe-backend/src/campana/services/campana.service.ts#L100).
 
 **Cómo leer las secciones que siguen:** son la explicación de los hallazgos anteriores. En cada tabla verás **qué tienes hoy**, **qué le falta para cubrir las vistas** y **qué haríamos después**. Son recomendaciones; no cambios ya ejecutados. Los campos y restricciones técnicos quedan en bloques desplegables opcionales.
 
 ## archivo (Infraestructura > Archivos)
 
-**Tabla ya mapeada:** `archivo`. **Fuente:** [archivo](D:/upeu/proyecto-carrera/app/epe-backend/src/archivo/entities/archivo.ts:12).
+**Tabla ya mapeada:** `archivo`. **Fuente:** [archivo](../../epe-backend/src/archivo/entities/archivo.ts#L12).
 
 **Qué tienes hoy:** Guarda los documentos y su ubicación en almacenamiento. Ya controla si el archivo está pendiente o disponible.
 
@@ -274,7 +276,7 @@ Se mantiene el nombre archivo. La propuesta anterior tenía ruta_storage, nombre
 
 ## campana (Administrador > Gestión de Campaña > Campaña)
 
-**Tabla ya mapeada:** `campana`. **Fuente:** [campana](D:/upeu/proyecto-carrera/app/epe-backend/src/campana/entities/campana.ts:24).
+**Tabla ya mapeada:** `campana`. **Fuente:** [campana](../../epe-backend/src/campana/entities/campana.ts#L24).
 
 **Qué tienes hoy:** Guarda una campaña, su fruta, fechas y estado.
 
@@ -307,7 +309,7 @@ Mantener campana y agregar esos campos/relaciones por migración. El plan separa
 
 ## campania_x_proveedores (Administrador > Gestión de Campaña > Campaña > Proveedores)
 
-**Tabla ya mapeada:** `campania_x_proveedores`. **Fuente:** [campania_x_proveedores](D:/upeu/proyecto-carrera/app/epe-backend/src/campana-proveedor/entities/campania-proveedor.ts:30).
+**Tabla ya mapeada:** `campania_x_proveedores`. **Fuente:** [campania_x_proveedores](../../epe-backend/src/campana-proveedor/entities/campania-proveedor.ts#L30).
 
 **Qué tienes hoy:** Relaciona una campaña con un proveedor y, cuando se conoce, una finca. Un mismo proveedor puede aparecer varias veces con fincas diferentes.
 
@@ -342,7 +344,7 @@ Se reserva campania_x_proveedores para el nivel de finca del objetivo, que antes
 
 ## certificado_campana (Administrador > Gestión de Campaña > Campaña > Certificaciones)
 
-**Tabla ya mapeada:** `certificado_campana`. **Fuente:** [certificado_campana](D:/upeu/proyecto-carrera/app/epe-backend/src/certificado-campana/entities/certificado-campana.ts:23).
+**Tabla ya mapeada:** `certificado_campana`. **Fuente:** [certificado_campana](../../epe-backend/src/certificado-campana/entities/certificado-campana.ts#L23).
 
 **Qué tienes hoy:** Guarda el certificado, costo, vencimiento y documentos. Permite varios certificados por campaña.
 
@@ -376,7 +378,7 @@ Mantener nombre, pero ampliar organismo, norma, emisión, moneda y productores c
 
 ## certificado_proveedor (Administrador > Gestión de Proveedores > Proveedor > Certificados)
 
-**Tabla ya mapeada:** `certificado_proveedor`. **Fuente:** [certificado_proveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/certificado-proveedor/entities/certificado-proveedor.ts:16).
+**Tabla ya mapeada:** `certificado_proveedor`. **Fuente:** [certificado_proveedor](../../epe-backend/src/certificado-proveedor/entities/certificado-proveedor.ts#L16).
 
 **Qué tienes hoy:** Guarda los certificados propios de un proveedor y puede enlazarlos con archivo.
 
@@ -407,7 +409,7 @@ Conservar certificado_proveedor; este es el equivalente de certificados_propios,
 
 ## chofer_transporte_externo (Administrador > Gestión de Transporte > Transportista > Choferes)
 
-**Tabla ya mapeada:** `chofer_transporte_externo`. **Fuente:** [chofer_transporte_externo](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/chofer-transporte-externo.ts:16).
+**Tabla ya mapeada:** `chofer_transporte_externo`. **Fuente:** [chofer_transporte_externo](../../epe-backend/src/transporte/entities/chofer-transporte-externo.ts#L16).
 
 **Qué tienes hoy:** Guarda al conductor, su empresa, nombre, teléfono y correo.
 
@@ -438,7 +440,7 @@ Conservar nombre y crear identidad compartida en persona y cuenta en usuario cua
 
 ## chofer_vehiculo_externo (Administrador > Gestión de Transporte > Asignaciones)
 
-**Tabla ya mapeada:** `chofer_vehiculo_externo`. **Fuente:** [chofer_vehiculo_externo](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/chofer-vehiculo-externo.ts:19).
+**Tabla ya mapeada:** `chofer_vehiculo_externo`. **Fuente:** [chofer_vehiculo_externo](../../epe-backend/src/transporte/entities/chofer-vehiculo-externo.ts#L19).
 
 **Qué tienes hoy:** Asigna chofer y vehículo a una trazabilidad durante un periodo. Ya impide que el chofer tenga fechas superpuestas.
 
@@ -470,7 +472,7 @@ No hay equivalencia 1:1. Su información alimenta coordinacion_entrega; primero 
 
 ## cliente_negocio (Administrador > Gestión Comercial > Clientes)
 
-**Tabla ya mapeada:** `cliente_negocio`. **Fuente:** [cliente_negocio](D:/upeu/proyecto-carrera/app/epe-backend/src/cliente-negocio/entities/cliente-negocio.ts:9).
+**Tabla ya mapeada:** `cliente_negocio`. **Fuente:** [cliente_negocio](../../epe-backend/src/cliente-negocio/entities/cliente-negocio.ts#L9).
 
 **Qué tienes hoy:** Guarda al cliente, contacto, RUC, correo, ubicación y tipo.
 
@@ -504,7 +506,7 @@ Es la misma identidad que clientes del plan; conservar cliente_negocio y sus ide
 
 ## cliente_negocio_campana (Administrador > Gestión Comercial > Campaña > Cliente > Contratos)
 
-**Tabla ya mapeada:** `cliente_negocio_campana`. **Fuente:** [cliente_negocio_campana](D:/upeu/proyecto-carrera/app/epe-backend/src/cliente-negocio-campana/entities/cliente-negocio-campana.ts:19).
+**Tabla ya mapeada:** `cliente_negocio_campana`. **Fuente:** [cliente_negocio_campana](../../epe-backend/src/cliente-negocio-campana/entities/cliente-negocio-campana.ts#L19).
 
 **Qué tienes hoy:** Relaciona al cliente con una campaña y guarda cantidades y documentos. Solo permite un vínculo por cliente y campaña.
 
@@ -538,7 +540,7 @@ Conservar cliente_negocio_campana como vínculo/requerimiento comercial (antes r
 
 ## detalle_trazabilidad (Administrador > Gestión de Transporte > Trazabilidad > Detalle)
 
-**Tabla ya mapeada:** `detalle_trazabilidad`. **Fuente:** [detalle_trazabilidad](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/detalle-trazabilidad.ts:16).
+**Tabla ya mapeada:** `detalle_trazabilidad`. **Fuente:** [detalle_trazabilidad](../../epe-backend/src/transporte/entities/detalle-trazabilidad.ts#L16).
 
 **Qué tienes hoy:** Guarda guía, flete, SCTR y gastos de transporte.
 
@@ -572,7 +574,7 @@ No es solo gasto_transporte. Separar documento de guía, liquidacion_transporte 
 
 ## empresa_transporte_externo (Administrador > Gestión de Transporte > Transportistas)
 
-**Tabla ya mapeada:** `empresa_transporte_externo`. **Fuente:** [empresa_transporte_externo](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/empresa-transporte-externo.ts:13).
+**Tabla ya mapeada:** `empresa_transporte_externo`. **Fuente:** [empresa_transporte_externo](../../epe-backend/src/transporte/entities/empresa-transporte-externo.ts#L13).
 
 **Qué tienes hoy:** Guarda a la empresa transportista y su contacto.
 
@@ -603,7 +605,7 @@ Conservar nombre. Agregar tipo/documento genérico y persona_id para independien
 
 ## entrevista_extencion (Administrador > Gestión de Campaña > Proveedor > Entrevistas)
 
-**Tabla ya mapeada:** `entrevista_extencion`. **Fuente:** [entrevista_extencion](D:/upeu/proyecto-carrera/app/epe-backend/src/entrevista-extencion/entities/entrevista-extencion.ts:17).
+**Tabla ya mapeada:** `entrevista_extencion`. **Fuente:** [entrevista_extencion](../../epe-backend/src/entrevista-extencion/entities/entrevista-extencion.ts#L17).
 
 **Qué tienes hoy:** Ya guarda entrevistas de productores por finca, con datos agronómicos y un código único generado por el backend.
 
@@ -638,7 +640,7 @@ Conservar el nombre físico exacto entrevista_extencion, incluida su escritura a
 
 ## examen_proveedor (Administrador > Gestión de Campaña > Proveedor > Exámenes)
 
-**Tabla ya mapeada:** `examen_proveedor`. **Fuente:** [examen_proveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/proveedor/entities/examen-proveedor.ts:19).
+**Tabla ya mapeada:** `examen_proveedor`. **Fuente:** [examen_proveedor](../../epe-backend/src/proveedor/entities/examen-proveedor.ts#L19).
 
 **Qué tienes hoy:** Guarda exámenes generales de un proveedor, con resultado positivo o negativo.
 
@@ -672,7 +674,7 @@ Conservar nombre, pero ampliar alcance con participación y finca opcional, cód
 
 ## finca (Administrador > Gestión de Proveedores > Proveedor > Fincas)
 
-**Tabla ya mapeada:** `finca`. **Fuente:** [finca](D:/upeu/proyecto-carrera/app/epe-backend/src/finca/entities/finca.ts:18).
+**Tabla ya mapeada:** `finca`. **Fuente:** [finca](../../epe-backend/src/finca/entities/finca.ts#L18).
 
 **Qué tienes hoy:** Guarda la finca de un proveedor, su ubicación, coordenadas y hectáreas.
 
@@ -708,7 +710,7 @@ Conservar finca. El objetivo usa hectáreas decimales, códigos SENASA/catastro/
 
 ## fruta (Administrador > Gestión de Campaña > Catálogos > Frutas)
 
-**Tabla ya mapeada:** `fruta`. **Fuente:** [fruta](D:/upeu/proyecto-carrera/app/epe-backend/src/fruta/entities/fruta.ts:7).
+**Tabla ya mapeada:** `fruta`. **Fuente:** [fruta](../../epe-backend/src/fruta/entities/fruta.ts#L7).
 
 **Qué tienes hoy:** Es el catálogo de frutas.
 
@@ -736,7 +738,7 @@ Conservar fruta y mapear name → nombre si se adopta el diccionario del objetiv
 
 ## fruta_derivada (Administrador > Gestión de Campaña > Catálogos > Variedades)
 
-**Tabla ya mapeada:** `fruta_derivada`. **Fuente:** [fruta_derivada](D:/upeu/proyecto-carrera/app/epe-backend/src/fruta/entities/fruta-derivada.ts:13).
+**Tabla ya mapeada:** `fruta_derivada`. **Fuente:** [fruta_derivada](../../epe-backend/src/fruta/entities/fruta-derivada.ts#L13).
 
 **Qué tienes hoy:** Representa las variedades de una fruta.
 
@@ -765,7 +767,7 @@ Conservar fruta_derivada como nombre físico para el concepto de variedad del pl
 
 ## proveedor (Administrador > Gestión de Proveedores > Proveedor)
 
-**Tabla ya mapeada:** `proveedor`. **Fuente:** [proveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/proveedor/entities/proveedor.ts:13).
+**Tabla ya mapeada:** `proveedor`. **Fuente:** [proveedor](../../epe-backend/src/proveedor/entities/proveedor.ts#L13).
 
 **Qué tienes hoy:** Guarda identidad, contacto, sanidad y un perfil agronómico general del proveedor.
 
@@ -808,7 +810,7 @@ Conservar proveedor como identidad comercial, extraer persona sin duplicar al mi
 
 ## proveedor_x_fruta (Administrador > Gestión de Proveedores > Proveedor > Frutas)
 
-**Tabla ya mapeada:** `proveedor_x_fruta`. **Fuente:** [proveedor_x_fruta](D:/upeu/proyecto-carrera/app/epe-backend/src/proveedor-fruta/entities/proveedor-fruta.ts:14).
+**Tabla ya mapeada:** `proveedor_x_fruta`. **Fuente:** [proveedor_x_fruta](../../epe-backend/src/proveedor-fruta/entities/proveedor-fruta.ts#L14).
 
 **Qué tienes hoy:** Indica qué frutas tiene asociadas cada proveedor y evita repetir la misma relación.
 
@@ -837,7 +839,7 @@ Conservar nombre y relación. El objetivo cambia las bajas a RESTRICT y añade v
 
 ## trazabilidad_transporte (Administrador > Gestión de Transporte > Trazabilidad)
 
-**Tabla ya mapeada:** `trazabilidad_transporte`. **Fuente:** [trazabilidad_transporte](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/trazabilidad-transporte.ts:26).
+**Tabla ya mapeada:** `trazabilidad_transporte`. **Fuente:** [trazabilidad_transporte](../../epe-backend/src/transporte/entities/trazabilidad-transporte.ts#L26).
 
 **Qué tienes hoy:** Guarda transporte y pesos vinculados a una relación de campaña/proveedor. Una fila parte de un solo proveedor.
 
@@ -869,7 +871,7 @@ Descomponer entre coordinacion_entrega, carga, proveedor_carga, recepcion_planta
 
 ## vehiculo_externo (Administrador > Gestión de Transporte > Transportista > Vehículos)
 
-**Tabla ya mapeada:** `vehiculo_externo`. **Fuente:** [vehiculo_externo](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/vehiculo-externo.ts:18).
+**Tabla ya mapeada:** `vehiculo_externo`. **Fuente:** [vehiculo_externo](../../epe-backend/src/transporte/entities/vehiculo-externo.ts#L18).
 
 **Qué tienes hoy:** Guarda placa, dimensiones, volumen y pesos del vehículo.
 
@@ -959,9 +961,9 @@ Esta sección contrasta el código local nuevo con el esquema objetivo y conserv
 | Análisis/Carga/Guías de la tabla | Los handlers de QualityPage muestran avisos de próximamente disponible. | No contabilizar esas acciones como CRUD o tablas de backend ya implementados. |
 | Aislamiento por campaña | useQualityAnalysis y getQualityAnalysis filtran con r.campaniaId === campaniaId || campaniaId === 1. | Para campaniaId=1 el filtro acepta todas las campañas. Ejemplo estático: registros de campañas 1 y 2 se incluyen ambos al consultar 1. Resolver antes de usarlo con datos reales. |
 
-**Evidencia:** [incorporación y deduplicación local](D:/upeu/proyecto-carrera/app/epe-web/src/modules/quality/quality.store.ts:45), [almacén/filtro de análisis](D:/upeu/proyecto-carrera/app/epe-web/src/modules/quality/qualityAnalysis.store.ts:33), [contrato local de análisis](D:/upeu/proyecto-carrera/app/epe-web/src/modules/quality/qualityAnalysis.utils.ts:5), [acciones todavía informativas](D:/upeu/proyecto-carrera/app/epe-web/src/modules/quality/pages/QualityPage.tsx:70) y [lectura del catálogo de campañas](D:/upeu/proyecto-carrera/app/epe-web/src/modules/quality/components/QualityAddCampaignModal.tsx:107).
+**Evidencia:** [incorporación y deduplicación local](../../epe-web/src/modules/quality/quality.store.ts#L45), [almacén/filtro de análisis](../../epe-web/src/modules/quality/qualityAnalysis.store.ts#L33), [contrato local de análisis](../../epe-web/src/modules/quality/qualityAnalysis.utils.ts#L5), [acciones todavía informativas](../../epe-web/src/modules/quality/pages/QualityPage.tsx#L70) y [lectura del catálogo de campañas](../../epe-web/src/modules/quality/components/QualityAddCampaignModal.tsx#L107).
 
-**Alcance de la observación:** es una inspección estática. No se abrió la app local ni se enviaron datos. Los almacenes declaran TODO(api) y sus demos se habilitan solo en desarrollo; no se atribuye al backend una fuga de datos que no está persistiendo. Los estados de conexión se registran únicamente en [reporte de conexión de vistas](D:/upeu/proyecto-carrera/app/epe-web/docs/reporte-conexion-vistas.md:1), conservando su historial.
+**Alcance de la observación:** es una inspección estática. No se abrió la app local ni se enviaron datos. Los almacenes declaran TODO(api) y sus demos se habilitan solo en desarrollo; no se atribuye al backend una fuga de datos que no está persistiendo. Los estados de conexión se registran en [integration-status.md](../../epe-web/docs/integration-status.md).
 
 </details>
 
@@ -1018,15 +1020,15 @@ La recomendación es verificar dónde quedará cada dato antes de cambiar la est
 
 | Orden | Migración | Alcance que afecta la comparación |
 |---:|---|---|
-| 1 | [InitialSchema1789745103871](D:/upeu/proyecto-carrera/app/epe-backend/src/database/migrations/1789745103871-InitialSchema.ts:6) | Crea el núcleo de campañas, proveedor, cliente, certificados, catálogos y exámenes. |
-| 2 | [AddTransportTables1790352000000](D:/upeu/proyecto-carrera/app/epe-backend/src/database/migrations/1790352000000-AddTransportTables.ts:6) | Crea seis tablas de transporte, costos y asignaciones; agrega btree_gist y exclusión por chofer. |
-| 3 | [AddEstadoExamenSanidadAgrariaToProveedor1790792329457](D:/upeu/proyecto-carrera/app/epe-backend/src/database/migrations/1790792329457-AddEstadoExamenSanidadAgrariaToProveedor.ts:6) | Agrega estado_examen_sanidad_agraria al proveedor. |
-| 4 | [AddArchivoStorage1791128261336](D:/upeu/proyecto-carrera/app/epe-backend/src/database/migrations/1791128261336-AddArchivoStorage.ts:6) | Crea archivo y migra certificado_proveedor desde documento_url a documento_archivo_id. |
-| 5 | [MoveAgronomicFieldsToProveedor1791561600000](D:/upeu/proyecto-carrera/app/epe-backend/src/database/migrations/1791561600000-MoveAgronomicFieldsToProveedor.ts:6) | Mueve agronomía desde campaña/proveedor al proveedor usando DISTINCT ON por proveedor, tomando el registro más recientemente actualizado. |
-| 6 | [CreateFincaAndMoveLocationFields1791561601000](D:/upeu/proyecto-carrera/app/epe-backend/src/database/migrations/1791561601000-CreateFincaAndMoveLocationFields.ts:6) | Crea finca a partir de ubicaciones de campaña/proveedor y agrega finca_id; cambia unicidades a campaña/finca y vínculo sin finca. |
-| 7 | [CleanupLegacyCampaniaProveedorFields1791561602000](D:/upeu/proyecto-carrera/app/epe-backend/src/database/migrations/1791561602000-CleanupLegacyCampaniaProveedorFields.ts:6) | Elimina campos legacy agronómicos y de ubicación de campaña/proveedor. |
-| 8 | [OptionalCampaignProviderFarm1792029000000](D:/upeu/proyecto-carrera/app/epe-backend/src/database/migrations/1792029000000-OptionalCampaignProviderFarm.ts:8) | Elimina la exigencia de finca para productor; down revisa previamente productores sin finca y falla si existen. |
-| 9 | [CreateEntrevistaExtencion1792371600000](D:/upeu/proyecto-carrera/app/epe-backend/src/database/migrations/1792371600000-CreateEntrevistaExtencion.ts:8) | Agrega estado sin validar/validado al vínculo de campaña y crea entrevista_extencion, sus índices y triggers de productor/finca y protección de la asignación. |
+| 1 | [InitialSchema1789745103871](../../epe-backend/src/database/migrations/1789745103871-InitialSchema.ts#L6) | Crea el núcleo de campañas, proveedor, cliente, certificados, catálogos y exámenes. |
+| 2 | [AddTransportTables1790352000000](../../epe-backend/src/database/migrations/1790352000000-AddTransportTables.ts#L6) | Crea seis tablas de transporte, costos y asignaciones; agrega btree_gist y exclusión por chofer. |
+| 3 | [AddEstadoExamenSanidadAgrariaToProveedor1790792329457](../../epe-backend/src/database/migrations/1790792329457-AddEstadoExamenSanidadAgrariaToProveedor.ts#L6) | Agrega estado_examen_sanidad_agraria al proveedor. |
+| 4 | [AddArchivoStorage1791128261336](../../epe-backend/src/database/migrations/1791128261336-AddArchivoStorage.ts#L6) | Crea archivo y migra certificado_proveedor desde documento_url a documento_archivo_id. |
+| 5 | [MoveAgronomicFieldsToProveedor1791561600000](../../epe-backend/src/database/migrations/1791561600000-MoveAgronomicFieldsToProveedor.ts#L6) | Mueve agronomía desde campaña/proveedor al proveedor usando DISTINCT ON por proveedor, tomando el registro más recientemente actualizado. |
+| 6 | [CreateFincaAndMoveLocationFields1791561601000](../../epe-backend/src/database/migrations/1791561601000-CreateFincaAndMoveLocationFields.ts#L6) | Crea finca a partir de ubicaciones de campaña/proveedor y agrega finca_id; cambia unicidades a campaña/finca y vínculo sin finca. |
+| 7 | [CleanupLegacyCampaniaProveedorFields1791561602000](../../epe-backend/src/database/migrations/1791561602000-CleanupLegacyCampaniaProveedorFields.ts#L6) | Elimina campos legacy agronómicos y de ubicación de campaña/proveedor. |
+| 8 | [OptionalCampaignProviderFarm1792029000000](../../epe-backend/src/database/migrations/1792029000000-OptionalCampaignProviderFarm.ts#L8) | Elimina la exigencia de finca para productor; down revisa previamente productores sin finca y falla si existen. |
+| 9 | [CreateEntrevistaExtencion1792371600000](../../epe-backend/src/database/migrations/1792371600000-CreateEntrevistaExtencion.ts#L8) | Agrega estado sin validar/validado al vínculo de campaña y crea entrevista_extencion, sus índices y triggers de productor/finca y protección de la asignación. |
 
 **Riesgos de datos al migrar:** la migración que toma el último perfil agronómico por proveedor no conserva por sí sola todas las diferencias de campañas anteriores. El código permite identificar ese riesgo, pero no demuestra que se hayan perdido datos de una instancia real. Revisar respaldos antes de reconstruir un historial. La creación de finca genera una finca por fila CXP que tenía ubicación completa; filas históricas de distintas campañas podrían corresponder al mismo lugar físico: no deduplicarlas sin validar identidad de finca. El paso a archivo elimina documento_url del certificado propio sin un backfill de archivos en ese script; revisar certificados cuyo documento_archivo_id siga nulo y rescatar URLs de respaldos si fuera necesario.
 

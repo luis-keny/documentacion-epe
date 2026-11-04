@@ -1,7 +1,8 @@
 BEGIN;
 SET LOCAL search_path = agro, public;
 
--- Catálogos iniciales del prototipo local (29/10/2026), sin usuarios demo ni movimientos.
+-- Datos iniciales del modelo objetivo, corte 2026-10-29; revisar antes del 2027-01-27.
+-- No representa catálogos del backend desplegado; sin usuarios demo ni movimientos.
 
 -- Reejecutable en mantenimiento controlado; no sobrescribe valores existentes.
 

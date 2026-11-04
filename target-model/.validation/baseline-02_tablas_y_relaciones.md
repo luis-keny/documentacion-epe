@@ -1,6 +1,6 @@
 # Agro Exportaciones — tablas y relaciones por vista
 
-[Reporte detallado](01_reporte_especifico.md) · [SQL](03_schema_total.sql). Modelo propuesto a partir de la aplicación inspeccionada el 25/10/2026. Los nombres son tablas propuestas, no nombres confirmados del backend actual. No se incluyen atributos.
+[Reporte detallado](baseline-01_reporte_especifico.md) · [SQL](baseline-03_schema_total.sql). Modelo propuesto a partir de la aplicación inspeccionada el 25/10/2026. Los nombres son tablas propuestas, no nombres confirmados del backend actual. No se incluyen atributos.
 
 
 **Cómo leer los diagramas Mermaid:** cada caja es una tabla, sin atributos. En el extremo de una línea, `||` significa exactamente uno; `o|`, cero o uno; `o{`, cero o muchos. Por ejemplo, `clientes ||..o{ destinos_cliente` indica que un cliente puede tener varios destinos y cada destino pertenece a un cliente. La línea discontinua representa una relación no identificadora: cada tabla tiene su propia PK. Las relaciones N:M se representan mediante tablas intermedias. Una tabla sin línea en una vista participa mediante consultas o reglas del servicio, sin FK directa. Los diagramas por vista incluyen sus tablas padre externas para conservar el contexto; las tablas compartidas se reutilizan entre módulos y roles. Las FK compuestas de coherencia entre el mismo par se agrupan en una sola línea; el SQL conserva todas las restricciones.

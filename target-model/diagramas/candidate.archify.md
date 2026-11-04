@@ -8,10 +8,10 @@ El modelo objetivo describe **60 tablas, 124 claves foráneas y seis vistas SQL*
 
 @answer scope="SQL de revisión y vistas funcionales documentadas · 29/10/2026"
 @meta locale=es quality_profile=standard style=editorial
-@source vistas title="ERD global y 62 vistas con atributos" path=docs/agro-schema/diagramas/esquema-agro-vistas.html
-@source sql title="SQL objetivo actualizado" path=docs/agro-schema/03_schema_total.sql
-@source relaciones title="Mapa global y esquemas por vista" path=docs/agro-schema/02_tablas_y_relaciones.md
-@source reporte title="Diccionario de tablas y fichas V01–V62" path=docs/agro-schema/01_reporte_especifico.md
+@source vistas title="ERD global y 62 vistas con atributos" path=docs/target-model/diagramas/esquema-agro-vistas.html
+@source sql title="SQL objetivo actualizado" path=docs/target-model/03_schema_total.sql
+@source relaciones title="Mapa global y esquemas por vista" path=docs/target-model/02_tablas_y_relaciones.md
+@source reporte title="Diccionario de tablas y fichas V01–V62" path=docs/target-model/01_reporte_especifico.md
 
 ## ¿Cómo se organiza el esquema global? {#global}
 

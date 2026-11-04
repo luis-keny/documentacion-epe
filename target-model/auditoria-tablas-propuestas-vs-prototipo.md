@@ -2,6 +2,8 @@
 
 **Decisiones incorporadas al SQL objetivo — 29/10/2026.**
 
+> **Trazabilidad del modelo, no estado de implementación.** Revisar para retiro o renovación el **27/01/2027**; las decisiones y el estado backend vigentes están en sus índices actuales.
+
 Se revisaron 46 propuestas originales: cinco se retiraron o consolidaron y quedan **41 propuestas vigentes**, junto a 19 tablas actuales: **60 tablas y 124 FK**. Se conserva norma con datos iniciales y guia_x_norma para selecciones reales. Estos cambios están incorporados al SQL y los HTML de revisión; no se ha modificado una base desplegada ni la aplicación.
 
 [Revisar HTML por vistas](diagramas/esquema-agro-vistas.html#auditoria) · [SQL total](03_schema_total.sql) · [Datos iniciales reejecutables](04_datos_iniciales.sql) · [Evidencias JSON](auditoria-tablas-propuestas.json)

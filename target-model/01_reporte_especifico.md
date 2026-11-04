@@ -1,12 +1,14 @@
 # Base de datos por vista — schema actualizado para cumplir la aplicación
 
-**Versión vigente — 29/10/2026.** Se incorporan los ajustes FC01–FC13 de la auditoría y las respuestas del usuario: compra sobre kilos reconocidos en planta, varios requerimientos por cliente/campaña y varias facturas por carga. No se modifica el prototipo, la web, el backend ni una base desplegada. [SQL completo de instalación nueva](03_schema_total.sql).
+**Modelo objetivo revisado el 29/10/2026; no describe la implementación actual.** La API/backend se consideran completados según confirmación del usuario. Usa [entidades y migraciones](../../epe-backend/src/database/) para el esquema implementado; este SQL es solo para instalar el modelo objetivo en una base nueva. Revisar este corte para retiro o renovación el **27/01/2027**.
 
 **Modelo:** 60 tablas (19 actuales ampliadas y 41 propuestas), 124 FK y seis vistas. Se conservan por nombre 173 columnas legacy incluidas; **35 definiciones de columnas actuales cambian** y se agregan 74 columnas a tablas actuales. No se afirma compatibilidad de tipos sin migración. Los detalles de formularios se conservan mediante JSONB en las tablas existentes, sin tablas nuevas por pantalla.
 
 **D08 — Destino como texto (29/10/2026):** se retira el catálogo propuesto de destinos porque el prototipo no tiene CRUD propio. La entrega guarda `destino text NOT NULL`; la guía conserva su dirección/ubigeo/establecimiento de llegada como snapshots.
 
 **Simplificación confirmada — 29/10/2026:** una sola participación en `campania_x_proveedores`; se retiran la cabecera duplicada, los dos puentes de variedades calculadas y `acuerdo_compra`. Se conserva `norma` con datos iniciales y `guia_x_norma` para selecciones reales. [Datos iniciales reejecutables](04_datos_iniciales.sql): dos perfiles, cinco normas, cinco frutas, 17 variedades y parámetros de 2025/2026 tomados del prototipo. El SQL total ya incluye esa carga. No se crean usuarios ni movimientos ficticios.
+
+Las notas FC y las recomendaciones de implementación que siguen describen el modelo objetivo de 29/10, no pendientes actuales. El backend se considera completado; confirma cualquier diferencia en sus fuentes vigentes antes de reutilizar una recomendación.
 
 **D17 — Sesiones fuera del alcance:** se retira `sesion_usuario` (tokens, expiración y revocación). `usuario` y `rol` permanecen; la autenticación no deberá depender de una tabla de sesiones propia.
 
@@ -224,7 +226,7 @@ erDiagram
 | D08 | Confirmado e incorporado al SQL | Destino como texto | Decisión del 29/10/2026: no existe CRUD independiente de destinos en el prototipo. Se retira el catálogo propuesto; entrega_programada.destino guarda texto obligatorio. La guía conserva direccion_llegada_snapshot, ubigeo_llegada_snapshot y establecimiento_llegada_snapshot propios, sin FK de destino. |
 | D09 | Por discutir | Cantidad de certificados | El editor dice uno por campaña; el backend y el resumen admiten varios. Se mantiene la capacidad actual hasta decidir si las normas requieren certificados distintos. |
 | D10 | Incorporado al SQL | Condiciones de compra | El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. Se retira acuerdo_compra: no existe un flujo independiente de acuerdos/versiones en el prototipo. La liquidación conserva kilos reconocidos y precio aplicados. |
-| D11 | Incorporado al SQL | Persona de la liquidación | La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro. |
+| D11 | Incorporado al SQL | Persona de la liquidación | La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa está implementada en el backend con JWT; no requiere una tabla de sesión. |
 | D12 | Incorporado al SQL | Examen por etapas | Pendiente y Enviado admiten resultado/documento ausentes. Con resultado requiere resultado explícito. Se mantienen tipos positivo/negativo del backend para el dato final. |
 | D13 | Decisión previa conservada | Gestión documental diferida | archivo no está en el SQL ni en diagramas. Los campos de documentos, comprobantes y evidencias son opcionales y sin FK. El mockup puede exigir archivos, pero esa exigencia no está implementada en el esquema de esta etapa. |
 | D14 | Confirmado por el usuario | Una carga por entrega | Se conserva un viaje/carga por entrega. Cosecha también es única por entrega. El SQL permite varias facturas de esa carga, con suma de kilos no superior a la recepción, según respuesta explícita del usuario. |
@@ -290,7 +292,7 @@ erDiagram
     rol ||..o{ usuario : propuesta
 ```
 
-**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa está implementada en el backend con JWT; no requiere una tabla de sesión.
 
 <a id="tabla-usuario"></a>
 
@@ -392,7 +394,7 @@ erDiagram
 
 **Clave primaria:** `cliente_negocio_id`. Padrón general del cliente y contacto.
 
-**Fuente actual:** [ClienteNegocio](D:/upeu/proyecto-carrera/app/epe-backend/src/cliente-negocio/entities/cliente-negocio.ts).
+**Fuente actual:** [ClienteNegocio](../../epe-backend/src/cliente-negocio/entities/cliente-negocio.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -450,7 +452,7 @@ erDiagram
 
 **Clave primaria:** `cliente_negocio_campana_id`. Participación cliente–campaña y necesidad original, previa a sus contratos.
 
-**Fuente actual:** [ClienteNegocioCampana](D:/upeu/proyecto-carrera/app/epe-backend/src/cliente-negocio-campana/entities/cliente-negocio-campana.ts).
+**Fuente actual:** [ClienteNegocioCampana](../../epe-backend/src/cliente-negocio-campana/entities/cliente-negocio-campana.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -480,7 +482,7 @@ erDiagram
 
 **Clave primaria:** `campania_id`. Campaña con sus fechas, responsable y cierre manual.
 
-**Fuente actual:** [Campana](D:/upeu/proyecto-carrera/app/epe-backend/src/campana/entities/campana.ts).
+**Fuente actual:** [Campana](../../epe-backend/src/campana/entities/campana.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -602,7 +604,7 @@ erDiagram
 
 **Clave primaria:** `fruta_derivada_id`. Variedades pertenecientes a una fruta.
 
-**Fuente actual:** [FrutaDerivada](D:/upeu/proyecto-carrera/app/epe-backend/src/fruta/entities/fruta-derivada.ts).
+**Fuente actual:** [FrutaDerivada](../../epe-backend/src/fruta/entities/fruta-derivada.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -898,7 +900,7 @@ erDiagram
 
 **Clave primaria:** `fruta_id`. Catálogo de frutas.
 
-**Fuente actual:** [Fruta](D:/upeu/proyecto-carrera/app/epe-backend/src/fruta/entities/fruta.ts).
+**Fuente actual:** [Fruta](../../epe-backend/src/fruta/entities/fruta.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -990,7 +992,7 @@ erDiagram
 
 **Clave primaria:** `cxp_id`. Única participación proveedor/campaña, identificada por cxp_id; conserva oferta, tipo, evaluación, entrevista aplicable, precio simple PEN y disponibilidad.
 
-**Fuente actual:** [CampaniaProveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/campana-proveedor/entities/campania-proveedor.ts).
+**Fuente actual:** [CampaniaProveedor](../../epe-backend/src/campana-proveedor/entities/campania-proveedor.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -1021,7 +1023,7 @@ erDiagram
 
 **Clave primaria:** `examen_proveedor_id`. Exámenes sanitarios de la participación, con muestra y fechas de laboratorio.
 
-**Fuente actual:** [ExamenProveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/proveedor/entities/examen-proveedor.ts).
+**Fuente actual:** [ExamenProveedor](../../epe-backend/src/proveedor/entities/examen-proveedor.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -1052,7 +1054,7 @@ erDiagram
 
 **Clave primaria:** `certificado_id`. Certificado de campaña y su costo; el backend admite varios, aunque el editor del mockup anuncia uno. Unicidad pendiente de decisión.
 
-**Fuente actual:** [CertificadoCampana](D:/upeu/proyecto-carrera/app/epe-backend/src/certificado-campana/entities/certificado-campana.ts).
+**Fuente actual:** [CertificadoCampana](../../epe-backend/src/certificado-campana/entities/certificado-campana.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -1259,7 +1261,7 @@ erDiagram
 
 **Clave primaria:** `proveedor_id`. Identidad comercial del proveedor principal.
 
-**Fuente actual:** [Proveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/proveedor/entities/proveedor.ts).
+**Fuente actual:** [Proveedor](../../epe-backend/src/proveedor/entities/proveedor.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -1297,7 +1299,7 @@ erDiagram
 
 **Clave primaria:** `pxf_id`. Frutas asociadas al padrón general.
 
-**Fuente actual:** [ProveedorFruta](D:/upeu/proyecto-carrera/app/epe-backend/src/proveedor-fruta/entities/proveedor-fruta.ts).
+**Fuente actual:** [ProveedorFruta](../../epe-backend/src/proveedor-fruta/entities/proveedor-fruta.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -1337,7 +1339,7 @@ erDiagram
 
 **Clave primaria:** `entrevista_id`. Registro agronómico de cada finca entrevistada en una campaña.
 
-**Fuente actual:** [EntrevistaExtencion](D:/upeu/proyecto-carrera/app/epe-backend/src/entrevista-extencion/entities/entrevista-extencion.ts).
+**Fuente actual:** [EntrevistaExtencion](../../epe-backend/src/entrevista-extencion/entities/entrevista-extencion.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -1372,7 +1374,7 @@ erDiagram
 
 **Clave primaria:** `finca_id`. Datos físicos de cada finca, independientes de la campaña.
 
-**Fuente actual:** [Finca](D:/upeu/proyecto-carrera/app/epe-backend/src/finca/entities/finca.ts).
+**Fuente actual:** [Finca](../../epe-backend/src/finca/entities/finca.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -1746,7 +1748,7 @@ erDiagram
 
 **Clave primaria:** `id_empresa_transporte_externo`. Padrón de empresas con RUC e independientes identificados por documento; admite correo y dimensiones pendientes en sus subrecursos.
 
-**Fuente actual:** [EmpresaTransporteExterno](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/empresa-transporte-externo.ts).
+**Fuente actual:** [EmpresaTransporteExterno](../../epe-backend/src/transporte/entities/empresa-transporte-externo.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -1953,7 +1955,7 @@ erDiagram
 
 **Clave primaria:** `id_vehiculo_externo`. Unidad de transporte con capacidad y pesos explícitos.
 
-**Fuente actual:** [VehiculoExterno](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/vehiculo-externo.ts).
+**Fuente actual:** [VehiculoExterno](../../epe-backend/src/transporte/entities/vehiculo-externo.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -1982,7 +1984,7 @@ erDiagram
 
 **Clave primaria:** `id_chofer_transporte_externo`. Identidad del conductor y vínculo opcional a cuenta de acceso.
 
-**Fuente actual:** [ChoferTransporteExterno](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/chofer-transporte-externo.ts).
+**Fuente actual:** [ChoferTransporteExterno](../../epe-backend/src/transporte/entities/chofer-transporte-externo.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -2114,7 +2116,7 @@ erDiagram
     persona o|..o{ proveedor : propuesta
 ```
 
-**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa está implementada en el backend con JWT; no requiere una tabla de sesión.
 
 **`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
@@ -2183,7 +2185,7 @@ erDiagram
     persona o|..o{ proveedor : propuesta
 ```
 
-**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa está implementada en el backend con JWT; no requiere una tabla de sesión.
 
 **`proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
@@ -2271,7 +2273,7 @@ erDiagram
 
 **Clave primaria:** `certificado_proveedor_id`. Certificados generales del proveedor; distintos del certificado de campaña.
 
-**Fuente actual:** [CertificadoProveedor](D:/upeu/proyecto-carrera/app/epe-backend/src/certificado-proveedor/entities/certificado-proveedor.ts).
+**Fuente actual:** [CertificadoProveedor](../../epe-backend/src/certificado-proveedor/entities/certificado-proveedor.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -2349,7 +2351,7 @@ erDiagram
 
 **Clave primaria:** `id_trazabilidad_transporte`. Tabla actual de transporte que se conserva con su historial.
 
-**Fuente actual:** [TrazabilidadTransporte](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/trazabilidad-transporte.ts).
+**Fuente actual:** [TrazabilidadTransporte](../../epe-backend/src/transporte/entities/trazabilidad-transporte.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -2374,7 +2376,7 @@ erDiagram
 
 **Clave primaria:** `id_chofer_vehiculo_externo`. Tabla actual de transporte que se conserva con su historial.
 
-**Fuente actual:** [ChoferVehiculoExterno](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/chofer-vehiculo-externo.ts).
+**Fuente actual:** [ChoferVehiculoExterno](../../epe-backend/src/transporte/entities/chofer-vehiculo-externo.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -2400,7 +2402,7 @@ erDiagram
 
 **Clave primaria:** `id_detalle_trazabilidad`. Tabla actual de transporte que se conserva con su historial.
 
-**Fuente actual:** [DetalleTrazabilidad](D:/upeu/proyecto-carrera/app/epe-backend/src/transporte/entities/detalle-trazabilidad.ts).
+**Fuente actual:** [DetalleTrazabilidad](../../epe-backend/src/transporte/entities/detalle-trazabilidad.ts).
 
 | Atributo | Estado | Tipo y obligatoriedad en el modelo revisado | Finalidad / relación |
 |---|---|---|---|
@@ -2526,7 +2528,7 @@ erDiagram
 
 **D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
-**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa está implementada en el backend con JWT; no requiere una tabla de sesión.
 
 **`chofer_transporte_externo`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
@@ -4224,7 +4226,7 @@ erDiagram
 
 **D10 — Condiciones de compra (Incorporado al SQL):** El precio simple vive en campania_x_proveedores.precio_compra_kg y moneda PEN. Se retira acuerdo_compra: no existe un flujo independiente de acuerdos/versiones en el prototipo. La liquidación conserva kilos reconocidos y precio aplicados.
 
-**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa está implementada en el backend con JWT; no requiere una tabla de sesión.
 
 **`liquidacion_proveedor`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
@@ -4336,7 +4338,7 @@ erDiagram
     parametro_uit
 ```
 
-**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa está implementada en el backend con JWT; no requiere una tabla de sesión.
 
 <a id="tabla-parametro_uit"></a>
 
@@ -4690,7 +4692,7 @@ erDiagram
 
 **D05 — Autoridad de transporte (Confirmado por el usuario):** coordinacion_entrega es la fuente del viaje. Se conservan las tablas actuales por compatibilidad; ambas asignaciones usan instantes y exclusión [inicio,fin), permitiendo viajes sucesivos en el día.
 
-**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa sigue en backend futuro.
+**D11 — Persona de la liquidación (Incorporado al SQL):** La liquidación referencia persona directamente y admite proveedor principal o persona vinculada activa. Conserva snapshot de identidad; no exige un vínculo ficticio del proveedor consigo mismo. La autenticación operativa está implementada en el backend con JWT; no requiere una tabla de sesión.
 
 **`usuario`:** reutiliza su diccionario anterior; no crea una tabla duplicada.
 
@@ -5453,7 +5455,7 @@ Las soluciones siguientes son el **mínimo funcional propuesto**, no cambios eje
 | FC11 | Liquidar compra sobre kilos reconocidos, consultar vencimiento y controlar acumulado de la persona | `liquidacion_proveedor` solo conserva importe y valor UIT, no kilos/precio aplicados ni vencimiento. La identidad depende de maestros mutables y no guarda el acuse del aviso del prototipo. | Guardar base de kilos, precio, vencimiento, identidad del documento y acuse. PEN puede ser una regla fija explícita. Proveedor principal debe poder seleccionarse; no obligar a crear una persona vinculada ficticia porque la FK actual de liquidación apunta a esa relación. Usar los kilos reconocidos según respuesta del usuario una vez alineado el flujo. |
 | FC12 | Preparar factura con descuento/cargos y registrar emisión electrónica | `importe_venta = round(kilos × precio, 2)` rechaza cualquier total ajustado. No se conservan descuento/cargos/notas ni la fecha de verificación del objeto `electronicInvoice`. | Añadir ajustes y notas, adaptar el cálculo del total y guardar verificación de emisión. Mantener una factura por viaje como regla del prototipo hasta resolver la discrepancia con la respuesta sobre múltiples facturas. |
 | FC13 | Guardar pagos/cobros, aplicar adelanto, finalizar campaña | Tablas/vistas permiten movimientos y saldos, pero no implementan las reglas de suma, sobrepago, aplicación única o cierre del prototipo. El SQL ya advierte que esas reglas están pendientes de servicio. | Implementar los guardados de negocio y sus comprobaciones en una transacción. Solo es requisito funcional para impedir pagar/aplicar dos veces o cerrar con pendientes. No se exige arquitectura nueva, libro contable ni framework adicional. |
-| FC14 | Adjuntar y volver a abrir evidencias/documentos | Campos `*_archivo_id` quedan sin relación y no representan por sí solos un archivo subido. Parte del prototipo guarda nombres, otra dispone de almacenamiento de documentos. | Mantener la integración documental como etapa diferida acordada y hacer visible la limitación. No dar por completo el flujo de documentos ni introducir identificadores inventados. La auditoría no revoca la exclusión actual de `archivo`. |
+| FC14 | Adjuntar y volver a abrir evidencias/documentos | El modelo objetivo excluye una tabla general `archivo`; sus referencias opcionales no acreditan una subida. Algunos flujos actuales usan rutas locales de adjuntos, pero esto queda fuera de este SQL y no certifica persistencia productiva. | Mantener fuera del modelo la gestión documental general y no inventar IDs. Para saber qué vistas adjuntan archivos, consultar el estado vigente del [frontend](../../epe-web/docs/integration-status.md). |
 
 ### Ejemplos de aceptación que hoy requieren ajustes
 
@@ -5485,7 +5487,7 @@ Las respuestas del usuario no se ignoran, pero tampoco se convierte una contradi
 1. **Permitir registrar lo que ya piden las pantallas:** tipos de maestros, campos opcionales por etapa, precio de participación/contrato y vínculo inicial del transportista — FC01–FC06.
 2. **Permitir completar el recorrido físico:** Calidad/cosecha/Industria, carga, guía y recepción por proveedor — FC07–FC10.
 3. **Permitir cerrar el recorrido económico:** documento de compra, factura con ajustes, movimientos y cierre — FC11–FC13.
-4. **Retomar documentos cuando corresponda:** FC14 sigue diferido por acuerdo previo. No presentarlo como terminado al cerrar las etapas anteriores.
+4. **Documentos:** este modelo no define un archivo general. Algunas vistas actuales admiten adjuntos locales; consulta el [estado de integración](../../epe-web/docs/integration-status.md), sin inferir persistencia productiva.
 
 Antes de implementar, llevar únicamente los cambios mínimos necesarios al SQL de revisión y después a migraciones TypeORM. Esta auditoría **no modifica** tablas, SQL, frontend o backend ni aprueba cambios de negocio pendientes.
 
@@ -5513,7 +5515,7 @@ Este apartado prevalece sobre los hallazgos y pendientes históricos conservados
 | FC09–FC10 | Contenido íntegro de guía, fincas por proveedor de guía, recepción reconocida por proveedor y detalle logístico/checklist. |
 | FC11–FC12 | Documento histórico de compra sobre reconocidos, persona principal/vinculada, facturación con ajustes y múltiples documentos por carga. |
 | FC13 | Triggers para sobrepago/cobro, aplicaciones disponibles/de la misma empresa-campaña, conservación de documentos con movimientos y suma de kilos facturados. El cierre completo sigue requiriendo servicio. |
-| FC14 | Integración documental diferida por acuerdo; no se crea archivo ni se añaden FK a ella. |
+| FC14 | El modelo objetivo no crea una tabla general de archivos; no describe las rutas locales implementadas en algunas vistas. |
 
 ### Contrato mínimo de los objetos JSONB
 
