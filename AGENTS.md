@@ -1,6 +1,7 @@
 # Reglas de documentación transversal
 
 - Escribe en español claro y directo. Prioriza información accionable; elimina contexto repetido y explicaciones que no cambien una decisión.
+- Las solicitudes del desarrollador autorizan ajustar las vistas, reglas de negocio y simulación necesarias dentro de su alcance. Actualiza sus fuentes en el mismo cambio según el [flujo frontend](../epe-web/docs/development.md#cambios-de-vistas-reglas-de-negocio-y-mock); distingue la regla solicitada del comportamiento implementado y de cualquier adaptación backend pendiente. Cierra con una explicación breve y poco técnica del cambio, su impacto y lo verificado.
 - Mantén una sola versión vigente por tema y usa nombres estables, sin fecha ni número de versión en el nombre del archivo.
 - Pon fecha de revisión dentro del documento solo cuando ayude a evaluar su vigencia; no conviertas cada actualización en otro archivo.
 - Crea versiones anteriores únicamente si preservan una decisión, auditoría, aceptación o evidencia que siga teniendo valor.

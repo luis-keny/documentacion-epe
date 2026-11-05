@@ -23,6 +23,7 @@ Esta carpeta conserva el contexto compartido del producto: procesos, modelo obje
 | Entender actores, términos o el recorrido general | [business/processes.md](business/processes.md); contrasta acciones concretas con los manuales de `epe-web` y el estado de integración. |
 | Revisar el modelo propuesto | [target-model/README.md](target-model/README.md), que conduce al diccionario, relaciones, SQL y límites frente al backend. |
 | Ver el estado de una vista | [integration-status.md](../epe-web/docs/integration-status.md). |
+| Modificar vistas, reglas de negocio y simulación de manera coordinada | [Flujo de cambios y comunicación al desarrollador](../epe-web/docs/development.md#cambios-de-vistas-reglas-de-negocio-y-mock). |
 | Investigar una decisión o evidencia pasada | [history/README.md](history/README.md); no usar sus conclusiones como estado actual. |
 | Cambiar contrato API o persistencia | [contrato frontend](../epe-web/docs/api/README.md), OpenAPI generado y entidades/migraciones backend. |
 | Cambiar diagramas de proceso | [fuentes Archify](business/flows/candidate.archify.md) y archivos `*.workflow.json` de esa carpeta. |
