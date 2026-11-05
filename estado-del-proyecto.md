@@ -16,6 +16,7 @@ La finalización del backend y de la parte visual se registra por confirmación 
 
 Los cambios solicitados se coordinan entre vistas, reglas de negocio y datos simulados mediante el [flujo de cambios](../epe-web/docs/development.md#cambios-de-vistas-reglas-de-negocio-y-mock). Cada entrega debe distinguir lo implementado con API real de lo simulado y explicar brevemente las implicaciones para el desarrollador. Esta revisión de instrucciones no modifica funcionalidades ni datos.
 
+La [optimización de peticiones por vista](../epe-web/docs/integration-status.md#optimización-de-peticiones-por-vista--2026-11-05--implementada-en-desarrollo-y-revisada) sustituye las recargas globales tras guardar por integración de respuestas confirmadas y cargas del ámbito activo. Campañas arranca con dos GET y el alta sin documento usa un POST sin lecturas adicionales en las pruebas locales. Se conserva el histórico que necesitan UIT/adelantos y los indicadores actuales. El [diseño de referencia](../epe-web/docs/integration-status.md#plan-de-consumo-api-por-vista--2026-11-05--referencia-de-diseño) cubre las 48 rutas con pantalla; las lecturas agregadas nuevas siguen siendo opcionales. No hubo cambios visuales, de esquema ni de contrato backend. La discrepancia decimal del generador quedó resuelta y las copias OpenAPI siguen idénticas. La validación es local; no acredita un despliegue productivo.
 ## Fuentes vigentes y su propósito
 
 - [README compartido](README.md): rutas de consulta para personas y agentes, sin lectura obligatoria para solicitudes ajenas al tema.
