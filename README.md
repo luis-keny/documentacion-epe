@@ -18,13 +18,19 @@ Esta carpeta conserva el contexto compartido del producto: procesos, modelo obje
 
 ## Rutas de consulta
 
+Los adjuntos de campaña y otros formularios verifican metadatos y objeto real en S3 antes de mostrarse verdes; faltantes/inconsistencias se muestran en rojo. El [flujo backend](../epe-backend/docs/backend-flow.md#41-servicio-general-de-documentos-y-vínculos-en-s3-apidocumentos) y el [contrato de disponibilidad](../epe-web/docs/api/business-rules.md#disponibilidad-de-adjuntos) describen la comprobación puntual y los errores de verificación. La implementación local no acredita el estado de un despliegue productivo.
+
 | Si necesitas… | Consulta… |
 |---|---|
 | Entender actores, términos o el recorrido general | [business/processes.md](business/processes.md); contrasta acciones concretas con los manuales de `epe-web` y el estado de integración. |
 | Revisar el modelo propuesto | [target-model/README.md](target-model/README.md), que conduce al diccionario, relaciones, SQL y límites frente al backend. |
 | Ver el estado de una vista | [integration-status.md](../epe-web/docs/integration-status.md). |
 | Modificar vistas, reglas de negocio y simulación de manera coordinada | [Flujo de cambios y comunicación al desarrollador](../epe-web/docs/development.md#cambios-de-vistas-reglas-de-negocio-y-mock). |
-| Investigar una decisión o evidencia pasada | [history/README.md](history/README.md); no usar sus conclusiones como estado actual. |
-| Cambiar contrato API o persistencia | [contrato frontend](../epe-web/docs/api/README.md), OpenAPI generado y entidades/migraciones backend. |
 | Revisar qué datos necesita cada vista y qué actualiza cada escritura | [Optimización implementada](../epe-web/docs/integration-status.md#optimización-de-peticiones-por-vista--2026-11-05--implementada-en-desarrollo-y-revisada) y [diseño de referencia](../epe-web/docs/integration-status.md#plan-de-consumo-api-por-vista--2026-11-05--referencia-de-diseño). |
+| Investigar una decisión o evidencia pasada | [history/README.md](history/README.md); no usar sus conclusiones como estado actual. |
+| Entender cómo arranca y responde el backend, o el flujo de documentos en S3 | [flujo del backend](../epe-backend/docs/backend-flow.md). |
+| Revisar variables S3, imágenes y Compose de backend/web | [diagnóstico de despliegue](../epe-backend/docs/diagnostico-s3-despliegue.md). |
+| Cambiar contrato API o persistencia | [contrato frontend](../epe-web/docs/api/README.md), OpenAPI generado y entidades/migraciones backend. |
 | Cambiar diagramas de proceso | [fuentes Archify](business/flows/candidate.archify.md) y archivos `*.workflow.json` de esa carpeta. |
+
+Los contratos y entregas guardan variedades y cantidades mediante una escritura atómica. Consulte el [contrato y compatibilidad HTTP](../epe-web/docs/api/README.md#desglose-de-contratos-y-entregas) y el [estado de integración](../epe-web/docs/integration-status.md#variedades-en-contratos-y-entregas--2026-11-05--completo-en-desarrollo-despliegue-pendiente).

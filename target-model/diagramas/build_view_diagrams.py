@@ -4,9 +4,9 @@ from audit_panel import load_audit, audit_tag, CSS as audit_css, JS as audit_js
 script_dir=Path(__file__).resolve().parent
 base=script_dir.parents[2]
 outdir=script_dir
-map_path=base/'docs/agro-schema/02_tablas_y_relaciones.md'
-report_path=base/'docs/agro-schema/01_reporte_especifico.md'
-sql_path=base/'docs/agro-schema/03_schema_total.sql'
+map_path=base/'docs/target-model/02_tablas_y_relaciones.md'
+report_path=base/'docs/target-model/01_reporte_especifico.md'
+sql_path=base/'docs/target-model/03_schema_total.sql'
 map_text=map_path.read_text(encoding='utf-8')
 report_text=report_path.read_text(encoding='utf-8')
 sql_text=sql_path.read_text(encoding='utf-8')

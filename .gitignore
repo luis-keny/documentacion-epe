@@ -4,7 +4,7 @@
 **/__pycache__/
 **/*.pyc
 **/*.log
-agro-schema/.validation/codigo-actual/
+target-model/.validation/codigo-actual/
 
 # Configuración privada y archivos del sistema
 .env

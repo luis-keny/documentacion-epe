@@ -40,3 +40,9 @@ Este orden resume los manuales; los pasos concretos y sus condiciones se deben v
 - Una guía o factura registrada en la aplicación y un pago con referencia no prueban por sí mismos emisión ante SUNAT ni operación bancaria real.
 
 Fuentes: [reglas de API](../../epe-web/docs/api/business-rules.md), [modelo objetivo](../target-model/README.md), [estado del proyecto](../estado-del-proyecto.md) y [seguimiento por vista](../../epe-web/docs/integration-status.md). El QA fechado conserva evidencia histórica, no reglas del negocio vigentes.
+
+## Cantidades contractuales por variedad
+
+Cada contrato acuerda variedades de la fruta de campaña incluidas en el requerimiento del cliente. Cada entrega programa solo esas variedades, sin transferir saldo entre ellas. El backend deriva totales y valida el desglose bajo bloqueo y en una transacción. Al editar, excluye toda la entrega original y sustituye sus líneas; reducir, quitar filas o eliminar libera el consumo correspondiente si el flujo lo permite. No se puede reducir un contrato por debajo de sus entregas confirmadas.
+
+Por decisión del usuario, los históricos pendientes de regularización no afectan los cupos actuales. No se les inventa un reparto; se identifican con la marca de confirmación en falso. Un contrato necesita confirmar sus variedades antes de admitir nuevas entregas. Confirmar manualmente una entrega histórica la incorpora al consumo actual y exige saldo. El [contrato HTTP](../../epe-web/docs/api/README.md#desglose-de-contratos-y-entregas) define las operaciones y el [seguimiento](../../epe-web/docs/integration-status.md) distingue implementación, pruebas y despliegue.
