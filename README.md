@@ -36,3 +36,5 @@ Los adjuntos de campaña y otros formularios verifican metadatos y objeto real e
 | Cambiar diagramas de proceso | [fuentes Archify](business/flows/candidate.archify.md) y archivos `*.workflow.json` de esa carpeta. |
 
 Los contratos y entregas guardan variedades y cantidades mediante una escritura atómica. Consulte el [contrato y compatibilidad HTTP](../epe-web/docs/api/README.md#desglose-de-contratos-y-entregas) y el [estado de integración](../epe-web/docs/integration-status.md#variedades-en-contratos-y-entregas--2026-11-05--completo-en-desarrollo-despliegue-pendiente).
+
+El [portal compartido del chofer](business/processes.md#portal-compartido-del-chofer) reúne las entregas coordinadas y permite registrar sus cargas y etapas de despacho.

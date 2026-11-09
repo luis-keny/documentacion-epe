@@ -50,3 +50,7 @@ El programa semanal muestra las entregas programadas por cliente y fecha y permi
 Cada cliente se vincula una vez por campaña. El vínculo admite varios contratos y los registros históricos conservan sus propios contratos y entregas.
 
 Por decisión del usuario, los históricos pendientes de regularización no afectan los cupos actuales. No se les inventa un reparto; se identifican con la marca de confirmación en falso. Un contrato necesita confirmar sus variedades antes de admitir nuevas entregas. Confirmar manualmente una entrega histórica la incorpora al consumo actual y exige saldo. El [contrato HTTP](../../epe-web/docs/api/README.md#desglose-de-contratos-y-entregas) define las operaciones y el [seguimiento](../../epe-web/docs/integration-status.md) distingue implementación, pruebas y despliegue.
+
+### Portal compartido del chofer
+
+La cuenta con rol Chofer consulta y opera las entregas coordinadas de todos los conductores. Cada entrega conserva el chofer y la unidad seleccionados en Transporte. Las coordinaciones aparecen incluso cuando la carga está por registrar. Consulte la [guía del portal](../../epe-web/docs/guides/driver.md).
