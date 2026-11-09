@@ -32,6 +32,7 @@ Los adjuntos de campaña y otros formularios verifican metadatos y objeto real e
 | Revisar variables S3, imágenes y Compose de backend/web | [diagnóstico de despliegue](../epe-backend/docs/diagnostico-s3-despliegue.md). |
 | Cambiar contrato API o persistencia | [contrato frontend](../epe-web/docs/api/README.md), OpenAPI generado y entidades/migraciones backend. |
 | Integrar el nombre libre del responsable de campaña | [Contrato y ejemplo](../epe-web/docs/api/README.md#responsable-libre-de-campaña) y [estado de integración](../epe-web/docs/integration-status.md#responsable-libre-de-campaña--2026-11-08--parcial). |
+| Guardar y consultar el documento de un chofer | [Contrato HTTP](../epe-web/docs/api/README.md#documento-del-chofer) y [migración](../epe-backend/docs/database.md#documento-del-chofer). |
 | Cambiar diagramas de proceso | [fuentes Archify](business/flows/candidate.archify.md) y archivos `*.workflow.json` de esa carpeta. |
 
 Los contratos y entregas guardan variedades y cantidades mediante una escritura atómica. Consulte el [contrato y compatibilidad HTTP](../epe-web/docs/api/README.md#desglose-de-contratos-y-entregas) y el [estado de integración](../epe-web/docs/integration-status.md#variedades-en-contratos-y-entregas--2026-11-05--completo-en-desarrollo-despliegue-pendiente).
