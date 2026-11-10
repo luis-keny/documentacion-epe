@@ -9,7 +9,7 @@ Esta carpeta conserva el contexto compartido del producto: procesos, modelo obje
 | Negocio/prototipo | [Procesos](business/processes.md) y [flujo visual](business/flows/overview.html) | Útil para reglas, términos y recorridos compartidos; el prototipo es antecedente, no implementación vigente. |
 | Estado general | [Estado del proyecto](estado-del-proyecto.md) | Resumen coordinado; el detalle por vista permanece en frontend. |
 | Estado de integración | [Registro frontend](../epe-web/docs/integration-status.md) | Estado por vista y evidencia reciente. |
-| Contrato generado | [Fuente SQL y proceso](../epe-web/docs/api/README.md) y OpenAPI generado | Contrato consumido; su copia runtime vive en backend. |
+| Contrato generado | [Fuente SQL y proceso](../epe-web/docs/api/README.md) y OpenAPI generado | Contrato de negocio bajo `/v1`. Su copia runtime vive en backend. |
 | Esquema implementado | Entidades y migraciones del [backend](../epe-backend/src/database/) | Estructura programada; no acredita el estado de una base desplegada. |
 | Modelo objetivo | [Entrada al modelo](target-model/README.md) | Útil al revisar tablas y relaciones propuestas; está separado del esquema implementado. |
 | Históricos | [Historial](history/README.md) | Útil para rastrear evidencia y decisiones fechadas; no describe el estado vigente. |
@@ -18,7 +18,7 @@ Esta carpeta conserva el contexto compartido del producto: procesos, modelo obje
 
 ## Rutas de consulta
 
-Los adjuntos de campaña y otros formularios verifican metadatos y objeto real en S3 antes de mostrarse verdes; faltantes/inconsistencias se muestran en rojo. El [flujo backend](../epe-backend/docs/backend-flow.md#41-servicio-general-de-documentos-y-vínculos-en-s3-apidocumentos) y el [contrato de disponibilidad](../epe-web/docs/api/business-rules.md#disponibilidad-de-adjuntos) describen la comprobación puntual y los errores de verificación. La implementación local no acredita el estado de un despliegue productivo.
+Los adjuntos de campaña y otros formularios verifican metadatos y objeto real en S3 antes de mostrarse verdes; faltantes/inconsistencias se muestran en rojo. El [flujo backend](../epe-backend/docs/backend-flow.md#41-servicio-general-de-documentos-y-vínculos-en-s3-v1documentos) y el [contrato de disponibilidad](../epe-web/docs/api/business-rules.md#disponibilidad-de-adjuntos) describen la comprobación puntual y los errores de verificación. La implementación local no acredita el estado de un despliegue productivo.
 
 | Si necesitas… | Consulta… |
 |---|---|
