@@ -2,10 +2,14 @@
 
 Esta carpeta conserva el contexto compartido del producto: procesos, modelo objetivo y evidencia. Este README es el mapa para personas y agentes; no hace falta leerlo para solicitudes ajenas a estos temas. La documentación de implementación vive en los índices de [epe-web](../epe-web/docs/README.md) y [epe-backend](../epe-backend/docs/README.md). Las reglas editoriales están en [AGENTS.md](AGENTS.md).
 
+Las referencias entre repositorios usan el workspace con `docs`, `epe-web` y `epe-backend` como carpetas hermanas.
+
 ## Fuentes de verdad
 
 | Tema | Fuente canónica | Alcance |
 |---|---|---|
+| Decisiones de ingeniería y calidad | [Criterios compartidos](criterios-de-calidad.md) | Arquitectura, patrones, SOLID, seguridad, datos, pruebas y operación relacionados con ISO/IEC 25010. |
+| Arquitectura y patrones | [Backend](../epe-backend/docs/architecture.md) y [frontend](../epe-web/docs/architecture.md) | Decisiones, límites de módulos y criterios para código nuevo. |
 | Negocio/prototipo | [Procesos](business/processes.md) y [flujo visual](business/flows/overview.html) | Útil para reglas, términos y recorridos compartidos; el prototipo es antecedente, no implementación vigente. |
 | Estado general | [Estado del proyecto](estado-del-proyecto.md) | Resumen coordinado; el detalle por vista permanece en frontend. |
 | Estado de integración | [Registro frontend](../epe-web/docs/integration-status.md) | Estado por vista y evidencia reciente. |
@@ -13,6 +17,7 @@ Esta carpeta conserva el contexto compartido del producto: procesos, modelo obje
 | Esquema implementado | Entidades y migraciones del [backend](../epe-backend/src/database/) | Estructura programada; no acredita el estado de una base desplegada. |
 | Modelo objetivo | [Entrada al modelo](target-model/README.md) | Útil al revisar tablas y relaciones propuestas; está separado del esquema implementado. |
 | Históricos | [Historial](history/README.md) | Útil para rastrear evidencia y decisiones fechadas; no describe el estado vigente. |
+| Seguridad | [Documentación transversal](auditoria-seguridad.md), [backend](../epe-backend/docs/auditoria-seguridad.md), [frontend](../epe-web/docs/auditoria-seguridad.md) y [entregables](../epe-documentacion-software/auditoria-seguridad.md) | Revisión estática, con prioridades y validaciones pendientes por proyecto. |
 
 `docs/prototipo/` no está presente en este checkout. Se conservan intactas sus referencias existentes; no se reconstruye ni se mueve el material inicial. Los agentes pueden usar este mapa cuando una solicitud afecte estas fuentes; no es lectura obligatoria para tareas ajenas a ellas.
 
@@ -31,7 +36,7 @@ Los adjuntos de campaña y otros formularios verifican metadatos y objeto real e
 | Entender cómo arranca y responde el backend, o el flujo de documentos en S3 | [flujo del backend](../epe-backend/docs/backend-flow.md). |
 | Revisar variables S3, imágenes y Compose de backend/web | [diagnóstico de despliegue](../epe-backend/docs/diagnostico-s3-despliegue.md). |
 | Cambiar contrato API o persistencia | [contrato frontend](../epe-web/docs/api/README.md), OpenAPI generado y entidades/migraciones backend. |
-| Integrar el nombre libre del responsable de campaña | [Contrato y ejemplo](../epe-web/docs/api/README.md#responsable-libre-de-campaña) y [estado de integración](../epe-web/docs/integration-status.md#responsable-libre-de-campaña--2026-11-08--parcial). |
+| Integrar el nombre libre del responsable de campaña | [Contrato y ejemplo](../epe-web/docs/api/README.md#responsable-libre-de-campaña) y [estado de integración](../epe-web/docs/integration-status.md#responsable-libre-de-campaña--2026-11-08--integrado-en-frontend). |
 | Guardar y consultar el documento de un chofer | [Contrato HTTP](../epe-web/docs/api/README.md#documento-del-chofer) y [migración](../epe-backend/docs/database.md#documento-del-chofer). |
 | Cambiar diagramas de proceso | [fuentes Archify](business/flows/candidate.archify.md) y archivos `*.workflow.json` de esa carpeta. |
 
