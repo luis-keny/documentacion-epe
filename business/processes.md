@@ -54,3 +54,5 @@ Por decisión del usuario, los históricos pendientes de regularización no afec
 ### Portal compartido del chofer
 
 La cuenta con rol Chofer consulta y opera las entregas coordinadas de todos los conductores. Cada entrega conserva el chofer y la unidad seleccionados en Transporte. Las coordinaciones aparecen incluso cuando la carga está por registrar. Consulte la [guía del portal](../../epe-web/docs/guides/driver.md).
+
+Los kilos y bultos guardados en la carga se usan para completar la guía de remisión en Calidad al seleccionar los proveedores. Consulte la [regla de precarga de la guía](../../epe-web/docs/api/business-rules.md#calidad-cosecha-carga-y-guía).
