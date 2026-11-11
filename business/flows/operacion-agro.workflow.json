@@ -34,11 +34,14 @@
           "clientes",
           "transporte",
           "campana",
+          "vincular-productores",
+          "evaluar-proveedores",
+          "certificacion-internacional",
           "contratos",
           "coordinacion",
           "fase"
         ],
-        "note": "Vincule productores en planificación. El estado de la campaña se actualiza según sus fechas."
+        "note": "Registre productores, exámenes y entrevistas en planificación; luego asocie la certificación a los productores participantes."
       },
       {
         "id": "despacho",
@@ -49,10 +52,12 @@
           "carga-admin",
           "carga-chofer",
           "guia",
+          "vincular-transportista",
+          "completar-entrega",
           "viaje",
           "checklist"
         ],
-        "note": "Con una carga registrada y aceptada, la guía emitida habilita la salida. Registre después En camino y Llegada."
+        "note": "En ejecución se pueden vincular acopiadores y transportistas. Coordine una entrega pendiente antes de cosecha y despacho."
       },
       {
         "id": "cierres",
@@ -87,6 +92,10 @@
     {
       "id": "campana",
       "label": "Administrador · Gestión de Campaña"
+    },
+    {
+      "id": "proveedores-campana",
+      "label": "Administrador · Proveedores y certificación"
     },
     {
       "id": "calidad",
@@ -465,6 +474,111 @@
         }
       ],
       "icon": "success"
+    },
+    {
+      "id": "vincular-productores",
+      "lane": "proveedores-campana",
+      "col": 3,
+      "label": "Vincular productores",
+      "sublabel": "Planificación",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/campaigns/pages/CampaignProvidersPage.tsx",
+          "line": 63,
+          "end_line": 67
+        },
+        {
+          "path": "src/modules/campaigns/pages/CampaignProvidersPage.tsx",
+          "line": 196,
+          "end_line": 210
+        }
+      ]
+    },
+    {
+      "id": "evaluar-proveedores",
+      "lane": "proveedores-campana",
+      "col": 4,
+      "label": "Exámenes y entrevistas",
+      "sublabel": "Entrevistas solo a productores",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/campaigns/pages/CampaignProviderDetailsPage.tsx",
+          "line": 106,
+          "end_line": 149
+        },
+        {
+          "path": "src/modules/campaigns/pages/CampaignProviderDetailsPage.tsx",
+          "line": 166,
+          "end_line": 179
+        }
+      ]
+    },
+    {
+      "id": "certificacion-internacional",
+      "lane": "proveedores-campana",
+      "col": 5,
+      "label": "Registrar certificación",
+      "sublabel": "Certificado para productores",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/campaigns/pages/CampaignCertificationsPage.tsx",
+          "line": 116,
+          "end_line": 142
+        },
+        {
+          "path": "src/modules/campaigns/components/CampaignCertificationFormModal.tsx",
+          "line": 305,
+          "end_line": 323
+        }
+      ]
+    },
+    {
+      "id": "vincular-transportista",
+      "lane": "campana",
+      "col": 4,
+      "label": "Vincular transportista",
+      "sublabel": "Al entrar en ejecución",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/campaigns/components/CampaignLinkCarrierModal.tsx",
+          "line": 85,
+          "end_line": 95
+        },
+        {
+          "path": "src/modules/campaigns/pages/CampaignCarriersPage.tsx",
+          "line": 368,
+          "end_line": 374
+        }
+      ]
+    },
+    {
+      "id": "completar-entrega",
+      "lane": "campana",
+      "col": 5,
+      "label": "Completar datos de entrega",
+      "sublabel": "Unidad, chofer, origen y destino",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/campaigns/pages/CampaignDeliveriesPage.tsx",
+          "line": 139,
+          "end_line": 139
+        },
+        {
+          "path": "src/modules/campaigns/pages/CampaignDeliveriesPage.tsx",
+          "line": 204,
+          "end_line": 210
+        },
+        {
+          "path": "src/modules/campaigns/components/CampaignDeliveryCoordinationModal.tsx",
+          "line": 158,
+          "end_line": 183
+        }
+      ]
     }
   ],
   "edges": [
@@ -646,6 +760,44 @@
       "to": "cobrar",
       "variant": "emphasis",
       "role": "main"
+    },
+    {
+      "id": "campana-productores",
+      "from": "campana",
+      "to": "vincular-productores",
+      "variant": "dashed",
+      "role": "branch",
+      "label": "Planificación"
+    },
+    {
+      "id": "productores-evaluacion",
+      "from": "vincular-productores",
+      "to": "evaluar-proveedores",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "evaluacion-certificacion",
+      "from": "evaluar-proveedores",
+      "to": "certificacion-internacional",
+      "variant": "emphasis",
+      "role": "main",
+      "label": "Tras registrar productores"
+    },
+    {
+      "id": "campana-transportista",
+      "from": "campana",
+      "to": "vincular-transportista",
+      "variant": "dashed",
+      "role": "branch",
+      "label": "Al iniciar ejecución"
+    },
+    {
+      "id": "transportista-entrega",
+      "from": "vincular-transportista",
+      "to": "completar-entrega",
+      "variant": "emphasis",
+      "role": "main"
     }
   ],
   "semanticChecks": {
@@ -655,7 +807,10 @@
     "allowedTerminals": [
       "cierre-admin",
       "cobrar",
-      "liquidacion"
+      "liquidacion",
+      "completar-entrega",
+      "certificacion-internacional",
+      "completar-entrega"
     ],
     "requiredEdges": [
       {
@@ -715,7 +870,19 @@
       "dot": "slate",
       "title": "Adjuntos",
       "items": [
-        "Seleccione el PDF en el formulario de la etapa y guárdelo. La aplicación guarda el documento a través del backend en S3. Revise Documento verificado cuando la vista muestre esa comprobación."
+        "Seleccione el PDF en el formulario de la etapa y guárdelo. La aplicación guarda el documento a través del backend en S3. Revise Documento verificado cuando la vista muestre esa comprobación.",
+        "Excepción comprobada en V1: el formulario exige la cotización del transportista, pero la pantalla informa que no se guardará y el detalle muestra que no hay documento adjunto. No la trate como evidencia persistida.",
+        "La coordinación solo está disponible si queda una entrega sin datos de transporte. En QA, la única entrega ya estaba coordinada; no se pudo probar una nueva asignación de unidad y chofer."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Gestión de campaña y logística",
+      "items": [
+        "En ejecución, Proveedores permite vincular acopiadores. Productores registrados tienen Exámenes y Entrevistas; los acopiadores, solo Exámenes. La entrevista vincula finca y datos agronómicos.",
+        "Después de registrar a los productores participantes, Gestión de Certificaciones permite registrar el certificado internacional. Documento del certificado y Cotización de la certificadora son opcionales.",
+        "En ejecución también se vinculan transportistas; Entregas > Completar datos de entrega asigna transportista, camión, chofer, origen y destino si existe una entrega pendiente.",
+        "Límite V1 comprobado: la cotización del transportista es requerida en el modal, pero se informa que no se guardará; el detalle no muestra adjunto. La coordinación queda deshabilitada si no hay entregas pendientes; en QA la única entrega ya estaba coordinada."
       ]
     }
   ]
