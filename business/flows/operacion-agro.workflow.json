@@ -1,0 +1,722 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "De la campaña al cobro",
+    "subtitle": "Navegación de Administrador y Chofer en la aplicación de Agroexportaciones F&V",
+    "locale": "es",
+    "visual_preset": "editorial",
+    "quality_profile": "showcase",
+    "output": "operacion-agro.html",
+    "repository": {
+      "url": "git@github.com:FacilitoEPE/app-web.git",
+      "revision": "933b75e1007a15e0ad2150b9ad21faa2b808c394",
+      "link_mode": "local-only"
+    },
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "frontend": {
+          "label": "Pantalla o acción"
+        },
+        "security": {
+          "label": "Condición de avance"
+        }
+      }
+    },
+    "views": [
+      {
+        "id": "planificacion",
+        "label": "Planificación",
+        "focus": [
+          "acceso-admin",
+          "proveedores",
+          "clientes",
+          "transporte",
+          "campana",
+          "contratos",
+          "coordinacion",
+          "fase"
+        ],
+        "note": "Vincule productores en planificación. El estado de la campaña se actualiza según sus fechas."
+      },
+      {
+        "id": "despacho",
+        "label": "Calidad y despacho",
+        "focus": [
+          "calidad",
+          "cosecha",
+          "carga-admin",
+          "carga-chofer",
+          "guia",
+          "viaje",
+          "checklist"
+        ],
+        "note": "Con una carga registrada y aceptada, la guía emitida habilita la salida. Registre después En camino y Llegada."
+      },
+      {
+        "id": "cierres",
+        "label": "Cierres",
+        "focus": [
+          "checklist",
+          "recepcion",
+          "cierre-fisico",
+          "cierre-chofer",
+          "cierre-admin"
+        ],
+        "note": "Logística confirma el cierre físico. Chofer cierra el despacho y Administrador registra el cierre administrativo."
+      },
+      {
+        "id": "cobros",
+        "label": "Facturación y cobros",
+        "focus": [
+          "recepcion",
+          "preparar",
+          "facturar",
+          "cobrar"
+        ],
+        "note": "Facturación se habilita con el respaldo de recepción y puede avanzar con el cierre administrativo pendiente."
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "acceso",
+      "label": "Administrador · Acceso y catálogos"
+    },
+    {
+      "id": "campana",
+      "label": "Administrador · Gestión de Campaña"
+    },
+    {
+      "id": "calidad",
+      "label": "Administrador · Cosecha y Control de Calidad"
+    },
+    {
+      "id": "chofer",
+      "label": "Chofer · Portal"
+    },
+    {
+      "id": "logistica",
+      "label": "Administrador · Logística y Despacho"
+    },
+    {
+      "id": "finanzas",
+      "label": "Administrador · Facturación y Cobros / Liquidación"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "acceso-admin",
+      "lane": "acceso",
+      "col": 0,
+      "label": "Ingresar",
+      "sublabel": "Perfil Administrador",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/App.tsx",
+          "line": 165,
+          "end_line": 181
+        }
+      ],
+      "icon": "start"
+    },
+    {
+      "id": "proveedores",
+      "lane": "acceso",
+      "col": 1,
+      "label": "Gestión de Proveedores",
+      "sublabel": "Proveedor, finca y variedad",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/shared/layout/navigationItems.ts",
+          "line": 26,
+          "end_line": 26
+        }
+      ]
+    },
+    {
+      "id": "clientes",
+      "lane": "acceso",
+      "col": 2,
+      "label": "Gestión Comercial",
+      "sublabel": "Registrar cliente",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/shared/layout/navigationItems.ts",
+          "line": 27,
+          "end_line": 27
+        }
+      ]
+    },
+    {
+      "id": "transporte",
+      "lane": "acceso",
+      "col": 3,
+      "label": "Gestión de Transporte",
+      "sublabel": "Empresa, unidad y chofer",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/App.tsx",
+          "line": 216,
+          "end_line": 219
+        }
+      ]
+    },
+    {
+      "id": "campana",
+      "lane": "campana",
+      "col": 3,
+      "label": "Nueva campaña",
+      "sublabel": "Fechas, meta y proveedores",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/App.tsx",
+          "line": 196,
+          "end_line": 205
+        }
+      ]
+    },
+    {
+      "id": "contratos",
+      "lane": "campana",
+      "col": 2,
+      "label": "Clientes y contratos",
+      "sublabel": "Variedades, precio y entrega",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/App.tsx",
+          "line": 199,
+          "end_line": 202
+        }
+      ]
+    },
+    {
+      "id": "coordinacion",
+      "lane": "campana",
+      "col": 1,
+      "label": "Coordinar entrega",
+      "sublabel": "Acuerdo, origen y vehículo",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/App.tsx",
+          "line": 207,
+          "end_line": 209
+        }
+      ]
+    },
+    {
+      "id": "fase",
+      "lane": "campana",
+      "col": 0,
+      "label": "Campaña en ejecución",
+      "sublabel": "Avance según fechas",
+      "type": "security",
+      "sources": [
+        {
+          "path": "src/modules/driver-portal/api/driver-screen-data.ts",
+          "line": 65,
+          "end_line": 75
+        }
+      ],
+      "icon": "decision"
+    },
+    {
+      "id": "calidad",
+      "lane": "calidad",
+      "col": 0,
+      "label": "Autorizar cosecha",
+      "sublabel": "MTD y análisis aptos",
+      "type": "security",
+      "sources": [
+        {
+          "path": "src/modules/quality/api/quality-commands.api.ts",
+          "line": 68,
+          "end_line": 82
+        }
+      ],
+      "icon": "decision"
+    },
+    {
+      "id": "cosecha",
+      "lane": "calidad",
+      "col": 1,
+      "label": "Registrar cosecha",
+      "sublabel": "Cuadrilla, kilos y bultos",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/quality/api/quality-commands.api.ts",
+          "line": 84,
+          "end_line": 92
+        }
+      ]
+    },
+    {
+      "id": "carga-admin",
+      "lane": "calidad",
+      "col": 2,
+      "label": "Registrar carga",
+      "sublabel": "Entrega ya coordinada",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/quality/api/quality-commands.api.ts",
+          "line": 96,
+          "end_line": 141
+        }
+      ]
+    },
+    {
+      "id": "guia",
+      "lane": "calidad",
+      "col": 3,
+      "label": "Emitir guía de fruta",
+      "sublabel": "Guías de remisión",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/quality/api/quality-commands.api.ts",
+          "line": 172,
+          "end_line": 201
+        }
+      ]
+    },
+    {
+      "id": "carga-chofer",
+      "lane": "chofer",
+      "col": 1,
+      "label": "Registrar carga",
+      "sublabel": "Campañas y Cargas",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/driver-portal/api/driver-commands.api.ts",
+          "line": 85,
+          "end_line": 112
+        }
+      ],
+      "tag": "Perfil Chofer"
+    },
+    {
+      "id": "viaje",
+      "lane": "chofer",
+      "col": 3,
+      "label": "Registrar el viaje",
+      "sublabel": "En carga → Salida → Llegada",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/driver-portal/api/driver-commands.api.ts",
+          "line": 12,
+          "end_line": 29
+        },
+        {
+          "path": "src/modules/driver-portal/pages/DriverPortalPage.tsx",
+          "line": 56,
+          "end_line": 63
+        }
+      ],
+      "tag": "Perfil Chofer"
+    },
+    {
+      "id": "checklist",
+      "lane": "chofer",
+      "col": 4,
+      "label": "Checklist y guía",
+      "sublabel": "Peso y guía de salida",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/driver-portal/api/driver-commands.api.ts",
+          "line": 51,
+          "end_line": 75
+        }
+      ]
+    },
+    {
+      "id": "cierre-chofer",
+      "lane": "chofer",
+      "col": 5,
+      "label": "Cerrar despacho",
+      "sublabel": "Checklist + cierre físico",
+      "type": "security",
+      "sources": [
+        {
+          "path": "src/modules/driver-portal/api/driver-commands.api.ts",
+          "line": 30,
+          "end_line": 49
+        }
+      ],
+      "icon": "decision"
+    },
+    {
+      "id": "recepcion",
+      "lane": "logistica",
+      "col": 3,
+      "label": "Recepción y calidad",
+      "sublabel": "Llegada, descarga y evaluación",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/logistics/pages/LogisticsReceptionPage.tsx",
+          "line": 31,
+          "end_line": 60
+        }
+      ],
+      "tag": "Perfil Administrador"
+    },
+    {
+      "id": "cierre-fisico",
+      "lane": "logistica",
+      "col": 4,
+      "label": "Cierre físico",
+      "sublabel": "Informe y PDF de guía",
+      "type": "security",
+      "sources": [
+        {
+          "path": "src/modules/logistics/api/logistics-commands.api.ts",
+          "line": 31,
+          "end_line": 45
+        }
+      ],
+      "icon": "decision"
+    },
+    {
+      "id": "cierre-admin",
+      "lane": "logistica",
+      "col": 5,
+      "label": "Cierre administrativo",
+      "sublabel": "Cierre chofer y guía firmada",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/logistics/api/logistics-commands.api.ts",
+          "line": 47,
+          "end_line": 53
+        }
+      ],
+      "icon": "success"
+    },
+    {
+      "id": "liquidacion",
+      "lane": "finanzas",
+      "col": 2,
+      "label": "Liquidación de Compra",
+      "sublabel": "Proveedor y transportista",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/purchase-settlement/pages/PurchaseSettlementPage.tsx",
+          "line": 1098,
+          "end_line": 1109
+        }
+      ]
+    },
+    {
+      "id": "preparar",
+      "lane": "finanzas",
+      "col": 3,
+      "label": "Preparar factura",
+      "sublabel": "Kilos recibidos y contrato",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/billing/api/billing-commands.api.ts",
+          "line": 20,
+          "end_line": 39
+        }
+      ]
+    },
+    {
+      "id": "facturar",
+      "lane": "finanzas",
+      "col": 4,
+      "label": "Registrar factura emitida",
+      "sublabel": "Número, fechas y PDF",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/billing/components/BillingIssueInvoiceModal.tsx",
+          "line": 60,
+          "end_line": 85
+        }
+      ]
+    },
+    {
+      "id": "cobrar",
+      "lane": "finanzas",
+      "col": 5,
+      "label": "Registrar cobro",
+      "sublabel": "Voucher e historial",
+      "type": "frontend",
+      "sources": [
+        {
+          "path": "src/modules/billing/components/BillingRegisterCollectionModal.tsx",
+          "line": 68,
+          "end_line": 90
+        }
+      ],
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "acceso-admin-proveedores",
+      "from": "acceso-admin",
+      "to": "proveedores",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "proveedores-clientes",
+      "from": "proveedores",
+      "to": "clientes",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "clientes-transporte",
+      "from": "clientes",
+      "to": "transporte",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "transporte-campana",
+      "from": "transporte",
+      "to": "campana",
+      "variant": "emphasis",
+      "role": "main",
+      "label": "Selector de módulos"
+    },
+    {
+      "id": "campana-contratos",
+      "from": "campana",
+      "to": "contratos",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "contratos-coordinacion",
+      "from": "contratos",
+      "to": "coordinacion",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "coordinacion-fase",
+      "from": "coordinacion",
+      "to": "fase",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "fase-calidad",
+      "from": "fase",
+      "to": "calidad",
+      "variant": "emphasis",
+      "role": "main",
+      "label": "En proceso"
+    },
+    {
+      "id": "calidad-cosecha",
+      "from": "calidad",
+      "to": "cosecha",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "cosecha-carga-admin",
+      "from": "cosecha",
+      "to": "carga-admin",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "carga-admin-guia",
+      "from": "carga-admin",
+      "to": "guia",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "guia-viaje",
+      "from": "guia",
+      "to": "viaje",
+      "variant": "emphasis",
+      "role": "main",
+      "label": "Cambiar a Chofer"
+    },
+    {
+      "id": "viaje-recepcion",
+      "from": "viaje",
+      "to": "recepcion",
+      "variant": "emphasis",
+      "role": "main",
+      "label": "Cambiar a Admin."
+    },
+    {
+      "id": "recepcion-cierre-fisico",
+      "from": "recepcion",
+      "to": "cierre-fisico",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "cierre-fisico-cierre-chofer",
+      "from": "cierre-fisico",
+      "to": "cierre-chofer",
+      "variant": "emphasis",
+      "role": "main",
+      "label": "Cambiar a Chofer"
+    },
+    {
+      "id": "cierre-chofer-cierre-admin",
+      "from": "cierre-chofer",
+      "to": "cierre-admin",
+      "variant": "emphasis",
+      "role": "main",
+      "label": "Volver a Admin."
+    },
+    {
+      "id": "cosecha-carga-chofer",
+      "from": "cosecha",
+      "to": "carga-chofer",
+      "variant": "dashed",
+      "role": "branch",
+      "label": "Alternativa"
+    },
+    {
+      "id": "carga-chofer-guia",
+      "from": "carga-chofer",
+      "to": "guia",
+      "variant": "dashed",
+      "role": "branch",
+      "label": "Volver a Admin.",
+      "toSide": "bottom",
+      "fromSide": "top"
+    },
+    {
+      "id": "viaje-checklist",
+      "from": "viaje",
+      "to": "checklist",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "checklist-cierre-chofer",
+      "from": "checklist",
+      "to": "cierre-chofer",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "recepcion-liquidacion",
+      "from": "recepcion",
+      "to": "liquidacion",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "recepcion-preparar",
+      "from": "recepcion",
+      "to": "preparar",
+      "variant": "dashed",
+      "role": "branch",
+      "label": "Informe guardado"
+    },
+    {
+      "id": "preparar-facturar",
+      "from": "preparar",
+      "to": "facturar",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "facturar-cobrar",
+      "from": "facturar",
+      "to": "cobrar",
+      "variant": "emphasis",
+      "role": "main"
+    }
+  ],
+  "semanticChecks": {
+    "allowedRoots": [
+      "acceso-admin"
+    ],
+    "allowedTerminals": [
+      "cierre-admin",
+      "cobrar",
+      "liquidacion"
+    ],
+    "requiredEdges": [
+      {
+        "from": "cierre-fisico",
+        "to": "cierre-chofer"
+      },
+      {
+        "from": "checklist",
+        "to": "cierre-chofer"
+      },
+      {
+        "from": "cierre-chofer",
+        "to": "cierre-admin"
+      },
+      {
+        "from": "recepcion",
+        "to": "preparar"
+      }
+    ],
+    "requiredPaths": [
+      {
+        "from": "carga-chofer",
+        "to": "guia"
+      },
+      {
+        "from": "recepcion",
+        "to": "cobrar"
+      }
+    ]
+  },
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Cambios de perfil",
+      "items": [
+        "Desde Administrador, use el selector de la cabecera para ir a otro módulo. Para entrar al portal del chofer, cierre sesión y seleccione Chofer al volver a ingresar.",
+        "Conserve el código de carga al pasar por Calidad, Chofer, Logística y Facturación. El viaje se registra en orden: En carga, Salida de finca, En camino y Llegada a planta."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Condiciones de cierre",
+      "items": [
+        "Cierre físico: horarios de descarga, peso, resultado, informe de recepción, guía de fruta emitida y PDF.",
+        "Cierre del chofer: checklist de llegada, guía de salida y cierre físico. Cierre administrativo: evento final del chofer y guía firmada en el expediente."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Facturación y liquidación",
+      "items": [
+        "Facturación usa peso, resultado e informe de recepción. El registro de factura emitida requiere el PDF de un comprobante externo. El cobro requiere su propio voucher.",
+        "Liquidación de Compra es el ramal de obligaciones con el proveedor y el transportista. La prueba de CAR-8-7 llegó a facturación y cobro con el cierre administrativo pendiente."
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Adjuntos",
+      "items": [
+        "Seleccione el PDF en el formulario de la etapa y guárdelo. La aplicación guarda el documento a través del backend en S3. Revise Documento verificado cuando la vista muestre esa comprobación."
+      ]
+    }
+  ]
+}

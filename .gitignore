@@ -5,6 +5,7 @@
 **/*.pyc
 **/*.log
 target-model/.validation/codigo-actual/
+business/flows/*.delivery.json
 
 # Configuración privada y archivos del sistema
 .env

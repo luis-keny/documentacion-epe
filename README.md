@@ -27,7 +27,7 @@ Los adjuntos de campaña y otros formularios verifican metadatos y objeto real e
 
 | Si necesitas… | Consulta… |
 |---|---|
-| Entender actores, términos o el recorrido general | [business/processes.md](business/processes.md); contrasta acciones concretas con los manuales de `epe-web` y el estado de integración. |
+| Entender actores, términos o el recorrido general | [Procesos](business/processes.md) y [flujo de navegación en Archify](business/flows/operacion-agro.html). |
 | Revisar el modelo propuesto | [target-model/README.md](target-model/README.md), que conduce al diccionario, relaciones, SQL y límites frente al backend. |
 | Ver el estado de una vista | [integration-status.md](../epe-web/docs/integration-status.md). |
 | Modificar vistas, reglas de negocio y simulación de manera coordinada | [Flujo de cambios y comunicación al desarrollador](../epe-web/docs/development.md#cambios-de-vistas-reglas-de-negocio-y-mock). |

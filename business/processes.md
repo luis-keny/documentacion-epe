@@ -6,6 +6,8 @@ Resumen vigente del negocio y sus actores. Describe el recorrido funcional; la d
 
 Agro Exportaciones F.V. organiza una operación agroexportadora alrededor de campañas: conecta abastecimiento de fruta, acuerdos con clientes, transporte, control de calidad, entrega y liquidación. El flujo visual proporciona una [vista general basada en el prototipo](flows/overview.html).
 
+El [flujo de navegación en Archify](flows/operacion-agro.html) muestra las pantallas vigentes, los cambios de perfil y las condiciones de cierre y facturación. El [QA de la carga CAR-8-7](../../epe-web/docs/evidence/qa-2026-11-10.md) registra el alcance comprobado en la aplicación. [Fuente del diagrama](flows/operacion-agro.workflow.json)
+
 | Actor | Participación documentada |
 |---|---|
 | Administrador | Prepara datos, coordina campañas, clientes, proveedores y transporte; gestiona calidad, logística, facturación y liquidaciones. |
