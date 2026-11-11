@@ -14,7 +14,7 @@ Las referencias entre repositorios usan el workspace con `docs`, `epe-web` y `ep
 | Estado general | [Estado del proyecto](estado-del-proyecto.md) | Resumen coordinado; el detalle por vista permanece en frontend. |
 | Estado de integración | [Registro frontend](../epe-web/docs/integration-status.md) | Estado por vista y evidencia reciente. |
 | Contrato generado | [Fuente SQL y proceso](../epe-web/docs/api/README.md) y OpenAPI generado | Contrato de negocio bajo `/v1`. Su copia runtime vive en backend. |
-| Esquema implementado | Entidades y migraciones del [backend](../epe-backend/src/database/) | Estructura programada; no acredita el estado de una base desplegada. |
+| Esquema implementado | [Guía SQL, entidades y migraciones del backend](../epe-backend/docs/database.md) | Instalación de `agro`, migraciones del backend completo y catálogos. |
 | Modelo objetivo | [Entrada al modelo](target-model/README.md) | Útil al revisar tablas y relaciones propuestas; está separado del esquema implementado. |
 | Históricos | [Historial](history/README.md) | Útil para rastrear evidencia y decisiones fechadas; no describe el estado vigente. |
 | Seguridad | [Documentación transversal](auditoria-seguridad.md), [backend](../epe-backend/docs/auditoria-seguridad.md), [frontend](../epe-web/docs/auditoria-seguridad.md) y [entregables](../epe-documentacion-software/auditoria-seguridad.md) | Revisión estática, con prioridades y validaciones pendientes por proyecto. |
