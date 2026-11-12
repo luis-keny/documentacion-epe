@@ -9,6 +9,7 @@ Las referencias entre repositorios usan el workspace con `docs`, `epe-web` y `ep
 | Tema | Fuente canónica | Alcance |
 |---|---|---|
 | Decisiones de ingeniería y calidad | [Criterios compartidos](criterios-de-calidad.md) | Arquitectura, patrones, SOLID, seguridad, datos, pruebas y operación relacionados con ISO/IEC 25010. |
+| Integración y releases de EPE | [Guía de integración y entregas](../epe-backend/docs/integracion-y-entregas.md) | Ramas cortas, revisión, distribución de guías, versionado y recuperación de la app. |
 | Arquitectura y patrones | [Backend](../epe-backend/docs/architecture.md) y [frontend](../epe-web/docs/architecture.md) | Decisiones, límites de módulos y criterios para código nuevo. |
 | Negocio/prototipo | [Procesos](business/processes.md) y [flujo visual](business/flows/overview.html) | Útil para reglas, términos y recorridos compartidos; el prototipo es antecedente, no implementación vigente. |
 | Estado general | [Estado del proyecto](estado-del-proyecto.md) | Resumen coordinado; el detalle por vista permanece en frontend. |
@@ -35,6 +36,7 @@ Los adjuntos de campaña y otros formularios verifican metadatos y objeto real e
 | Investigar una decisión o evidencia pasada | [history/README.md](history/README.md); no usar sus conclusiones como estado actual. |
 | Entender cómo arranca y responde el backend, o el flujo de documentos en S3 | [flujo del backend](../epe-backend/docs/backend-flow.md). |
 | Revisar variables S3, imágenes y Compose de backend/web | [diagnóstico de despliegue](../epe-backend/docs/diagnostico-s3-despliegue.md). |
+| Recuperar una versión estable en el servidor físico | [rollback del backend](../epe-backend/docs/guia-on-premise-despliegue-backend.md#rollback-manual-por-versión) y [rollback de la web](../epe-web/README.md#despliegue-y-rollback-manual-de-la-web). |
 | Cambiar contrato API o persistencia | [contrato frontend](../epe-web/docs/api/README.md), OpenAPI generado y entidades/migraciones backend. |
 | Integrar el nombre libre del responsable de campaña | [Contrato y ejemplo](../epe-web/docs/api/README.md#responsable-libre-de-campaña) y [estado de integración](../epe-web/docs/integration-status.md#responsable-libre-de-campaña--2026-11-08--integrado-en-frontend). |
 | Guardar y consultar el documento de un chofer | [Contrato HTTP](../epe-web/docs/api/README.md#documento-del-chofer) y [migración](../epe-backend/docs/database.md#documento-del-chofer). |
